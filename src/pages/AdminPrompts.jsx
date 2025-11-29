@@ -37,13 +37,13 @@ import {
 import AdminSidebar from '../components/admin/AdminSidebar';
 
 const categories = [
-  { value: 'writing', label: 'Writing' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'coding', label: 'Coding' },
-  { value: 'analysis', label: 'Analysis' },
-  { value: 'creative', label: 'Creative' },
-  { value: 'business', label: 'Business' },
-  { value: 'other', label: 'Other' },
+  { value: 'writing', label: '写作' },
+  { value: 'marketing', label: '营销' },
+  { value: 'coding', label: '编程' },
+  { value: 'analysis', label: '分析' },
+  { value: 'creative', label: '创意' },
+  { value: 'business', label: '商务' },
+  { value: 'other', label: '其他' },
 ];
 
 const colors = [
@@ -192,15 +192,15 @@ export default function AdminPrompts() {
       <div className="flex-1 p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Prompt Modules</h1>
-            <p className="text-slate-500 mt-1">Create and manage pre-configured AI prompts</p>
+            <h1 className="text-3xl font-bold text-slate-900">提示词模块管理</h1>
+            <p className="text-slate-500 mt-1">创建和管理预设的AI提示词模块，用户可一键调用</p>
           </div>
           <Button 
             onClick={() => { resetForm(); setDialogOpen(true); }}
             className="bg-violet-600 hover:bg-violet-700 gap-2"
           >
             <Plus className="h-4 w-4" />
-            Add Module
+            添加模块
           </Button>
         </div>
 
@@ -253,7 +253,7 @@ export default function AdminPrompts() {
           ))}
           {modules.length === 0 && (
             <div className="col-span-full text-center py-12 text-slate-500">
-              No prompt modules yet. Create your first one to get started.
+              暂无提示词模块，点击上方按钮创建您的第一个模块
             </div>
           )}
         </div>
@@ -263,22 +263,22 @@ export default function AdminPrompts() {
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {selectedModule ? 'Edit Prompt Module' : 'Create Prompt Module'}
+                {selectedModule ? '编辑提示词模块' : '创建提示词模块'}
               </DialogTitle>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Title</Label>
+                  <Label>模块名称</Label>
                   <Input
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Video Script Writer"
+                    placeholder="视频口播稿编写"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Category</Label>
+                  <Label>分类</Label>
                   <Select
                     value={formData.category}
                     onValueChange={(value) => setFormData({ ...formData, category: value })}
@@ -298,41 +298,44 @@ export default function AdminPrompts() {
               </div>
 
               <div className="space-y-2">
-                <Label>Description</Label>
+                <Label>功能描述</Label>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Brief description of what this module does..."
+                  placeholder="简要描述此模块的功能，如：一键生成专业的视频口播稿，支持多种风格和时长..."
                   rows={2}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>System Prompt</Label>
+                <Label>系统提示词（核心约束）</Label>
                 <Textarea
                   value={formData.system_prompt}
                   onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
-                  placeholder="You are an expert video script writer. Your task is to create engaging video scripts..."
-                  rows={6}
+                  placeholder="你是一个专业的视频脚本编写专家。你的任务是帮助用户创作引人入胜的视频口播稿。请注意：1. 专注于视频脚本创作 2. 不处理其他类型的请求 3. 保持专业的创作风格..."
+                  rows={8}
                 />
                 <p className="text-xs text-slate-500">
-                  This prompt guides the AI's behavior and expertise area.
+                  此提示词将约束AI的行为和专业领域。建议包含：角色定位、功能边界、输出格式、禁止事项等。
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label>User Prompt Template (optional)</Label>
+                <Label>用户引导模板（可选）</Label>
                 <Textarea
                   value={formData.user_prompt_template}
                   onChange={(e) => setFormData({ ...formData, user_prompt_template: e.target.value })}
-                  placeholder="Please create a video script about: "
+                  placeholder="请帮我创作一个关于 [主题] 的视频口播稿，时长约 [X] 分钟..."
                   rows={2}
                 />
+                <p className="text-xs text-slate-500">
+                  提供给用户的输入模板提示，帮助用户更好地使用此模块
+                </p>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Icon</Label>
+                  <Label>图标</Label>
                   <Select
                     value={formData.icon}
                     onValueChange={(value) => setFormData({ ...formData, icon: value })}
@@ -350,7 +353,7 @@ export default function AdminPrompts() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Color</Label>
+                  <Label>颜色</Label>
                   <Select
                     value={formData.color}
                     onValueChange={(value) => setFormData({ ...formData, color: value })}
@@ -371,7 +374,7 @@ export default function AdminPrompts() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Credits Multiplier</Label>
+                  <Label>积分倍率</Label>
                   <Input
                     type="number"
                     value={formData.credits_multiplier}
@@ -385,7 +388,7 @@ export default function AdminPrompts() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Sort Order</Label>
+                  <Label>排序权重</Label>
                   <Input
                     type="number"
                     value={formData.sort_order}
@@ -393,7 +396,7 @@ export default function AdminPrompts() {
                   />
                 </div>
                 <div className="flex items-center justify-between pt-6">
-                  <Label>Active</Label>
+                  <Label>启用状态</Label>
                   <Switch
                     checked={formData.is_active}
                     onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
@@ -404,14 +407,14 @@ export default function AdminPrompts() {
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
+                取消
               </Button>
               <Button 
                 onClick={handleSubmit}
                 disabled={!formData.title || !formData.system_prompt}
                 className="bg-violet-600 hover:bg-violet-700"
               >
-                {selectedModule ? 'Update' : 'Create'}
+                {selectedModule ? '保存修改' : '创建模块'}
               </Button>
             </DialogFooter>
           </DialogContent>
