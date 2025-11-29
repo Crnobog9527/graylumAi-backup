@@ -1,19 +1,27 @@
 import Chat from './pages/Chat';
-import Templates from './pages/Templates';
 import Credits from './pages/Credits';
-import Admin from './pages/Admin';
-import __Layout from './Layout.jsx';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminModels from './pages/AdminModels';
+import AdminPrompts from './pages/AdminPrompts';
+import AdminPackages from './pages/AdminPackages';
+import AdminUsers from './pages/AdminUsers';
+import AdminTransactions from './pages/AdminTransactions';
+import AdminSettings from './pages/AdminSettings';
 
 
 export const PAGES = {
     "Chat": Chat,
-    "Templates": Templates,
     "Credits": Credits,
-    "Admin": Admin,
+    "AdminDashboard": AdminDashboard,
+    "AdminModels": AdminModels,
+    "AdminPrompts": AdminPrompts,
+    "AdminPackages": AdminPackages,
+    "AdminUsers": AdminUsers,
+    "AdminTransactions": AdminTransactions,
+    "AdminSettings": AdminSettings,
 }
 
 export const pagesConfig = {
     mainPage: "Chat",
     Pages: PAGES,
-    Layout: __Layout,
 };

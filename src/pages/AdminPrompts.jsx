@@ -1,0 +1,443 @@
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Plus, Pencil, Trash2, Wand2, GripVertical } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+import AdminSidebar from '../components/admin/AdminSidebar';
+
+const categories = [
+  { value: 'writing', label: 'Writing' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'coding', label: 'Coding' },
+  { value: 'analysis', label: 'Analysis' },
+  { value: 'creative', label: 'Creative' },
+  { value: 'business', label: 'Business' },
+  { value: 'other', label: 'Other' },
+];
+
+const colors = [
+  { value: 'violet', label: 'Violet' },
+  { value: 'blue', label: 'Blue' },
+  { value: 'emerald', label: 'Emerald' },
+  { value: 'orange', label: 'Orange' },
+  { value: 'pink', label: 'Pink' },
+  { value: 'amber', label: 'Amber' },
+  { value: 'cyan', label: 'Cyan' },
+  { value: 'rose', label: 'Rose' },
+];
+
+const icons = [
+  { value: 'Sparkles', label: 'Sparkles' },
+  { value: 'PenTool', label: 'Pen' },
+  { value: 'Video', label: 'Video' },
+  { value: 'Megaphone', label: 'Marketing' },
+  { value: 'Code', label: 'Code' },
+  { value: 'BarChart3', label: 'Chart' },
+  { value: 'Lightbulb', label: 'Idea' },
+  { value: 'Briefcase', label: 'Business' },
+  { value: 'FileText', label: 'Document' },
+  { value: 'Palette', label: 'Design' },
+  { value: 'Rocket', label: 'Rocket' },
+  { value: 'Target', label: 'Target' },
+];
+
+const initialFormData = {
+  title: '',
+  description: '',
+  system_prompt: '',
+  user_prompt_template: '',
+  category: 'writing',
+  icon: 'Sparkles',
+  color: 'violet',
+  credits_multiplier: 1,
+  is_active: true,
+  sort_order: 0,
+};
+
+export default function AdminPrompts() {
+  const [user, setUser] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [formData, setFormData] = useState(initialFormData);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await base44.auth.me();
+        if (userData.role !== 'admin') {
+          window.location.href = '/';
+          return;
+        }
+        setUser(userData);
+      } catch (e) {
+        base44.auth.redirectToLogin();
+      }
+    };
+    loadUser();
+  }, []);
+
+  const { data: modules = [] } = useQuery({
+    queryKey: ['admin-prompts'],
+    queryFn: () => base44.entities.PromptModule.list('sort_order'),
+    enabled: !!user,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.PromptModule.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-prompts']);
+      setDialogOpen(false);
+      resetForm();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.PromptModule.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-prompts']);
+      setDialogOpen(false);
+      resetForm();
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.PromptModule.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-prompts']);
+      setDeleteDialogOpen(false);
+      setSelectedModule(null);
+    },
+  });
+
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setSelectedModule(null);
+  };
+
+  const handleEdit = (module) => {
+    setSelectedModule(module);
+    setFormData({
+      title: module.title || '',
+      description: module.description || '',
+      system_prompt: module.system_prompt || '',
+      user_prompt_template: module.user_prompt_template || '',
+      category: module.category || 'writing',
+      icon: module.icon || 'Sparkles',
+      color: module.color || 'violet',
+      credits_multiplier: module.credits_multiplier || 1,
+      is_active: module.is_active !== false,
+      sort_order: module.sort_order || 0,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (selectedModule) {
+      updateMutation.mutate({ id: selectedModule.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const handleDelete = (module) => {
+    setSelectedModule(module);
+    setDeleteDialogOpen(true);
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen bg-slate-50">
+      <AdminSidebar currentPage="AdminPrompts" />
+      
+      <div className="flex-1 p-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Prompt Modules</h1>
+            <p className="text-slate-500 mt-1">Create and manage pre-configured AI prompts</p>
+          </div>
+          <Button 
+            onClick={() => { resetForm(); setDialogOpen(true); }}
+            className="bg-violet-600 hover:bg-violet-700 gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Module
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {modules.map((module) => (
+            <Card key={module.id} className="relative overflow-hidden">
+              <div className={`absolute top-0 left-0 w-1 h-full bg-${module.color || 'violet'}-500`} />
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg bg-${module.color || 'violet'}-100`}>
+                      <Wand2 className={`h-5 w-5 text-${module.color || 'violet'}-600`} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-800">{module.title}</h3>
+                      <Badge variant="secondary" className="text-xs mt-1">
+                        {module.category}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Badge variant={module.is_active ? "default" : "secondary"}>
+                    {module.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+                <p className="text-sm text-slate-500 mb-4 line-clamp-2">{module.description}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">
+                    {module.credits_multiplier}x credits
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(module)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => handleDelete(module)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {modules.length === 0 && (
+            <div className="col-span-full text-center py-12 text-slate-500">
+              No prompt modules yet. Create your first one to get started.
+            </div>
+          )}
+        </div>
+
+        {/* Add/Edit Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedModule ? 'Edit Prompt Module' : 'Create Prompt Module'}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Title</Label>
+                  <Input
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Video Script Writer"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description of what this module does..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>System Prompt</Label>
+                <Textarea
+                  value={formData.system_prompt}
+                  onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
+                  placeholder="You are an expert video script writer. Your task is to create engaging video scripts..."
+                  rows={6}
+                />
+                <p className="text-xs text-slate-500">
+                  This prompt guides the AI's behavior and expertise area.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>User Prompt Template (optional)</Label>
+                <Textarea
+                  value={formData.user_prompt_template}
+                  onChange={(e) => setFormData({ ...formData, user_prompt_template: e.target.value })}
+                  placeholder="Please create a video script about: "
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Icon</Label>
+                  <Select
+                    value={formData.icon}
+                    onValueChange={(value) => setFormData({ ...formData, icon: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {icons.map((icon) => (
+                        <SelectItem key={icon.value} value={icon.value}>
+                          {icon.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Color</Label>
+                  <Select
+                    value={formData.color}
+                    onValueChange={(value) => setFormData({ ...formData, color: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {colors.map((color) => (
+                        <SelectItem key={color.value} value={color.value}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full bg-${color.value}-500`} />
+                            {color.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Credits Multiplier</Label>
+                  <Input
+                    type="number"
+                    value={formData.credits_multiplier}
+                    onChange={(e) => setFormData({ ...formData, credits_multiplier: parseFloat(e.target.value) })}
+                    min={0.5}
+                    max={10}
+                    step={0.5}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Sort Order</Label>
+                  <Input
+                    type="number"
+                    value={formData.sort_order}
+                    onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) })}
+                  />
+                </div>
+                <div className="flex items-center justify-between pt-6">
+                  <Label>Active</Label>
+                  <Switch
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSubmit}
+                disabled={!formData.title || !formData.system_prompt}
+                className="bg-violet-600 hover:bg-violet-700"
+              >
+                {selectedModule ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Prompt Module</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{selectedModule?.title}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteMutation.mutate(selectedModule?.id)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  );
+}
