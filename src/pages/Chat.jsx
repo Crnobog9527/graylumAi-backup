@@ -1,366 +1,452 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Menu, X, Sparkles, Bot } from 'lucide-react';
+import { Plus, Menu, X, Coins, Settings, LogOut, User as UserIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import ModelSelector from '@/components/chat/ModelSelector';
-import MessageBubble from '@/components/chat/MessageBubble';
-import ChatInput from '@/components/chat/ChatInput';
-import TemplateCard from '@/components/chat/TemplateCard';
-import CreditDisplay from '@/components/common/CreditDisplay';
-import ConversationList from '@/components/common/ConversationList';
+import ModelSelector from '../components/chat/ModelSelector';
+import PromptModuleGrid from '../components/chat/PromptModuleGrid';
+import ActiveModuleBanner from '../components/chat/ActiveModuleBanner';
+import ChatMessage from '../components/chat/ChatMessage';
+import ChatInput from '../components/chat/ChatInput';
+import ConversationList from '../components/chat/ConversationList';
+import CreditBalance from '../components/credits/CreditBalance';
 
 export default function Chat() {
   const [user, setUser] = useState(null);
-  const [selectedModel, setSelectedModel] = useState('');
-  const [activeConversation, setActiveConversation] = useState(null);
+  const [selectedModel, setSelectedModel] = useState(null);
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [currentConversation, setCurrentConversation] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(true);
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
     const loadUser = async () => {
-      const userData = await base44.auth.me();
-      setUser(userData);
+      try {
+        const userData = await base44.auth.me();
+        setUser(userData);
+      } catch (e) {
+        base44.auth.redirectToLogin();
+      }
     };
     loadUser();
   }, []);
 
   const { data: models = [] } = useQuery({
     queryKey: ['models'],
-    queryFn: () => base44.entities.AIModel.filter({ is_active: true }, 'sort_order'),
+    queryFn: () => base44.entities.AIModel.filter({ is_active: true }),
   });
 
-  const { data: templates = [] } = useQuery({
-    queryKey: ['templates'],
-    queryFn: () => base44.entities.PromptTemplate.filter({ is_active: true }, 'sort_order'),
+  const { data: promptModules = [] } = useQuery({
+    queryKey: ['promptModules'],
+    queryFn: () => base44.entities.PromptModule.filter({ is_active: true }, 'sort_order'),
   });
 
-  const { data: conversations = [], refetch: refetchConversations } = useQuery({
+  const { data: conversations = [] } = useQuery({
     queryKey: ['conversations', user?.email],
     queryFn: () => base44.entities.Conversation.filter(
-      { created_by: user?.email, is_archived: false }, 
-      '-created_date'
+      { created_by: user?.email, is_archived: false },
+      '-updated_date'
     ),
     enabled: !!user?.email,
   });
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
-      setSelectedModel(models[0].model_id);
+      setSelectedModel(models[0].id);
     }
-  }, [models, selectedModel]);
+  }, [models]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const loadMessages = async (conversation) => {
-    const msgs = await base44.entities.Message.filter(
-      { conversation_id: conversation.id },
-      'created_date'
-    );
-    setMessages(msgs);
-    setShowTemplates(false);
-  };
+  const createConversationMutation = useMutation({
+    mutationFn: (data) => base44.entities.Conversation.create(data),
+    onSuccess: () => queryClient.invalidateQueries(['conversations']),
+  });
 
-  const handleSelectConversation = async (conversation) => {
-    setActiveConversation(conversation);
-    setSelectedModel(conversation.model_id);
-    await loadMessages(conversation);
-    setSidebarOpen(false);
-  };
+  const updateConversationMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Conversation.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries(['conversations']),
+  });
 
-  const handleNewChat = () => {
-    setActiveConversation(null);
+  const updateUserMutation = useMutation({
+    mutationFn: (data) => base44.auth.updateMe(data),
+    onSuccess: (data) => setUser(prev => ({ ...prev, ...data })),
+  });
+
+  const createTransactionMutation = useMutation({
+    mutationFn: (data) => base44.entities.CreditTransaction.create(data),
+  });
+
+  const handleStartNewChat = (module = null) => {
+    setCurrentConversation(null);
     setMessages([]);
-    setShowTemplates(true);
-    setSidebarOpen(false);
+    setSelectedModule(module);
+    // 如果选择了模块，显示初始引导消息
+    if (module && module.user_prompt_template) {
+      // 可选：显示模块的引导提示
+    }
   };
 
-  const handleSelectTemplate = async (template) => {
-    const currentModel = models.find(m => m.model_id === selectedModel);
-    if (!currentModel) {
-      toast.error('Please select an AI model first');
-      return;
-    }
+  const handleClearModule = () => {
+    setSelectedModule(null);
+  };
 
-    const totalCost = (template.credits_cost || 0);
-    if ((user?.credits || 0) < totalCost) {
-      toast.error('Insufficient credits');
-      return;
+  const handleSelectConversation = async (convId) => {
+    const conv = conversations.find(c => c.id === convId);
+    if (conv) {
+      setCurrentConversation(conv);
+      setMessages(conv.messages || []);
+      setSelectedModel(conv.model_id);
+      setSidebarOpen(false);
     }
+  };
 
-    const conversation = await base44.entities.Conversation.create({
-      title: template.title,
-      model_id: selectedModel,
-      template_id: template.id,
-      system_prompt: template.system_prompt,
+  const handleDeleteConversation = async (convId) => {
+    await base44.entities.Conversation.delete(convId);
+    queryClient.invalidateQueries(['conversations']);
+    if (currentConversation?.id === convId) {
+      handleStartNewChat();
+    }
+  };
+
+  const handleArchiveConversation = async (convId) => {
+    await updateConversationMutation.mutateAsync({
+      id: convId,
+      data: { is_archived: true }
     });
-
-    setActiveConversation(conversation);
-    setShowTemplates(false);
-    refetchConversations();
-
-    if (template.starter_message) {
-      setMessages([{
-        id: 'starter',
-        role: 'assistant',
-        content: template.starter_message,
-        credits_used: 0,
-      }]);
+    if (currentConversation?.id === convId) {
+      handleStartNewChat();
     }
   };
 
   const handleSendMessage = async (content) => {
-    if (!selectedModel) {
-      toast.error('Please select an AI model');
+    if (!selectedModel || !user) return;
+    
+    const model = models.find(m => m.id === selectedModel);
+    if (!model) return;
+
+    const creditsNeeded = model.credits_per_message * (selectedModule?.credits_multiplier || 1);
+    const currentCredits = user.credits || 0;
+    
+    if (currentCredits < creditsNeeded) {
+      alert('Insufficient credits. Please purchase more credits to continue.');
       return;
-    }
-
-    const currentModel = models.find(m => m.model_id === selectedModel);
-    if (!currentModel) return;
-
-    const creditCost = currentModel.credits_per_message;
-    if ((user?.credits || 0) < creditCost) {
-      toast.error('Insufficient credits. Please purchase more.');
-      return;
-    }
-
-    setIsLoading(true);
-
-    let conversation = activeConversation;
-    if (!conversation) {
-      conversation = await base44.entities.Conversation.create({
-        title: content.slice(0, 50) + (content.length > 50 ? '...' : ''),
-        model_id: selectedModel,
-      });
-      setActiveConversation(conversation);
-      refetchConversations();
     }
 
     const userMessage = {
-      conversation_id: conversation.id,
       role: 'user',
       content,
-      credits_used: 0,
-    };
-    
-    await base44.entities.Message.create(userMessage);
-    setMessages(prev => [...prev, { ...userMessage, id: Date.now() }]);
-
-    const contextMessages = messages.slice(-10).map(m => ({
-      role: m.role,
-      content: m.content,
-    }));
-
-    const systemPrompt = conversation.system_prompt || 
-      "You are a helpful AI assistant. Be concise, accurate, and helpful.";
-
-    const fullPrompt = `${systemPrompt}\n\nConversation history:\n${contextMessages.map(m => `${m.role}: ${m.content}`).join('\n')}\n\nUser: ${content}`;
-
-    const response = await base44.integrations.Core.InvokeLLM({
-      prompt: fullPrompt,
-    });
-
-    const assistantMessage = {
-      conversation_id: conversation.id,
-      role: 'assistant',
-      content: response,
-      credits_used: creditCost,
+      timestamp: new Date().toISOString(),
     };
 
-    await base44.entities.Message.create(assistantMessage);
-    setMessages(prev => [...prev, { ...assistantMessage, id: Date.now() + 1 }]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setIsStreaming(true);
 
-    const newCredits = (user?.credits || 0) - creditCost;
-    await base44.auth.updateMe({ credits: newCredits });
-    setUser(prev => ({ ...prev, credits: newCredits }));
+    try {
+      // 构建隔离的系统提示词，确保每个模块的对话不会混淆
+      let systemPrompt = '';
+      if (selectedModule) {
+        systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
+${selectedModule.system_prompt}
 
-    await base44.entities.CreditTransaction.create({
-      user_email: user.email,
-      type: 'usage',
-      amount: -creditCost,
-      balance_after: newCredits,
-      description: `Chat message with ${currentModel.name}`,
-      reference_id: conversation.id,
-    });
+【行为规范】
+1. 你必须严格遵循上述角色定位和功能约束
+2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
+3. 保持专业、专注，不要偏离主题
+4. 每次回复都要符合此模块的专业领域`;
+      }
 
-    await base44.entities.Conversation.update(conversation.id, {
-      message_count: (conversation.message_count || 0) + 2,
-      total_credits_used: (conversation.total_credits_used || 0) + creditCost,
-    });
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: systemPrompt 
+          ? `${systemPrompt}\n\n用户消息: ${content}`
+          : content,
+      });
 
-    setIsLoading(false);
-  };
+      const assistantMessage = {
+        role: 'assistant',
+        content: response,
+        timestamp: new Date().toISOString(),
+        credits_used: creditsNeeded,
+      };
 
-  const handleDeleteConversation = async (conv) => {
-    await base44.entities.Conversation.delete(conv.id);
-    if (activeConversation?.id === conv.id) {
-      handleNewChat();
+      const updatedMessages = [...newMessages, assistantMessage];
+      setMessages(updatedMessages);
+
+      // Deduct credits
+      const newBalance = currentCredits - creditsNeeded;
+      await updateUserMutation.mutateAsync({
+        credits: newBalance,
+        total_credits_used: (user.total_credits_used || 0) + creditsNeeded,
+      });
+
+      // Create transaction record
+      await createTransactionMutation.mutateAsync({
+        user_email: user.email,
+        type: 'usage',
+        amount: -creditsNeeded,
+        balance_after: newBalance,
+        description: `Chat with ${model.name}${selectedModule ? ` - ${selectedModule.title}` : ''}`,
+        model_used: model.name,
+        prompt_module_used: selectedModule?.title,
+      });
+
+      // Save conversation
+      const title = content.slice(0, 50) + (content.length > 50 ? '...' : '');
+      
+      if (currentConversation) {
+        await updateConversationMutation.mutateAsync({
+          id: currentConversation.id,
+          data: {
+            messages: updatedMessages,
+            total_credits_used: (currentConversation.total_credits_used || 0) + creditsNeeded,
+          }
+        });
+      } else {
+        const newConv = await createConversationMutation.mutateAsync({
+          title,
+          model_id: selectedModel,
+          prompt_module_id: selectedModule?.id,
+          system_prompt: systemPrompt,
+          messages: updatedMessages,
+          total_credits_used: creditsNeeded,
+        });
+        setCurrentConversation(newConv);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setMessages(newMessages.slice(0, -1));
+    } finally {
+      setIsStreaming(false);
     }
-    refetchConversations();
-    toast.success('Conversation deleted');
   };
 
-  const handleArchiveConversation = async (conv) => {
-    await base44.entities.Conversation.update(conv.id, { is_archived: true });
-    if (activeConversation?.id === conv.id) {
-      handleNewChat();
-    }
-    refetchConversations();
-    toast.success('Conversation archived');
-  };
-
-  const Sidebar = () => (
-    <div className="flex flex-col h-full bg-slate-50/80 backdrop-blur-xl">
-      <div className="p-4 border-b border-slate-200">
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      <div className="p-4 border-b border-slate-100">
         <Button 
-          onClick={handleNewChat}
-          className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-lg shadow-indigo-200"
+          onClick={() => handleStartNewChat()}
+          className="w-full bg-violet-600 hover:bg-violet-700 gap-2"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4" />
           New Chat
         </Button>
       </div>
       
-      <div className="p-4 border-b border-slate-200">
-        <CreditDisplay credits={user?.credits || 0} compact />
-      </div>
-      
-      <ConversationList
-        conversations={conversations}
-        activeConversationId={activeConversation?.id}
-        onSelect={handleSelectConversation}
-        onDelete={handleDeleteConversation}
-        onArchive={handleArchiveConversation}
-      />
+      <ScrollArea className="flex-1 p-4">
+        <ConversationList
+          conversations={conversations}
+          selectedId={currentConversation?.id}
+          onSelect={handleSelectConversation}
+          onDelete={handleDeleteConversation}
+          onArchive={handleArchiveConversation}
+        />
+      </ScrollArea>
     </div>
   );
 
-  return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block w-72 border-r border-slate-200">
-        <Sidebar />
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div>
       </div>
+    );
+  }
 
-      {/* Mobile Sidebar */}
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="p-0 w-72">
-          <Sidebar />
-        </SheetContent>
-      </Sheet>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="flex items-center justify-between px-4 lg:px-6 py-4 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
-                <Bot className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h1 className="font-semibold text-slate-800">AI Assistant</h1>
-                <p className="text-xs text-slate-500">
-                  {activeConversation?.title || 'Start a new conversation'}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <ModelSelector
-            models={models}
-            selectedModel={selectedModel}
-            onSelectModel={setSelectedModel}
-            disabled={!!activeConversation}
-          />
-        </header>
-
-        {/* Chat Area */}
-        <div className="flex-1 overflow-hidden">
-          {showTemplates && messages.length === 0 ? (
-            <ScrollArea className="h-full">
-              <div className="max-w-4xl mx-auto p-6 lg:p-8">
-                <div className="text-center mb-10">
-                  <div className="inline-flex p-4 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 mb-4">
-                    <Sparkles className="h-8 w-8 text-indigo-600" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-800 mb-2">
-                    How can I help you today?
-                  </h2>
-                  <p className="text-slate-500 max-w-md mx-auto">
-                    Start with a template below or type your own message
-                  </p>
-                </div>
-
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {templates.map((template) => (
-                    <TemplateCard
-                      key={template.id}
-                      template={template}
-                      onClick={() => handleSelectTemplate(template)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </ScrollArea>
-          ) : (
-            <ScrollArea className="h-full">
-              <div className="max-w-3xl mx-auto p-6 lg:p-8 space-y-6">
-                {messages.map((message, index) => (
-                  <MessageBubble key={message.id || index} message={message} />
-                ))}
-                {isLoading && (
-                  <div className="flex gap-4">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                      <Bot className="h-4 w-4 text-slate-600" />
-                    </div>
-                    <div className="bg-white border border-slate-100 rounded-2xl px-5 py-4 shadow-sm">
-                      <div className="flex gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" />
-                        <div className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce delay-100" />
-                        <div className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce delay-200" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-          )}
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50/30">
+      <div className="flex h-screen">
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block w-72 border-r border-slate-200 bg-white/80 backdrop-blur-xl">
+          <SidebarContent />
         </div>
 
-        {/* Input Area */}
-        <div className="p-4 lg:p-6 border-t border-slate-100 bg-gradient-to-t from-white to-transparent">
-          <div className="max-w-3xl mx-auto">
-            <ChatInput
-              onSend={handleSendMessage}
-              isLoading={isLoading}
-              disabled={!selectedModel}
-              placeholder={activeConversation?.system_prompt 
-                ? "Continue the conversation..." 
-                : "Type your message or select a template above..."
-              }
-            />
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6">
+            <div className="flex items-center gap-3">
+              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="lg:hidden">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-72 p-0">
+                  <SidebarContent />
+                </SheetContent>
+              </Sheet>
+              
+              <div className="w-48 lg:w-64">
+                <ModelSelector
+                  models={models}
+                  selectedModel={selectedModel}
+                  onSelect={setSelectedModel}
+                  disabled={isStreaming}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Link to={createPageUrl('Credits')}>
+                <CreditBalance credits={user.credits} compact onBuyClick={() => {}} />
+              </Link>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-10 w-10 rounded-full p-0">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={user.avatar_url} />
+                      <AvatarFallback className="bg-violet-100 text-violet-600">
+                        {user.full_name?.[0] || user.email?.[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-3 py-2">
+                    <p className="font-medium text-sm">{user.full_name || 'User'}</p>
+                    <p className="text-xs text-slate-500">{user.email}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <Link to={createPageUrl('Credits')}>
+                    <DropdownMenuItem>
+                      <Coins className="h-4 w-4 mr-2" />
+                      Buy Credits
+                    </DropdownMenuItem>
+                  </Link>
+                  {user.role === 'admin' && (
+                    <Link to={createPageUrl('AdminDashboard')}>
+                      <DropdownMenuItem>
+                        <Settings className="h-4 w-4 mr-2" />
+                        Admin Panel
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="text-red-600"
+                    onClick={() => base44.auth.logout()}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </header>
+
+          {/* Chat Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {messages.length === 0 ? (
+              /* Welcome Screen */
+              <div className="flex-1 overflow-auto p-6">
+                <div className="max-w-4xl mx-auto">
+                  <div className="text-center mb-10">
+                    <h1 className="text-4xl font-bold text-slate-900 mb-3">
+                      AI 智能助手
+                    </h1>
+                    <p className="text-lg text-slate-500">
+                      选择专业助手一键启用，或开启自由对话
+                    </p>
+                  </div>
+
+                  <Tabs defaultValue="modules" className="w-full">
+                    <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
+                      <TabsTrigger value="modules">智能助手</TabsTrigger>
+                      <TabsTrigger value="free">自由对话</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="modules">
+                      <PromptModuleGrid
+                        modules={promptModules}
+                        onSelect={handleStartNewChat}
+                        selectedModule={selectedModule}
+                      />
+                      {promptModules.length === 0 && (
+                        <div className="text-center py-12 text-slate-500">
+                          <p>暂无可用的智能助手模块</p>
+                          <p className="text-sm mt-1">管理员可在后台添加</p>
+                        </div>
+                      )}
+                    </TabsContent>
+                    
+                    <TabsContent value="free">
+                      <div className="max-w-2xl mx-auto">
+                        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
+                          <div className="p-4 rounded-full bg-violet-100 w-fit mx-auto mb-4">
+                            <Plus className="h-8 w-8 text-violet-600" />
+                          </div>
+                          <h3 className="text-xl font-semibold text-slate-800 mb-2">
+                            开启自由对话
+                          </h3>
+                          <p className="text-slate-500 mb-6">
+                            不使用预设提示词，与AI自由交流
+                          </p>
+                          <Button 
+                            onClick={() => handleStartNewChat()}
+                            className="bg-violet-600 hover:bg-violet-700"
+                          >
+                            开始对话
+                          </Button>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              </div>
+            ) : (
+              /* Messages */
+              <>
+                <ActiveModuleBanner module={selectedModule} onClear={handleClearModule} />
+                <ScrollArea className="flex-1 px-4 lg:px-6">
+                  <div className="max-w-3xl mx-auto py-6">
+                    {messages.map((message, index) => (
+                    <ChatMessage 
+                      key={index} 
+                      message={message} 
+                      isStreaming={isStreaming && index === messages.length - 1 && message.role === 'assistant'}
+                    />
+                  ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                </ScrollArea>
+              </>
+            )}
+
+            {/* Input Area */}
+            <div className="p-4 lg:p-6 bg-gradient-to-t from-white to-transparent">
+              <div className="max-w-3xl mx-auto">
+                <ChatInput
+                  onSend={handleSendMessage}
+                  disabled={isStreaming || !selectedModel}
+                  placeholder={
+                    selectedModule 
+                      ? `Ask about ${selectedModule.title.toLowerCase()}...`
+                      : "Type your message..."
+                  }
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
