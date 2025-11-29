@@ -1,7 +1,15 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Badge } from "@/components/ui/badge";
-import * as LucideIcons from 'lucide-react';
+import { 
+  Sparkles, PenTool, Video, Megaphone, Code, BarChart3, 
+  Lightbulb, Briefcase, FileText, Palette, Rocket, Target 
+} from 'lucide-react';
+
+const iconMap = {
+  Sparkles, PenTool, Video, Megaphone, Code, BarChart3,
+  Lightbulb, Briefcase, FileText, Palette, Rocket, Target
+};
 
 const colorClasses = {
   violet: 'bg-violet-50 border-violet-200 hover:border-violet-300 hover:bg-violet-100/50',
@@ -26,7 +34,7 @@ const iconColorClasses = {
 };
 
 export default function PromptModuleCard({ module, onClick, isSelected }) {
-  const IconComponent = LucideIcons[module.icon] || LucideIcons.Sparkles;
+  const IconComponent = iconMap[module.icon] || Sparkles;
   const color = module.color || 'violet';
   
   return (
