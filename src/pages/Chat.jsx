@@ -288,8 +288,8 @@ ${selectedModule.system_prompt}
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50/30">
-      <div className="flex h-screen">
+    <div className="h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-50 via-white to-violet-50/30">
+      <div className="flex h-full">
         {/* Desktop Sidebar */}
         <div className="hidden lg:block w-72 border-r border-slate-200 bg-white/80 backdrop-blur-xl">
           <SidebarContent />
