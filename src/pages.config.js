@@ -7,6 +7,7 @@ import AdminPackages from './pages/AdminPackages';
 import AdminUsers from './pages/AdminUsers';
 import AdminTransactions from './pages/AdminTransactions';
 import AdminSettings from './pages/AdminSettings';
+import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
@@ -24,4 +25,5 @@ export const PAGES = {
 export const pagesConfig = {
     mainPage: "Chat",
     Pages: PAGES,
+    Layout: __Layout,
 };
