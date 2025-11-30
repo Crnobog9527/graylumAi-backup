@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Menu, X, Coins, Settings, LogOut, User as UserIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -35,6 +35,21 @@ export default function Chat() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Handle module selection from URL
+    const params = new URLSearchParams(location.search);
+    const moduleId = params.get('module_id');
+    if (moduleId && promptModules.length > 0) {
+      const module = promptModules.find(m => m.id === moduleId);
+      if (module) {
+        handleStartNewChat(module);
+        // Clean up URL
+        window.history.replaceState({}, '', createPageUrl('Chat'));
+      }
+    }
+  }, [location.search, promptModules]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -282,8 +297,8 @@ ${selectedModule.system_prompt}
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6">
+          {/* Chat Header - Simplified since we have Global Header */}
+          <header className="h-14 border-b border-slate-200 bg-white/50 backdrop-blur-sm flex items-center justify-between px-4">
             <div className="flex items-center gap-3">
               <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                 <SheetTrigger asChild>
@@ -305,54 +320,7 @@ ${selectedModule.system_prompt}
                 />
               </div>
             </div>
-
-            <div className="flex items-center gap-3">
-              <Link to={createPageUrl('Credits')}>
-                <CreditBalance credits={user.credits} compact onBuyClick={() => {}} />
-              </Link>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-10 w-10 rounded-full p-0">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.avatar_url} />
-                      <AvatarFallback className="bg-violet-100 text-violet-600">
-                        {user.full_name?.[0] || user.email?.[0]?.toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-3 py-2">
-                    <p className="font-medium text-sm">{user.full_name || 'User'}</p>
-                    <p className="text-xs text-slate-500">{user.email}</p>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <Link to={createPageUrl('Credits')}>
-                    <DropdownMenuItem>
-                      <Coins className="h-4 w-4 mr-2" />
-                      Buy Credits
-                    </DropdownMenuItem>
-                  </Link>
-                  {user.role === 'admin' && (
-                    <Link to={createPageUrl('AdminDashboard')}>
-                      <DropdownMenuItem>
-                        <Settings className="h-4 w-4 mr-2" />
-                        Admin Panel
-                      </DropdownMenuItem>
-                    </Link>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    className="text-red-600"
-                    onClick={() => base44.auth.logout()}
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {/* Removed duplicate user/credits controls as they are in the global AppHeader */}
           </header>
 
           {/* Chat Area */}
