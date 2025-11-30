@@ -8,6 +8,7 @@ import AdminUsers from './pages/AdminUsers';
 import AdminTransactions from './pages/AdminTransactions';
 import AdminSettings from './pages/AdminSettings';
 import Home from './pages/Home';
+import Marketplace from './pages/Marketplace';
 import __Layout from './Layout.jsx';
 
 
@@ -22,6 +23,7 @@ export const PAGES = {
     "AdminTransactions": AdminTransactions,
     "AdminSettings": AdminSettings,
     "Home": Home,
+    "Marketplace": Marketplace,
 }
 
 export const pagesConfig = {
