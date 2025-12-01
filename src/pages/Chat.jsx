@@ -102,19 +102,27 @@ export default function Chat() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const moduleId = params.get('module_id');
-    if (moduleId && promptModules.length > 0) {
+    if (moduleId && promptModules.length > 0 && models.length > 0) {
       const module = promptModules.find(m => m.id === moduleId);
       if (module) {
         handleStartNewChat(module);
         window.history.replaceState({}, '', createPageUrl('Chat'));
       }
     }
-  }, [location.search, promptModules]);
+  }, [location.search, promptModules, models]);
 
   const handleStartNewChat = (module = null) => {
     setCurrentConversation(null);
     setMessages([]);
     setSelectedModule(module);
+    
+    // 如果模块指定了专用模型，自动切换
+    if (module?.model_id && models.length > 0) {
+      const moduleModel = models.find(m => m.id === module.model_id);
+      if (moduleModel) {
+        setSelectedModel(moduleModel);
+      }
+    }
   };
 
   const handleSelectConversation = async (conv) => {
