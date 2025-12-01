@@ -20,9 +20,9 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
   ];
 
   return (
-    <div className="w-64 shrink-0 hidden md:block">
-      <div className="mb-8">
-        <h2 className="text-lg font-bold text-slate-900 px-4 mb-4">个人中心</h2>
+    <div className="w-56 shrink-0 hidden md:block bg-white rounded-2xl p-4 border border-slate-200 h-fit">
+      <div className="mb-6">
+        <h2 className="text-base font-bold text-slate-900 px-2 mb-4">个人中心</h2>
         <nav className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -32,13 +32,13 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors",
+                  "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
                   isActive 
-                    ? "bg-indigo-50 text-indigo-600" 
+                    ? "bg-blue-50 text-blue-600" 
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-4 w-4" />
                 {item.label}
               </button>
             );
@@ -46,12 +46,12 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
         </nav>
       </div>
       
-      <div className="px-4 pt-4 border-t border-slate-100">
+      <div className="pt-4 border-t border-slate-100">
         <button 
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-0 py-3 text-sm font-medium text-slate-500 hover:text-red-600 transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-500 hover:text-red-600 transition-colors"
         >
-          <LogOut className="h-5 w-5" />
+          <LogOut className="h-4 w-4" />
           退出登录
         </button>
       </div>
