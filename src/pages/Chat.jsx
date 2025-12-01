@@ -38,20 +38,6 @@ export default function Chat() {
   const location = useLocation();
 
   useEffect(() => {
-    // Handle module selection from URL
-    const params = new URLSearchParams(location.search);
-    const moduleId = params.get('module_id');
-    if (moduleId && promptModules.length > 0) {
-      const module = promptModules.find(m => m.id === moduleId);
-      if (module) {
-        handleStartNewChat(module);
-        // Clean up URL
-        window.history.replaceState({}, '', createPageUrl('Chat'));
-      }
-    }
-  }, [location.search, promptModules]);
-
-  useEffect(() => {
     const loadUser = async () => {
       try {
         const userData = await base44.auth.me();
@@ -120,6 +106,20 @@ export default function Chat() {
       // 可选：显示模块的引导提示
     }
   };
+
+  useEffect(() => {
+    // Handle module selection from URL
+    const params = new URLSearchParams(location.search);
+    const moduleId = params.get('module_id');
+    if (moduleId && promptModules.length > 0) {
+      const module = promptModules.find(m => m.id === moduleId);
+      if (module) {
+        handleStartNewChat(module);
+        // Clean up URL
+        window.history.replaceState({}, '', createPageUrl('Chat'));
+      }
+    }
+  }, [location.search, promptModules]);
 
   const handleClearModule = () => {
     setSelectedModule(null);
