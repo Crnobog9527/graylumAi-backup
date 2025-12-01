@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, Wand2, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, Wand2, GripVertical, Bot } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -81,6 +81,7 @@ const initialFormData = {
   icon: 'Sparkles',
   color: 'violet',
   credits_multiplier: 1,
+  model_id: '',
   is_active: true,
   sort_order: 0,
 };
@@ -112,6 +113,12 @@ export default function AdminPrompts() {
   const { data: modules = [] } = useQuery({
     queryKey: ['admin-prompts'],
     queryFn: () => base44.entities.PromptModule.list('sort_order'),
+    enabled: !!user,
+  });
+
+  const { data: models = [] } = useQuery({
+    queryKey: ['admin-models'],
+    queryFn: () => base44.entities.AIModel.filter({ is_active: true }),
     enabled: !!user,
   });
 
@@ -158,6 +165,7 @@ export default function AdminPrompts() {
       icon: module.icon || 'Sparkles',
       color: module.color || 'violet',
       credits_multiplier: module.credits_multiplier || 1,
+      model_id: module.model_id || '',
       is_active: module.is_active !== false,
       sort_order: module.sort_order || 0,
     });
@@ -227,9 +235,17 @@ export default function AdminPrompts() {
                 </div>
                 <p className="text-sm text-slate-500 mb-4 line-clamp-2">{module.description}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400">
-                    {module.credits_multiplier}x credits
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">
+                      {module.credits_multiplier}x credits
+                    </span>
+                    {module.model_id && (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Bot className="h-3 w-3" />
+                        {models.find(m => m.id === module.model_id)?.name || '指定模型'}
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
@@ -330,6 +346,33 @@ export default function AdminPrompts() {
                 />
                 <p className="text-xs text-slate-500">
                   提供给用户的输入模板提示，帮助用户更好地使用此模块
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>指定使用模型</Label>
+                <Select
+                  value={formData.model_id}
+                  onValueChange={(value) => setFormData({ ...formData, model_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="使用用户选择的模型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>使用用户选择的模型</SelectItem>
+                    {models.map((model) => (
+                      <SelectItem key={model.id} value={model.id}>
+                        <div className="flex items-center gap-2">
+                          <Bot className="h-4 w-4" />
+                          {model.name}
+                          <span className="text-slate-400">({model.credits_per_message} 积分/次)</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500">
+                  为此模块指定专用模型，留空则使用用户在对话中选择的模型
                 </p>
               </div>
 
