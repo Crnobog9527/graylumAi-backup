@@ -1,29 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Menu, X, Coins, Settings, LogOut, User as UserIcon } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Plus, MessageSquare, Pencil, ChevronDown, Paperclip, Send, Loader2, Copy, RefreshCw, ThumbsUp, ThumbsDown, Bot } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-import ModelSelector from '../components/chat/ModelSelector';
-import PromptModuleGrid from '../components/chat/PromptModuleGrid';
-import ActiveModuleBanner from '../components/chat/ActiveModuleBanner';
-import ChatMessage from '../components/chat/ChatMessage';
-import ChatInput from '../components/chat/ChatInput';
-import ConversationList from '../components/chat/ConversationList';
-import CreditBalance from '../components/credits/CreditBalance';
+import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
+import { format, isToday, isYesterday, differenceInDays } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 
 export default function Chat() {
   const [user, setUser] = useState(null);
@@ -32,8 +26,9 @@ export default function Chat() {
   const [currentConversation, setCurrentConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [inputMessage, setInputMessage] = useState('');
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
   const queryClient = useQueryClient();
   const location = useLocation();
 
@@ -70,13 +65,20 @@ export default function Chat() {
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
-      setSelectedModel(models[0].id);
+      setSelectedModel(models[0]);
     }
   }, [models]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+    }
+  }, [inputMessage]);
 
   const createConversationMutation = useMutation({
     mutationFn: (data) => base44.entities.Conversation.create(data),
@@ -97,88 +99,56 @@ export default function Chat() {
     mutationFn: (data) => base44.entities.CreditTransaction.create(data),
   });
 
-  const handleStartNewChat = (module = null) => {
-    setCurrentConversation(null);
-    setMessages([]);
-    setSelectedModule(module);
-    // 如果选择了模块，显示初始引导消息
-    if (module && module.user_prompt_template) {
-      // 可选：显示模块的引导提示
-    }
-  };
-
   useEffect(() => {
-    // Handle module selection from URL
     const params = new URLSearchParams(location.search);
     const moduleId = params.get('module_id');
     if (moduleId && promptModules.length > 0) {
       const module = promptModules.find(m => m.id === moduleId);
       if (module) {
         handleStartNewChat(module);
-        // Clean up URL
         window.history.replaceState({}, '', createPageUrl('Chat'));
       }
     }
   }, [location.search, promptModules]);
 
-  const handleClearModule = () => {
-    setSelectedModule(null);
+  const handleStartNewChat = (module = null) => {
+    setCurrentConversation(null);
+    setMessages([]);
+    setSelectedModule(module);
   };
 
-  const handleSelectConversation = async (convId) => {
-    const conv = conversations.find(c => c.id === convId);
-    if (conv) {
-      setCurrentConversation(conv);
-      setMessages(conv.messages || []);
-      setSelectedModel(conv.model_id);
-      setSidebarOpen(false);
+  const handleSelectConversation = async (conv) => {
+    setCurrentConversation(conv);
+    setMessages(conv.messages || []);
+    if (conv.model_id) {
+      const model = models.find(m => m.id === conv.model_id);
+      if (model) setSelectedModel(model);
     }
   };
 
-  const handleDeleteConversation = async (convId) => {
-    await base44.entities.Conversation.delete(convId);
-    queryClient.invalidateQueries(['conversations']);
-    if (currentConversation?.id === convId) {
-      handleStartNewChat();
-    }
-  };
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !selectedModel || !user || isStreaming) return;
 
-  const handleArchiveConversation = async (convId) => {
-    await updateConversationMutation.mutateAsync({
-      id: convId,
-      data: { is_archived: true }
-    });
-    if (currentConversation?.id === convId) {
-      handleStartNewChat();
-    }
-  };
-
-  const handleSendMessage = async (content) => {
-    if (!selectedModel || !user) return;
-    
-    const model = models.find(m => m.id === selectedModel);
-    if (!model) return;
-
-    const creditsNeeded = model.credits_per_message * (selectedModule?.credits_multiplier || 1);
+    const creditsNeeded = selectedModel.credits_per_message * (selectedModule?.credits_multiplier || 1);
     const currentCredits = user.credits || 0;
-    
+
     if (currentCredits < creditsNeeded) {
-      alert('Insufficient credits. Please purchase more credits to continue.');
+      alert('积分不足，请充值后继续使用。');
       return;
     }
 
     const userMessage = {
       role: 'user',
-      content,
+      content: inputMessage,
       timestamp: new Date().toISOString(),
     };
 
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
+    setInputMessage('');
     setIsStreaming(true);
 
     try {
-      // 构建隔离的系统提示词，确保每个模块的对话不会混淆
       let systemPrompt = '';
       if (selectedModule) {
         systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
@@ -187,14 +157,13 @@ ${selectedModule.system_prompt}
 【行为规范】
 1. 你必须严格遵循上述角色定位和功能约束
 2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
-3. 保持专业、专注，不要偏离主题
-4. 每次回复都要符合此模块的专业领域`;
+3. 保持专业、专注，不要偏离主题`;
       }
 
       const response = await base44.integrations.Core.InvokeLLM({
-        prompt: systemPrompt 
-          ? `${systemPrompt}\n\n用户消息: ${content}`
-          : content,
+        prompt: systemPrompt
+          ? `${systemPrompt}\n\n用户消息: ${inputMessage}`
+          : inputMessage,
       });
 
       const assistantMessage = {
@@ -207,27 +176,24 @@ ${selectedModule.system_prompt}
       const updatedMessages = [...newMessages, assistantMessage];
       setMessages(updatedMessages);
 
-      // Deduct credits
       const newBalance = currentCredits - creditsNeeded;
       await updateUserMutation.mutateAsync({
         credits: newBalance,
         total_credits_used: (user.total_credits_used || 0) + creditsNeeded,
       });
 
-      // Create transaction record
       await createTransactionMutation.mutateAsync({
         user_email: user.email,
         type: 'usage',
         amount: -creditsNeeded,
         balance_after: newBalance,
-        description: `Chat with ${model.name}${selectedModule ? ` - ${selectedModule.title}` : ''}`,
-        model_used: model.name,
+        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''}`,
+        model_used: selectedModel.name,
         prompt_module_used: selectedModule?.title,
       });
 
-      // Save conversation
-      const title = content.slice(0, 50) + (content.length > 50 ? '...' : '');
-      
+      const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
+
       if (currentConversation) {
         await updateConversationMutation.mutateAsync({
           id: currentConversation.id,
@@ -239,7 +205,7 @@ ${selectedModule.system_prompt}
       } else {
         const newConv = await createConversationMutation.mutateAsync({
           title,
-          model_id: selectedModel,
+          model_id: selectedModel.id,
           prompt_module_id: selectedModule?.id,
           system_prompt: systemPrompt,
           messages: updatedMessages,
@@ -249,172 +215,384 @@ ${selectedModule.system_prompt}
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      setMessages(newMessages.slice(0, -1));
     } finally {
       setIsStreaming(false);
     }
   };
 
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-slate-100">
-        <Button 
-          onClick={() => handleStartNewChat()}
-          className="w-full bg-violet-600 hover:bg-violet-700 gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          New Chat
-        </Button>
-      </div>
-      
-      <ScrollArea className="flex-1 p-4">
-        <ConversationList
-          conversations={conversations}
-          selectedId={currentConversation?.id}
-          onSelect={handleSelectConversation}
-          onDelete={handleDeleteConversation}
-          onArchive={handleArchiveConversation}
-        />
-      </ScrollArea>
-    </div>
-  );
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  // Group conversations by date
+  const groupedConversations = React.useMemo(() => {
+    const groups = { today: [], yesterday: [], thisWeek: [], older: [] };
+    conversations.forEach(conv => {
+      const date = new Date(conv.updated_date || conv.created_date);
+      if (isToday(date)) {
+        groups.today.push(conv);
+      } else if (isYesterday(date)) {
+        groups.yesterday.push(conv);
+      } else if (differenceInDays(new Date(), date) <= 7) {
+        groups.thisWeek.push(conv);
+      } else {
+        groups.older.push(conv);
+      }
+    });
+    return groups;
+  }, [conversations]);
 
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-50 via-white to-violet-50/30">
-      <div className="flex h-full">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block w-72 border-r border-slate-200 bg-white/80 backdrop-blur-xl">
-          <SidebarContent />
+    <div className="h-[calc(100vh-4rem)] flex bg-slate-100">
+      {/* Left Sidebar - Conversation List */}
+      <div className="w-64 bg-white border-r border-slate-200 flex flex-col">
+        {/* New Chat Button */}
+        <div className="p-4">
+          <Button
+            onClick={() => handleStartNewChat()}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2 h-11 rounded-lg font-medium"
+          >
+            <Plus className="h-5 w-5" />
+            新建对话
+          </Button>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          {/* Chat Header - Simplified since we have Global Header */}
-          <header className="h-14 border-b border-slate-200 bg-white/50 backdrop-blur-sm flex items-center justify-between px-4">
-            <div className="flex items-center gap-3">
-              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="lg:hidden">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-72 p-0">
-                  <SidebarContent />
-                </SheetContent>
-              </Sheet>
-              
-              <div className="w-48 lg:w-64">
-                <ModelSelector
-                  models={models}
-                  selectedModel={selectedModel}
-                  onSelect={setSelectedModel}
-                  disabled={isStreaming}
-                />
+        {/* Conversations List */}
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="px-3 pb-4">
+              {/* All Conversations Header */}
+              <div className="flex items-center justify-between px-2 py-2 text-sm text-slate-500">
+                <span>全部对话</span>
+                <ChevronDown className="h-4 w-4" />
               </div>
-            </div>
-            {/* Removed duplicate user/credits controls as they are in the global AppHeader */}
-          </header>
 
-          {/* Chat Area */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {messages.length === 0 ? (
-              /* Welcome Screen */
-              <div className="flex-1 overflow-auto p-6">
-                <div className="max-w-4xl mx-auto">
-                  <div className="text-center mb-10">
-                    <h1 className="text-4xl font-bold text-slate-900 mb-3">
-                      AI 智能助手
-                    </h1>
-                    <p className="text-lg text-slate-500">
-                      选择专业助手一键启用，或开启自由对话
-                    </p>
-                  </div>
-
-                  <Tabs defaultValue="modules" className="w-full">
-                    <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
-                      <TabsTrigger value="modules">智能助手</TabsTrigger>
-                      <TabsTrigger value="free">自由对话</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="modules">
-                      <PromptModuleGrid
-                        modules={promptModules}
-                        onSelect={handleStartNewChat}
-                        selectedModule={selectedModule}
-                      />
-                      {promptModules.length === 0 && (
-                        <div className="text-center py-12 text-slate-500">
-                          <p>暂无可用的智能助手模块</p>
-                          <p className="text-sm mt-1">管理员可在后台添加</p>
-                        </div>
-                      )}
-                    </TabsContent>
-                    
-                    <TabsContent value="free">
-                      <div className="max-w-2xl mx-auto">
-                        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
-                          <div className="p-4 rounded-full bg-violet-100 w-fit mx-auto mb-4">
-                            <Plus className="h-8 w-8 text-violet-600" />
-                          </div>
-                          <h3 className="text-xl font-semibold text-slate-800 mb-2">
-                            开启自由对话
-                          </h3>
-                          <p className="text-slate-500 mb-6">
-                            不使用预设提示词，与AI自由交流
-                          </p>
-                          <Button 
-                            onClick={() => handleStartNewChat()}
-                            className="bg-violet-600 hover:bg-violet-700"
-                          >
-                            开始对话
-                          </Button>
-                        </div>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </div>
-              </div>
-            ) : (
-              /* Messages */
-              <>
-                <ActiveModuleBanner module={selectedModule} onClear={handleClearModule} />
-                <ScrollArea className="flex-1 px-4 lg:px-6">
-                  <div className="max-w-3xl mx-auto py-6">
-                    {messages.map((message, index) => (
-                    <ChatMessage 
-                      key={index} 
-                      message={message} 
-                      isStreaming={isStreaming && index === messages.length - 1 && message.role === 'assistant'}
+              {/* Today */}
+              {groupedConversations.today.length > 0 && (
+                <div className="mb-3">
+                  <div className="px-2 py-1 text-xs text-slate-400">今天</div>
+                  {groupedConversations.today.map(conv => (
+                    <ConversationItem
+                      key={conv.id}
+                      conversation={conv}
+                      isActive={currentConversation?.id === conv.id}
+                      onClick={() => handleSelectConversation(conv)}
                     />
                   ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                </ScrollArea>
-              </>
-            )}
+                </div>
+              )}
 
-            {/* Input Area */}
-            <div className="p-4 lg:p-6 bg-gradient-to-t from-white to-transparent">
-              <div className="max-w-3xl mx-auto">
-                <ChatInput
-                  onSend={handleSendMessage}
-                  disabled={isStreaming || !selectedModel}
-                  placeholder={
-                    selectedModule 
-                      ? `Ask about ${selectedModule.title.toLowerCase()}...`
-                      : "Type your message..."
-                  }
+              {/* Yesterday */}
+              {groupedConversations.yesterday.length > 0 && (
+                <div className="mb-3">
+                  <div className="px-2 py-1 text-xs text-slate-400">昨天</div>
+                  {groupedConversations.yesterday.map(conv => (
+                    <ConversationItem
+                      key={conv.id}
+                      conversation={conv}
+                      isActive={currentConversation?.id === conv.id}
+                      onClick={() => handleSelectConversation(conv)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* This Week */}
+              {groupedConversations.thisWeek.length > 0 && (
+                <div className="mb-3">
+                  <div className="px-2 py-1 text-xs text-slate-400">本周</div>
+                  {groupedConversations.thisWeek.map(conv => (
+                    <ConversationItem
+                      key={conv.id}
+                      conversation={conv}
+                      isActive={currentConversation?.id === conv.id}
+                      onClick={() => handleSelectConversation(conv)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Older */}
+              {groupedConversations.older.length > 0 && (
+                <div className="mb-3">
+                  <div className="px-2 py-1 text-xs text-slate-400">更早</div>
+                  {groupedConversations.older.map(conv => (
+                    <ConversationItem
+                      key={conv.id}
+                      conversation={conv}
+                      isActive={currentConversation?.id === conv.id}
+                      onClick={() => handleSelectConversation(conv)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col bg-white">
+        {/* Chat Header */}
+        <div className="h-14 border-b border-slate-200 flex items-center justify-between px-6">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-medium text-slate-800">
+              {currentConversation?.title || '新对话'}
+            </h1>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Model Selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2 h-9 px-3 border-slate-200">
+                <Bot className="h-4 w-4 text-blue-600" />
+                <span className="text-sm">{selectedModel?.name || '选择模型'}</span>
+                <ChevronDown className="h-4 w-4 text-slate-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {models.map(model => (
+                <DropdownMenuItem
+                  key={model.id}
+                  onClick={() => setSelectedModel(model)}
+                  className="gap-2"
+                >
+                  <Bot className="h-4 w-4" />
+                  {model.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="max-w-3xl mx-auto py-6 px-4">
+              {messages.length === 0 ? (
+                <div className="text-center py-20">
+                  <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <h2 className="text-xl font-medium text-slate-800 mb-2">开始新对话</h2>
+                  <p className="text-slate-500">请输入您的问题，AI将为您解答</p>
+                </div>
+              ) : (
+                messages.map((message, index) => (
+                  <ChatMessageItem
+                    key={index}
+                    message={message}
+                    isStreaming={isStreaming && index === messages.length - 1 && message.role === 'assistant'}
+                    user={user}
+                  />
+                ))
+              )}
+              {isStreaming && messages[messages.length - 1]?.role === 'user' && (
+                <div className="flex gap-4 py-4">
+                  <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                    <Bot className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <span className="flex gap-1">
+                      <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </span>
+                    <span className="text-sm">AI正在思考中...</span>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* Input Area */}
+        <div className="border-t border-slate-200 p-4 bg-slate-50">
+          <div className="max-w-3xl mx-auto">
+            {/* Credits Info */}
+            <div className="flex items-center justify-center gap-2 text-xs text-slate-500 mb-3">
+              <span>上一条消息消耗了 {messages[messages.length - 1]?.credits_used || 0} 积分，</span>
+              <span>您还剩 <span className="text-blue-600 font-medium">{user.credits?.toLocaleString() || 0}</span> 积分</span>
+            </div>
+
+            {/* Input Box */}
+            <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex items-end p-3">
+                <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600 shrink-0">
+                  <Paperclip className="h-5 w-5" />
+                </Button>
+                <Textarea
+                  ref={textareaRef}
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="请输入您的问题..."
+                  disabled={isStreaming}
+                  className="flex-1 min-h-[44px] max-h-[120px] resize-none border-0 focus-visible:ring-0 py-2 px-2 text-base placeholder:text-slate-400 bg-transparent"
+                  rows={1}
                 />
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-slate-400">{inputMessage.length}/2000</span>
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!inputMessage.trim() || isStreaming}
+                    className="bg-blue-600 hover:bg-blue-700 h-9 px-4 gap-2"
+                  >
+                    {isStreaming ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        发送
+                        <Send className="h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
+
+            {/* Estimated Cost */}
+            <div className="text-center mt-2">
+              <span className="text-xs text-blue-600">⚡ 预计消耗 {selectedModel?.credits_per_message || 0}-{(selectedModel?.credits_per_message || 0) * 2} 积分</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Conversation Item Component
+function ConversationItem({ conversation, isActive, onClick }) {
+  const date = new Date(conversation.updated_date || conversation.created_date);
+  const timeStr = format(date, 'HH:mm', { locale: zhCN });
+
+  return (
+    <div
+      onClick={onClick}
+      className={cn(
+        "group flex items-start gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors",
+        isActive ? "bg-blue-50" : "hover:bg-slate-50"
+      )}
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <span className={cn(
+            "text-sm truncate",
+            isActive ? "text-blue-700 font-medium" : "text-slate-700"
+          )}>
+            {conversation.title || '新对话'}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+          >
+            <Pencil className="h-3 w-3 text-slate-400" />
+          </Button>
+        </div>
+        <span className="text-xs text-slate-400">{timeStr}</span>
+      </div>
+    </div>
+  );
+}
+
+// Chat Message Item Component
+function ChatMessageItem({ message, isStreaming, user }) {
+  const [copied, setCopied] = useState(false);
+  const isUser = message.role === 'user';
+  const time = message.timestamp ? format(new Date(message.timestamp), 'HH:mm') : '';
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (isUser) {
+    return (
+      <div className="flex justify-end py-4">
+        <div className="max-w-[80%]">
+          <div className="bg-blue-600 text-white rounded-2xl rounded-tr-md px-4 py-3">
+            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+          </div>
+          <div className="text-xs text-slate-400 text-right mt-1">{time}</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex gap-4 py-4">
+      <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+        <Bot className="h-5 w-5 text-blue-600" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="prose prose-slate prose-sm max-w-none">
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed text-slate-700">{children}</p>,
+              ul: ({ children }) => <ul className="list-disc pl-4 mb-3 space-y-1">{children}</ul>,
+              ol: ({ children }) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
+              li: ({ children }) => <li className="leading-relaxed text-slate-700">{children}</li>,
+              strong: ({ children }) => <strong className="font-semibold text-slate-800">{children}</strong>,
+              code: ({ inline, children }) =>
+                inline ? (
+                  <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-blue-600">{children}</code>
+                ) : (
+                  <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto my-3">
+                    <code className="text-sm font-mono">{children}</code>
+                  </pre>
+                ),
+              h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0 text-slate-800">{children}</h1>,
+              h2: ({ children }) => <h2 className="text-lg font-semibold mb-2 mt-3 first:mt-0 text-slate-800">{children}</h2>,
+              h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-3 first:mt-0 text-slate-800">{children}</h3>,
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+          {isStreaming && (
+            <span className="inline-block w-2 h-5 bg-blue-400 animate-pulse ml-1 rounded-sm" />
+          )}
+        </div>
+
+        {/* Message Footer */}
+        <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
+          <span>{time}</span>
+          {message.credits_used && <span>消耗 {message.credits_used} 积分</span>}
+          <div className="flex items-center gap-1 ml-auto">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
+              onClick={handleCopy}
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+              <RefreshCw className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+              <ThumbsUp className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+              <ThumbsDown className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
       </div>

@@ -24,6 +24,7 @@ export default function AppHeader({ user }) {
 
   const navItems = [
     { name: '首页', path: 'Home', icon: Home },
+    { name: '对话', path: 'Chat', icon: Bot },
     { name: '功能广场', path: 'Marketplace', icon: LayoutGrid },
     { name: '个人中心', path: 'Profile', icon: User },
   ];
