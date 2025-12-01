@@ -1,131 +1,145 @@
-import { base44 } from './base44Client.js';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
-export default async function callAIModel({ model_id, messages, system_prompt }) {
-  // 获取模型配置
-  const models = await base44.entities.AIModel.filter({ id: model_id });
-  const model = models[0];
-  
-  if (!model) {
-    throw new Error('Model not found');
-  }
-  
-  if (!model.api_key) {
-    throw new Error('API key not configured for this model');
-  }
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
 
-  const provider = model.provider;
-  let response;
-
-  // 构建消息列表
-  const formattedMessages = messages.map(m => ({
-    role: m.role,
-    content: m.content
-  }));
-
-  if (system_prompt) {
-    formattedMessages.unshift({ role: 'system', content: system_prompt });
-  }
-
-  if (provider === 'openai' || provider === 'custom') {
-    // OpenAI 或兼容 OpenAI 格式的 API
-    const endpoint = model.api_endpoint || 'https://api.openai.com/v1/chat/completions';
-    
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${model.api_key}`
-      },
-      body: JSON.stringify({
-        model: model.model_id,
-        messages: formattedMessages,
-        max_tokens: model.max_tokens || 4096
-      })
-    });
-
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(`API error: ${error}`);
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const data = await res.json();
-    response = data.choices[0].message.content;
+    const { model_id, messages, system_prompt } = await req.json();
 
-  } else if (provider === 'anthropic') {
-    // Anthropic Claude API
-    const endpoint = model.api_endpoint || 'https://api.anthropic.com/v1/messages';
-    
-    // Anthropic 需要单独处理 system prompt
-    const anthropicMessages = formattedMessages.filter(m => m.role !== 'system');
-    const systemContent = formattedMessages.find(m => m.role === 'system')?.content || '';
+    // 获取模型配置
+    const models = await base44.asServiceRole.entities.AIModel.filter({ id: model_id });
+    const model = models[0];
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': model.api_key,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: model.model_id,
-        max_tokens: model.max_tokens || 4096,
-        system: systemContent,
-        messages: anthropicMessages
-      })
-    });
-
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(`API error: ${error}`);
+    if (!model) {
+      return Response.json({ error: 'Model not found' }, { status: 404 });
     }
 
-    const data = await res.json();
-    response = data.content[0].text;
+    if (!model.api_key) {
+      return Response.json({ error: 'API key not configured for this model' }, { status: 400 });
+    }
 
-  } else if (provider === 'google') {
-    // Google Gemini API
-    const endpoint = model.api_endpoint || `https://generativelanguage.googleapis.com/v1beta/models/${model.model_id}:generateContent?key=${model.api_key}`;
-    
-    // 转换消息格式为 Gemini 格式
-    const geminiContents = formattedMessages
-      .filter(m => m.role !== 'system')
-      .map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      }));
+    const provider = model.provider;
+    let responseText;
 
-    const systemInstruction = formattedMessages.find(m => m.role === 'system')?.content;
+    // 构建消息列表
+    const formattedMessages = messages.map(m => ({
+      role: m.role,
+      content: m.content
+    }));
 
-    const requestBody = {
-      contents: geminiContents,
-      generationConfig: {
-        maxOutputTokens: model.max_tokens || 4096
+    if (system_prompt && provider !== 'anthropic' && provider !== 'google') {
+      formattedMessages.unshift({ role: 'system', content: system_prompt });
+    }
+
+    if (provider === 'openai' || provider === 'custom') {
+      // OpenAI 或兼容 OpenAI 格式的 API
+      const endpoint = model.api_endpoint || 'https://api.openai.com/v1/chat/completions';
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${model.api_key}`
+        },
+        body: JSON.stringify({
+          model: model.model_id,
+          messages: formattedMessages,
+          max_tokens: model.max_tokens || 4096
+        })
+      });
+
+      if (!res.ok) {
+        const error = await res.text();
+        return Response.json({ error: `API error: ${error}` }, { status: res.status });
       }
-    };
 
-    if (systemInstruction) {
-      requestBody.systemInstruction = { parts: [{ text: systemInstruction }] };
+      const data = await res.json();
+      responseText = data.choices[0].message.content;
+
+    } else if (provider === 'anthropic') {
+      // Anthropic Claude API
+      const endpoint = model.api_endpoint || 'https://api.anthropic.com/v1/messages';
+
+      // Anthropic 需要单独处理 system prompt
+      const anthropicMessages = formattedMessages.filter(m => m.role !== 'system');
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': model.api_key,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: model.model_id,
+          max_tokens: model.max_tokens || 4096,
+          system: system_prompt || '',
+          messages: anthropicMessages
+        })
+      });
+
+      if (!res.ok) {
+        const error = await res.text();
+        return Response.json({ error: `API error: ${error}` }, { status: res.status });
+      }
+
+      const data = await res.json();
+      responseText = data.content[0].text;
+
+    } else if (provider === 'google') {
+      // Google Gemini API
+      const endpoint = model.api_endpoint || `https://generativelanguage.googleapis.com/v1beta/models/${model.model_id}:generateContent?key=${model.api_key}`;
+
+      // 转换消息格式为 Gemini 格式
+      const geminiContents = formattedMessages
+        .filter(m => m.role !== 'system')
+        .map(m => ({
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: m.content }]
+        }));
+
+      const requestBody = {
+        contents: geminiContents,
+        generationConfig: {
+          maxOutputTokens: model.max_tokens || 4096
+        }
+      };
+
+      if (system_prompt) {
+        requestBody.systemInstruction = { parts: [{ text: system_prompt }] };
+      }
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!res.ok) {
+        const error = await res.text();
+        return Response.json({ error: `API error: ${error}` }, { status: res.status });
+      }
+
+      const data = await res.json();
+      responseText = data.candidates[0].content.parts[0].text;
+
+    } else {
+      return Response.json({ error: `Unsupported provider: ${provider}` }, { status: 400 });
     }
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
+    return Response.json({
+      response: responseText,
+      credits_used: model.credits_per_message || 1
     });
 
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(`API error: ${error}`);
-    }
-
-    const data = await res.json();
-    response = data.candidates[0].content.parts[0].text;
-
-  } else {
-    throw new Error(`Unsupported provider: ${provider}`);
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
   }
-
-  return { response, credits_used: model.credits_per_message };
-}
+});

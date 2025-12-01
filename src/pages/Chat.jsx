@@ -169,11 +169,15 @@ ${selectedModule.system_prompt}
       }
 
       // 调用后端函数，使用配置的API
-      const result = await base44.functions.callAIModel({
+      const { data: result } = await base44.functions.invoke('callAIModel', {
         model_id: selectedModel.id,
         messages: [...newMessages],
         system_prompt: systemPrompt || undefined
       });
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
       const response = result.response;
 
       const assistantMessage = {
