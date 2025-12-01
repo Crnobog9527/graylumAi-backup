@@ -168,11 +168,13 @@ ${selectedModule.system_prompt}
 3. 保持专业、专注，不要偏离主题`;
       }
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: systemPrompt
-          ? `${systemPrompt}\n\n用户消息: ${inputMessage}`
-          : inputMessage,
+      // 调用后端函数，使用配置的API
+      const result = await base44.functions.callAIModel({
+        model_id: selectedModel.id,
+        messages: [...newMessages],
+        system_prompt: systemPrompt || undefined
       });
+      const response = result.response;
 
       const assistantMessage = {
         role: 'assistant',
