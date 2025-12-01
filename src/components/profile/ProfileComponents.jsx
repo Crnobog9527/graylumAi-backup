@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { 
   User, CreditCard, History, Shield, LogOut, 
   Crown, Zap, Clock, ChevronRight, ChevronLeft,
-  CheckCircle2, RefreshCw, FileText, Wallet, Receipt
+  CheckCircle2, RefreshCw, FileText, Wallet, Receipt,
+  Settings
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
