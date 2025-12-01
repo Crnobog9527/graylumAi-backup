@@ -25,7 +25,7 @@ export default function AppHeader({ user }) {
   const navItems = [
     { name: '首页', path: 'Home', icon: Home },
     { name: '功能广场', path: 'Marketplace', icon: LayoutGrid },
-    { name: '个人中心', path: 'Chat', icon: User }, // Linking to Chat/Profile for now
+    { name: '个人中心', path: 'Profile', icon: User },
   ];
 
   return (
@@ -98,6 +98,12 @@ export default function AppHeader({ user }) {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>我的账户</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <Link to={createPageUrl('Profile')}>
+                    <DropdownMenuItem>
+                      <User className="h-4 w-4 mr-2" />
+                      个人中心
+                    </DropdownMenuItem>
+                  </Link>
                   <Link to={createPageUrl('Credits')}>
                     <DropdownMenuItem>
                       <CreditCard className="h-4 w-4 mr-2" />
