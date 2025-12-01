@@ -129,6 +129,14 @@ Deno.serve(async (req) => {
 
       const data = await res.json();
       responseText = data.candidates[0].content.parts[0].text;
+      
+      // 返回 Google Gemini 的 modelVersion
+      return Response.json({
+        response: responseText,
+        credits_used: model.credits_per_message || 1,
+        modelVersion: data.modelVersion || null,
+        rawResponse: data // 调试用，可查看完整响应结构
+      });
 
     } else {
       return Response.json({ error: `Unsupported provider: ${provider}` }, { status: 400 });
