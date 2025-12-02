@@ -63,6 +63,15 @@ Deno.serve(async (req) => {
 
       const data = await res.json();
       responseText = data.choices[0].message.content;
+      
+      // 返回 OpenAI 兼容格式的调试信息
+      return Response.json({
+        response: responseText,
+        credits_used: model.credits_per_message || 1,
+        model: data.model || null,
+        usage: data.usage || null,
+        rawResponse: data // 调试用，可查看完整响应结构
+      });
 
     } else if (provider === 'anthropic') {
       // Anthropic Claude API
