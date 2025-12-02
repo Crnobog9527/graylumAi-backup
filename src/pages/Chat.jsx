@@ -624,33 +624,54 @@ ${selectedModule.system_prompt}
 }
 
 // Conversation Item Component
-function ConversationItem({ conversation, isActive, onClick }) {
+function ConversationItem({ conversation, isActive, isSelectMode, isSelected, onSelect, onClick, onDelete }) {
   const date = new Date(conversation.updated_date || conversation.created_date);
   const timeStr = format(date, 'HH:mm', { locale: zhCN });
 
+  const handleClick = (e) => {
+    if (isSelectMode) {
+      onSelect();
+    } else {
+      onClick();
+    }
+  };
+
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
       className={cn(
         "group flex items-start gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors",
-        isActive ? "bg-blue-50" : "hover:bg-slate-50"
+        isActive && !isSelectMode ? "bg-blue-50" : "hover:bg-slate-50",
+        isSelected && "bg-red-50"
       )}
     >
+      {isSelectMode && (
+        <div className="shrink-0 mt-0.5">
+          {isSelected ? (
+            <CheckSquare className="h-4 w-4 text-red-500" />
+          ) : (
+            <Square className="h-4 w-4 text-slate-300" />
+          )}
+        </div>
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <span className={cn(
             "text-sm truncate",
-            isActive ? "text-blue-700 font-medium" : "text-slate-700"
+            isActive && !isSelectMode ? "text-blue-700 font-medium" : "text-slate-700"
           )}>
             {conversation.title || '新对话'}
           </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-          >
-            <Pencil className="h-3 w-3 text-slate-400" />
-          </Button>
+          {!isSelectMode && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 hover:bg-red-100 hover:text-red-600"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
         </div>
         <span className="text-xs text-slate-400">{timeStr}</span>
       </div>
