@@ -32,11 +32,14 @@ Deno.serve(async (req) => {
       content: m.content
     }));
 
-    if (system_prompt && provider !== 'anthropic' && provider !== 'google') {
+    // 如果配置了自定义端点且包含 /chat/completions，使用 OpenAI 兼容格式
+    const useOpenAIFormat = model.api_endpoint && model.api_endpoint.includes('/chat/completions');
+
+    if (system_prompt) {
       formattedMessages.unshift({ role: 'system', content: system_prompt });
     }
 
-    if (provider === 'openai' || provider === 'custom') {
+    if (useOpenAIFormat || provider === 'openai' || provider === 'custom') {
       // OpenAI 或兼容 OpenAI 格式的 API
       const endpoint = model.api_endpoint || 'https://api.openai.com/v1/chat/completions';
 
