@@ -346,28 +346,29 @@ ${selectedModule.system_prompt}
           </Button>
         </div>
 
+        {/* All Conversations Header with Manage Button - Outside ScrollArea */}
+        <div className="flex items-center justify-between px-5 py-2 border-b border-slate-100">
+          <span className="text-sm text-slate-500">全部对话</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setIsSelectMode(!isSelectMode);
+              if (isSelectMode) {
+                setSelectedConversations([]);
+              }
+            }}
+            className="h-7 px-2 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          >
+            <Settings2 className="h-3.5 w-3.5 mr-1" />
+            {isSelectMode ? '完成' : '管理'}
+          </Button>
+        </div>
+
         {/* Conversations List */}
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="px-3 pb-4">
-              {/* All Conversations Header with Manage Button */}
-              <div className="flex items-center justify-between px-2 py-2">
-                <span className="text-sm text-slate-500">全部对话</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setIsSelectMode(!isSelectMode);
-                    if (isSelectMode) {
-                      setSelectedConversations([]);
-                    }
-                  }}
-                  className="h-7 px-2 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                >
-                  <Settings2 className="h-3.5 w-3.5 mr-1" />
-                  {isSelectMode ? '完成' : '管理'}
-                </Button>
-              </div>
               
               {/* 批量操作栏 */}
               {isSelectMode && (
