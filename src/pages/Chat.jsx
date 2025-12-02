@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, MessageSquare, Pencil, ChevronDown, Paperclip, Send, Loader2, Copy, RefreshCw, ThumbsUp, ThumbsDown, Bot, Trash2, CheckSquare, Square, X } from 'lucide-react';
+import { Plus, MessageSquare, Pencil, ChevronDown, Paperclip, Send, Loader2, Copy, RefreshCw, ThumbsUp, ThumbsDown, Bot, Trash2, CheckSquare, Square, Settings2 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
@@ -158,18 +158,14 @@ export default function Chat() {
         handleStartNewChat(module);
         window.history.replaceState({}, '', createPageUrl('Chat'));
         
-        // 如果设置了自动开始，自动发送初始消息触发系统提示词
         if (autoStart && module.user_prompt_template) {
-          // 延迟执行，确保状态已更新
           setTimeout(() => {
             setInputMessage(module.user_prompt_template);
-            // 再延迟一点触发发送
             setTimeout(() => {
               document.querySelector('[data-send-button]')?.click();
             }, 100);
           }, 100);
         } else if (autoStart) {
-          // 如果没有用户提示模板，发送默认消息
           setTimeout(() => {
             setInputMessage('请开始');
             setTimeout(() => {
@@ -186,7 +182,6 @@ export default function Chat() {
     setMessages([]);
     setSelectedModule(module);
     
-    // 如果模块指定了专用模型，自动切换
     if (module?.model_id && models.length > 0) {
       const moduleModel = models.find(m => m.id === module.model_id);
       if (moduleModel) {
@@ -238,7 +233,6 @@ ${selectedModule.system_prompt}
 3. 保持专业、专注，不要偏离主题`;
       }
 
-      // 调用后端函数，使用配置的API
       const { data: result } = await base44.functions.invoke('callAIModel', {
         model_id: selectedModel.id,
         messages: [...newMessages],
@@ -356,34 +350,46 @@ ${selectedModule.system_prompt}
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="px-3 pb-4">
-              {/* All Conversations Header */}
-              <div className="flex items-center justify-between px-2 py-2 text-sm text-slate-500">
-                <span>全部对话</span>
-                <button
-                  onClick={() => setIsSelectMode(!isSelectMode)}
-                  className="text-xs text-slate-400 hover:text-blue-600 transition-colors"
+              {/* All Conversations Header with Manage Button */}
+              <div className="flex items-center justify-between px-2 py-2">
+                <span className="text-sm text-slate-500">全部对话</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIsSelectMode(!isSelectMode);
+                    if (isSelectMode) {
+                      setSelectedConversations([]);
+                    }
+                  }}
+                  className="h-7 px-2 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                 >
+                  <Settings2 className="h-3.5 w-3.5 mr-1" />
                   {isSelectMode ? '完成' : '管理'}
-                </button>
+                </Button>
               </div>
               
-              {/* 选择模式操作栏 */}
+              {/* 批量操作栏 */}
               {isSelectMode && (
-                <div className="flex items-center justify-between px-2 pb-2 gap-2">
-                  <button
+                <div className="flex items-center justify-between px-2 py-2 mb-2 bg-slate-50 rounded-lg">
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={toggleSelectAll}
-                    className="text-xs text-blue-600 hover:text-blue-700"
+                    className="h-7 px-2 text-xs"
                   >
                     {selectedConversations.length === conversations.length ? '取消全选' : '全选'}
-                  </button>
+                  </Button>
                   {selectedConversations.length > 0 && (
-                    <button
+                    <Button
+                      variant="destructive"
+                      size="sm"
                       onClick={handleBatchDelete}
-                      className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
+                      className="h-7 px-2 text-xs"
                     >
-                      <Trash2 className="h-3 w-3" />
-                      删除({selectedConversations.length})
-                    </button>
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      删除 ({selectedConversations.length})
+                    </Button>
                   )}
                 </div>
               )}
@@ -461,6 +467,13 @@ ${selectedModule.system_prompt}
                       onDelete={() => handleDeleteConversation(conv.id)}
                     />
                   ))}
+                </div>
+              )}
+
+              {/* Empty state */}
+              {conversations.length === 0 && (
+                <div className="text-center py-8 text-slate-400 text-sm">
+                  暂无对话记录
                 </div>
               )}
             </div>
@@ -609,25 +622,18 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
   const date = new Date(conversation.updated_date || conversation.created_date);
   const timeStr = format(date, 'HH:mm', { locale: zhCN });
 
-  const handleClick = (e) => {
-    if (isSelectMode) {
-      onSelect();
-    } else {
-      onClick();
-    }
-  };
-
   return (
     <div
-      onClick={handleClick}
+      onClick={() => isSelectMode ? onSelect() : onClick()}
       className={cn(
-        "group flex items-start gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors",
-        isActive && !isSelectMode ? "bg-blue-50" : "hover:bg-slate-50",
-        isSelected && "bg-red-50"
+        "group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all",
+        isActive && !isSelectMode ? "bg-blue-50 border border-blue-200" : "hover:bg-slate-50",
+        isSelected && "bg-red-50 border border-red-200"
       )}
     >
+      {/* Checkbox in select mode */}
       {isSelectMode && (
-        <div className="shrink-0 mt-0.5">
+        <div className="shrink-0">
           {isSelected ? (
             <CheckSquare className="h-4 w-4 text-red-500" />
           ) : (
@@ -635,27 +641,34 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
           )}
         </div>
       )}
+      
+      {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <span className={cn(
-            "text-sm truncate",
+            "text-sm truncate block",
             isActive && !isSelectMode ? "text-blue-700 font-medium" : "text-slate-700"
           )}>
             {conversation.title || '新对话'}
           </span>
-          {!isSelectMode && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 hover:bg-red-100 hover:text-red-600"
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          )}
         </div>
         <span className="text-xs text-slate-400">{timeStr}</span>
       </div>
+
+      {/* Delete button - always visible when not in select mode */}
+      {!isSelectMode && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => { 
+            e.stopPropagation(); 
+            onDelete(); 
+          }}
+          className="h-7 w-7 shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      )}
     </div>
   );
 }
@@ -664,21 +677,12 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
 function filterThinkingContent(content) {
   if (!content) return content;
   
-  // 移除 [思考过程] 或 【思考过程】 及其后面的代码块
   let filtered = content.replace(/\[思考过程\][\s\S]*?```[\s\S]*?```/g, '');
   filtered = filtered.replace(/【思考过程】[\s\S]*?```[\s\S]*?```/g, '');
-  
-  // 移除 <think>...</think> 标签及内容
   filtered = filtered.replace(/<think>[\s\S]*?<\/think>/gi, '');
-  
-  // 移除 <thinking>...</thinking> 标签及内容
   filtered = filtered.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
-  
-  // 移除独立的 [思考过程] 段落（没有代码块的情况）
   filtered = filtered.replace(/\[思考过程\][^\[]*(?=\n\n|\n[^（\(]|$)/g, '');
   filtered = filtered.replace(/【思考过程】[^【]*(?=\n\n|\n[^（\(]|$)/g, '');
-  
-  // 清理多余的空行
   filtered = filtered.replace(/\n{3,}/g, '\n\n').trim();
   
   return filtered;
@@ -690,7 +694,6 @@ function ChatMessageItem({ message, isStreaming, user }) {
   const isUser = message.role === 'user';
   const time = message.timestamp ? format(new Date(message.timestamp), 'HH:mm') : '';
   
-  // 过滤AI回复中的思考过程
   const displayContent = isUser ? message.content : filterThinkingContent(message.content);
 
   const handleCopy = async () => {
