@@ -102,14 +102,36 @@ export default function Chat() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const moduleId = params.get('module_id');
-    if (moduleId && promptModules.length > 0 && models.length > 0) {
+    const autoStart = params.get('auto_start') === 'true';
+    
+    if (moduleId && promptModules.length > 0 && models.length > 0 && user) {
       const module = promptModules.find(m => m.id === moduleId);
       if (module) {
         handleStartNewChat(module);
         window.history.replaceState({}, '', createPageUrl('Chat'));
+        
+        // 如果设置了自动开始，自动发送初始消息触发系统提示词
+        if (autoStart && module.user_prompt_template) {
+          // 延迟执行，确保状态已更新
+          setTimeout(() => {
+            setInputMessage(module.user_prompt_template);
+            // 再延迟一点触发发送
+            setTimeout(() => {
+              document.querySelector('[data-send-button]')?.click();
+            }, 100);
+          }, 100);
+        } else if (autoStart) {
+          // 如果没有用户提示模板，发送默认消息
+          setTimeout(() => {
+            setInputMessage('请开始');
+            setTimeout(() => {
+              document.querySelector('[data-send-button]')?.click();
+            }, 100);
+          }, 100);
+        }
       }
     }
-  }, [location.search, promptModules, models]);
+  }, [location.search, promptModules, models, user]);
 
   const handleStartNewChat = (module = null) => {
     setCurrentConversation(null);
@@ -463,6 +485,7 @@ ${selectedModule.system_prompt}
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-xs text-slate-400">{inputMessage.length}/2000</span>
                   <Button
+                    data-send-button
                     onClick={handleSendMessage}
                     disabled={!inputMessage.trim() || isStreaming}
                     className="bg-blue-600 hover:bg-blue-700 h-9 px-4 gap-2"
