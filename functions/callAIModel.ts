@@ -19,6 +19,31 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Model not found' }, { status: 404 });
     }
 
+    // 如果使用内置集成（支持联网）
+    if (model.provider === 'builtin' || model.enable_web_search) {
+      // 构建完整的提示
+      const fullPrompt = messages.map(m => {
+        if (m.role === 'user') return `用户: ${m.content}`;
+        if (m.role === 'assistant') return `助手: ${m.content}`;
+        return m.content;
+      }).join('\n\n');
+
+      const finalPrompt = system_prompt 
+        ? `${system_prompt}\n\n${fullPrompt}\n\n请根据上述对话历史，回复用户最后的消息。`
+        : fullPrompt;
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: finalPrompt,
+        add_context_from_internet: model.enable_web_search || false
+      });
+
+      return Response.json({
+        response: result,
+        credits_used: model.credits_per_message || 1,
+        web_search_enabled: model.enable_web_search || false
+      });
+    }
+
     if (!model.api_key) {
       return Response.json({ error: 'API key not configured for this model' }, { status: 400 });
     }
