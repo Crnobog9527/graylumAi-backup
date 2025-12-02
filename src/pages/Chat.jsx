@@ -359,38 +359,34 @@ ${selectedModule.system_prompt}
               {/* All Conversations Header */}
               <div className="flex items-center justify-between px-2 py-2 text-sm text-slate-500">
                 <span>全部对话</span>
-                <div className="flex items-center gap-1">
-                  {isSelectMode ? (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={toggleSelectAll}
-                        className="h-6 px-2 text-xs"
-                      >
-                        {selectedConversations.length === conversations.length ? '取消全选' : '全选'}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => { setIsSelectMode(false); setSelectedConversations([]); }}
-                        className="h-6 px-2 text-xs"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsSelectMode(true)}
-                      className="h-6 px-2 text-xs text-slate-400 hover:text-slate-600"
+                <button
+                  onClick={() => setIsSelectMode(!isSelectMode)}
+                  className="text-xs text-slate-400 hover:text-blue-600 transition-colors"
+                >
+                  {isSelectMode ? '完成' : '管理'}
+                </button>
+              </div>
+              
+              {/* 选择模式操作栏 */}
+              {isSelectMode && (
+                <div className="flex items-center justify-between px-2 pb-2 gap-2">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="text-xs text-blue-600 hover:text-blue-700"
+                  >
+                    {selectedConversations.length === conversations.length ? '取消全选' : '全选'}
+                  </button>
+                  {selectedConversations.length > 0 && (
+                    <button
+                      onClick={handleBatchDelete}
+                      className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
                     >
-                      管理
-                    </Button>
+                      <Trash2 className="h-3 w-3" />
+                      删除({selectedConversations.length})
+                    </button>
                   )}
                 </div>
-              </div>
+              )}
 
               {/* 批量删除按钮 */}
               {isSelectMode && selectedConversations.length > 0 && (
