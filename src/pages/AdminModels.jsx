@@ -48,7 +48,8 @@ const providerIcons = {
   anthropic: Sparkles,
   google: Brain,
   openai: Zap,
-  custom: Bot
+  custom: Bot,
+  builtin: Zap
 };
 
 const initialFormData = {
@@ -61,6 +62,7 @@ const initialFormData = {
   is_active: true,
   description: '',
   max_tokens: 4096,
+  enable_web_search: false,
 };
 
 export default function AdminModels() {
@@ -137,6 +139,7 @@ export default function AdminModels() {
       is_active: model.is_active !== false,
       description: model.description || '',
       max_tokens: model.max_tokens || 4096,
+      enable_web_search: model.enable_web_search || false,
     });
     setDialogOpen(true);
   };
@@ -297,6 +300,7 @@ export default function AdminModels() {
                     <SelectItem value="google">Google (Gemini)</SelectItem>
                     <SelectItem value="openai">OpenAI (GPT)</SelectItem>
                     <SelectItem value="custom">Custom</SelectItem>
+                    <SelectItem value="builtin">内置 (支持联网)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -356,6 +360,17 @@ export default function AdminModels() {
                 <Switch
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <div>
+                  <Label className="text-blue-900">启用联网搜索</Label>
+                  <p className="text-xs text-blue-600 mt-0.5">开启后将使用内置集成，支持实时联网获取信息</p>
+                </div>
+                <Switch
+                  checked={formData.enable_web_search}
+                  onCheckedChange={(checked) => setFormData({ ...formData, enable_web_search: checked })}
                 />
               </div>
             </div>
