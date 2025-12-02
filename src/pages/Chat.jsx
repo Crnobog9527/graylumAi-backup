@@ -359,8 +359,53 @@ ${selectedModule.system_prompt}
               {/* All Conversations Header */}
               <div className="flex items-center justify-between px-2 py-2 text-sm text-slate-500">
                 <span>全部对话</span>
-                <ChevronDown className="h-4 w-4" />
+                <div className="flex items-center gap-1">
+                  {isSelectMode ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleSelectAll}
+                        className="h-6 px-2 text-xs"
+                      >
+                        {selectedConversations.length === conversations.length ? '取消全选' : '全选'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setIsSelectMode(false); setSelectedConversations([]); }}
+                        className="h-6 px-2 text-xs"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsSelectMode(true)}
+                      className="h-6 px-2 text-xs text-slate-400 hover:text-slate-600"
+                    >
+                      管理
+                    </Button>
+                  )}
+                </div>
               </div>
+
+              {/* 批量删除按钮 */}
+              {isSelectMode && selectedConversations.length > 0 && (
+                <div className="px-2 pb-2">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBatchDelete}
+                    className="w-full h-8 text-xs gap-1"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    删除选中 ({selectedConversations.length})
+                  </Button>
+                </div>
+              )}
 
               {/* Today */}
               {groupedConversations.today.length > 0 && (
