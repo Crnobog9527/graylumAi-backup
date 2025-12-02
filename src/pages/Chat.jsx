@@ -27,6 +27,8 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedConversations, setSelectedConversations] = useState([]);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const queryClient = useQueryClient();
