@@ -1,8 +1,18 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { cn } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Video, PenTool, Sparkles, Briefcase, BarChart3, Lightbulb, 
   Target, Image as ImageIcon, Languages, Code, Megaphone, 
@@ -29,11 +39,13 @@ const colorConfig = {
 };
 
 export default function ModuleCard({ module, models = [], className }) {
+  const [showConfirm, setShowConfirm] = useState(false);
+  const navigate = useNavigate();
   const Icon = iconMap[module.icon] || Bot;
   const color = colorConfig[module.color] || colorConfig.blue;
 
   // Assuming we navigate to Chat page with module_id parameter
-  const targetUrl = `${createPageUrl('Chat')}?module_id=${module.id}`;
+  const targetUrl = `${createPageUrl('Chat')}?module_id=${module.id}&auto_start=true`;
 
   // 计算真实积分消耗
   const getCreditsPerUse = () => {
@@ -89,11 +101,36 @@ export default function ModuleCard({ module, models = [], className }) {
         </span>
       </div>
 
-      <Link to={targetUrl} className="mt-4 block">
-        <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-10">
-          立即使用
-        </Button>
-      </Link>
+      <Button 
+        onClick={() => setShowConfirm(true)}
+        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-10 mt-4"
+      >
+        立即使用
+      </Button>
+
+      {/* 确认弹窗 */}
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认使用「{module.title}」</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>{module.description}</p>
+              <p className="text-amber-600 font-medium">
+                点击"确认"以后，将开始消耗积分（{creditsPerUse}积分/次）
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => navigate(targetUrl)}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
+              确认
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
