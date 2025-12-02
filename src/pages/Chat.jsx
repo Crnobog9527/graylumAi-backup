@@ -388,21 +388,6 @@ ${selectedModule.system_prompt}
                 </div>
               )}
 
-              {/* 批量删除按钮 */}
-              {isSelectMode && selectedConversations.length > 0 && (
-                <div className="px-2 pb-2">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleBatchDelete}
-                    className="w-full h-8 text-xs gap-1"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    删除选中 ({selectedConversations.length})
-                  </Button>
-                </div>
-              )}
-
               {/* Today */}
               {groupedConversations.today.length > 0 && (
                 <div className="mb-3">
