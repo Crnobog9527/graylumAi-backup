@@ -47,6 +47,11 @@ export default function Marketplace() {
     queryFn: () => base44.entities.PromptModule.list('-sort_order', 100),
   });
 
+  const { data: models = [] } = useQuery({
+    queryKey: ['models'],
+    queryFn: () => base44.entities.AIModel.filter({ is_active: true }),
+  });
+
   // Filter and Sort Logic
   const filteredModules = modules.filter(module => {
     // Search
@@ -127,7 +132,7 @@ export default function Marketplace() {
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
         {displayedModules.map((module) => (
-          <ModuleCard key={module.id} module={module} />
+          <ModuleCard key={module.id} module={module} models={models} />
         ))}
       </div>
 
