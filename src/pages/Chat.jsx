@@ -92,6 +92,52 @@ export default function Chat() {
     onSuccess: () => queryClient.invalidateQueries(['conversations']),
   });
 
+  const deleteConversationMutation = useMutation({
+    mutationFn: (id) => base44.entities.Conversation.delete(id),
+    onSuccess: () => queryClient.invalidateQueries(['conversations']),
+  });
+
+  // 删除单个对话
+  const handleDeleteConversation = async (convId) => {
+    if (currentConversation?.id === convId) {
+      setCurrentConversation(null);
+      setMessages([]);
+    }
+    await deleteConversationMutation.mutateAsync(convId);
+  };
+
+  // 批量删除对话
+  const handleBatchDelete = async () => {
+    for (const convId of selectedConversations) {
+      if (currentConversation?.id === convId) {
+        setCurrentConversation(null);
+        setMessages([]);
+      }
+      await base44.entities.Conversation.delete(convId);
+    }
+    setSelectedConversations([]);
+    setIsSelectMode(false);
+    queryClient.invalidateQueries(['conversations']);
+  };
+
+  // 切换选择
+  const toggleSelectConversation = (convId) => {
+    setSelectedConversations(prev => 
+      prev.includes(convId) 
+        ? prev.filter(id => id !== convId)
+        : [...prev, convId]
+    );
+  };
+
+  // 全选/取消全选
+  const toggleSelectAll = () => {
+    if (selectedConversations.length === conversations.length) {
+      setSelectedConversations([]);
+    } else {
+      setSelectedConversations(conversations.map(c => c.id));
+    }
+  };
+
   const updateUserMutation = useMutation({
     mutationFn: (data) => base44.auth.updateMe(data),
     onSuccess: (data) => setUser(prev => ({ ...prev, ...data })),
