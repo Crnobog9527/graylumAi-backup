@@ -549,14 +549,41 @@ function ConversationItem({ conversation, isActive, onClick }) {
   );
 }
 
+// 过滤掉AI思考过程的函数
+function filterThinkingContent(content) {
+  if (!content) return content;
+  
+  // 移除 [思考过程] 或 【思考过程】 及其后面的代码块
+  let filtered = content.replace(/\[思考过程\][\s\S]*?```[\s\S]*?```/g, '');
+  filtered = filtered.replace(/【思考过程】[\s\S]*?```[\s\S]*?```/g, '');
+  
+  // 移除 <think>...</think> 标签及内容
+  filtered = filtered.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  
+  // 移除 <thinking>...</thinking> 标签及内容
+  filtered = filtered.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
+  
+  // 移除独立的 [思考过程] 段落（没有代码块的情况）
+  filtered = filtered.replace(/\[思考过程\][^\[]*(?=\n\n|\n[^（\(]|$)/g, '');
+  filtered = filtered.replace(/【思考过程】[^【]*(?=\n\n|\n[^（\(]|$)/g, '');
+  
+  // 清理多余的空行
+  filtered = filtered.replace(/\n{3,}/g, '\n\n').trim();
+  
+  return filtered;
+}
+
 // Chat Message Item Component
 function ChatMessageItem({ message, isStreaming, user }) {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
   const time = message.timestamp ? format(new Date(message.timestamp), 'HH:mm') : '';
+  
+  // 过滤AI回复中的思考过程
+  const displayContent = isUser ? message.content : filterThinkingContent(message.content);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(message.content);
+    await navigator.clipboard.writeText(displayContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -601,7 +628,7 @@ function ChatMessageItem({ message, isStreaming, user }) {
               h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-3 first:mt-0 text-slate-800">{children}</h3>,
             }}
           >
-            {message.content}
+            {displayContent}
           </ReactMarkdown>
           {isStreaming && (
             <span className="inline-block w-2 h-5 bg-blue-400 animate-pulse ml-1 rounded-sm" />
