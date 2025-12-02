@@ -416,7 +416,11 @@ ${selectedModule.system_prompt}
                       key={conv.id}
                       conversation={conv}
                       isActive={currentConversation?.id === conv.id}
-                      onClick={() => handleSelectConversation(conv)}
+                      isSelectMode={isSelectMode}
+                      isSelected={selectedConversations.includes(conv.id)}
+                      onSelect={() => toggleSelectConversation(conv.id)}
+                      onClick={() => !isSelectMode && handleSelectConversation(conv)}
+                      onDelete={() => handleDeleteConversation(conv.id)}
                     />
                   ))}
                 </div>
@@ -431,7 +435,11 @@ ${selectedModule.system_prompt}
                       key={conv.id}
                       conversation={conv}
                       isActive={currentConversation?.id === conv.id}
-                      onClick={() => handleSelectConversation(conv)}
+                      isSelectMode={isSelectMode}
+                      isSelected={selectedConversations.includes(conv.id)}
+                      onSelect={() => toggleSelectConversation(conv.id)}
+                      onClick={() => !isSelectMode && handleSelectConversation(conv)}
+                      onDelete={() => handleDeleteConversation(conv.id)}
                     />
                   ))}
                 </div>
@@ -446,7 +454,11 @@ ${selectedModule.system_prompt}
                       key={conv.id}
                       conversation={conv}
                       isActive={currentConversation?.id === conv.id}
-                      onClick={() => handleSelectConversation(conv)}
+                      isSelectMode={isSelectMode}
+                      isSelected={selectedConversations.includes(conv.id)}
+                      onSelect={() => toggleSelectConversation(conv.id)}
+                      onClick={() => !isSelectMode && handleSelectConversation(conv)}
+                      onDelete={() => handleDeleteConversation(conv.id)}
                     />
                   ))}
                 </div>
@@ -461,7 +473,11 @@ ${selectedModule.system_prompt}
                       key={conv.id}
                       conversation={conv}
                       isActive={currentConversation?.id === conv.id}
-                      onClick={() => handleSelectConversation(conv)}
+                      isSelectMode={isSelectMode}
+                      isSelected={selectedConversations.includes(conv.id)}
+                      onSelect={() => toggleSelectConversation(conv.id)}
+                      onClick={() => !isSelectMode && handleSelectConversation(conv)}
+                      onDelete={() => handleDeleteConversation(conv.id)}
                     />
                   ))}
                 </div>
