@@ -191,11 +191,18 @@ export default function Chat() {
   };
 
   const handleSelectConversation = async (conv) => {
-    setCurrentConversation(conv);
-    setMessages(conv.messages || []);
-    if (conv.model_id) {
-      const model = models.find(m => m.id === conv.model_id);
-      if (model) setSelectedModel(model);
+    try {
+      // 验证对话是否还存在
+      const freshConv = await base44.entities.Conversation.get(conv.id);
+      setCurrentConversation(freshConv);
+      setMessages(freshConv.messages || []);
+      if (freshConv.model_id) {
+        const model = models.find(m => m.id === freshConv.model_id);
+        if (model) setSelectedModel(model);
+      }
+    } catch (e) {
+      // 对话已被删除，刷新列表
+      queryClient.invalidateQueries(['conversations']);
     }
   };
 
