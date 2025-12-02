@@ -64,17 +64,28 @@ Deno.serve(async (req) => {
     } else if (provider === 'anthropic') {
       // Anthropic Claude API
       const endpoint = model.api_endpoint || 'https://api.anthropic.com/v1/messages';
+      const isOfficialApi = !model.api_endpoint || model.api_endpoint.includes('anthropic.com');
 
       // Anthropic 需要单独处理 system prompt
       const anthropicMessages = formattedMessages.filter(m => m.role !== 'system');
 
+      // 根据是否使用官方 API 或代理来设置不同的请求头
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (isOfficialApi) {
+        // 官方 Anthropic API 使用 x-api-key
+        headers['x-api-key'] = model.api_key;
+        headers['anthropic-version'] = '2023-06-01';
+      } else {
+        // 第三方代理通常使用 Bearer token
+        headers['Authorization'] = `Bearer ${model.api_key}`;
+      }
+
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': model.api_key,
-          'anthropic-version': '2023-06-01'
-        },
+        headers,
         body: JSON.stringify({
           model: model.model_id,
           max_tokens: model.max_tokens || 4096,
