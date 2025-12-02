@@ -373,25 +373,27 @@ ${selectedModule.system_prompt}
               {/* 批量操作栏 */}
               {isSelectMode && (
                 <div className="flex items-center justify-between px-2 py-2 mb-2 bg-slate-50 rounded-lg">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleSelectAll}
-                    className="h-7 px-2 text-xs"
-                  >
-                    {selectedConversations.length === conversations.length ? '取消全选' : '全选'}
-                  </Button>
-                  {selectedConversations.length > 0 && (
+                  <div className="flex items-center gap-2">
                     <Button
-                      variant="destructive"
+                      variant="ghost"
                       size="sm"
-                      onClick={handleBatchDelete}
+                      onClick={toggleSelectAll}
                       className="h-7 px-2 text-xs"
                     >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      删除 ({selectedConversations.length})
+                      {selectedConversations.length === conversations.length ? '取消全选' : '全选'}
                     </Button>
-                  )}
+                    {selectedConversations.length > 0 && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBatchDelete}
+                        className="h-7 px-2 text-xs"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        删除 ({selectedConversations.length})
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
 
