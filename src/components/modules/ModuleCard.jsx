@@ -8,6 +8,8 @@ import {
   Target, Image as ImageIcon, Languages, Code, Megaphone, 
   BookOpen, Music, Bot
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 
 const iconMap = {
   Video, PenTool, Sparkles, Briefcase, BarChart3, Lightbulb,
@@ -31,6 +33,31 @@ const colorConfig = {
 export default function ModuleCard({ module, className }) {
   const Icon = iconMap[module.icon] || Bot;
   const color = colorConfig[module.color] || colorConfig.blue;
+
+  // 获取模型列表来计算实际积分
+  const { data: models = [] } = useQuery({
+    queryKey: ['models-for-credits'],
+    queryFn: () => base44.entities.AIModel.filter({ is_active: true }),
+    staleTime: 5 * 60 * 1000, // 缓存5分钟
+  });
+
+  // 计算实际积分消耗
+  const calculateCredits = () => {
+    const multiplier = module.credits_multiplier || 1;
+    if (module.model_id) {
+      const model = models.find(m => m.id === module.model_id);
+      if (model) {
+        return model.credits_per_message * multiplier;
+      }
+    }
+    // 如果没有指定模型，使用第一个活跃模型的积分
+    if (models.length > 0) {
+      return models[0].credits_per_message * multiplier;
+    }
+    return multiplier; // 默认值
+  };
+
+  const creditsPerUse = calculateCredits();
 
   // Assuming we navigate to Chat page with module_id parameter
   const targetUrl = `${createPageUrl('Chat')}?module_id=${module.id}`;
@@ -62,7 +89,7 @@ export default function ModuleCard({ module, className }) {
       <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
         <div className="flex items-center gap-1.5 text-slate-400 text-xs">
           <span className={cn("font-medium", color.text)}>
-            {module.credits_multiplier > 0 ? `${module.credits_multiplier * 10}积分/次` : '免费'}
+            {creditsPerUse > 0 ? `${creditsPerUse}积分/次` : '免费'}
           </span>
         </div>
         
