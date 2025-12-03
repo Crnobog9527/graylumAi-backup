@@ -202,3 +202,11 @@ const [user, setUser] = useState(null);
     </div>
   );
 }
+
+export default function AdminDashboard() {
+  return (
+    <LanguageProvider>
+      <AdminDashboardContent />
+    </LanguageProvider>
+  );
+}
