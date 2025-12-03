@@ -13,7 +13,6 @@ import Profile from './pages/Profile';
 import AdminFinance from './pages/AdminFinance';
 import AdminAnnouncements from './pages/AdminAnnouncements';
 import Landing from './pages/Landing';
-import AdminFeatured from './pages/AdminFeatured';
 import __Layout from './Layout.jsx';
 
 
@@ -33,7 +32,6 @@ export const PAGES = {
     "AdminFinance": AdminFinance,
     "AdminAnnouncements": AdminAnnouncements,
     "Landing": Landing,
-    "AdminFeatured": AdminFeatured,
 }
 
 export const pagesConfig = {
