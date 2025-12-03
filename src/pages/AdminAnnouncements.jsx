@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
 import AdminSidebar from '../components/admin/AdminSidebar';
@@ -15,6 +16,7 @@ import { LanguageProvider, useLanguage } from '../components/admin/LanguageConte
 const defaultSettings = {
   // 聊天页面
   chat_billing_hint: { value: '⚡ 按实际Token消耗计费：输入 {input}积分/1K tokens，输出 {output}积分/1K tokens', type: 'string', label: '计费提示文案', description: '聊天页面底部显示的计费说明，{input}和{output}会替换为实际值' },
+  chat_show_model_selector: { value: 'true', type: 'boolean', label: '显示模型选择器', description: '是否在聊天页面顶部显示模型切换按钮' },
 };
 
 function AdminAnnouncementsContent() {
@@ -140,7 +142,20 @@ function AdminAnnouncementsContent() {
               <CardDescription>配置聊天页面显示的提示信息</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-3">
+              {/* 模型选择器开关 */}
+              <div className="flex items-center justify-between py-4 border-b border-slate-100">
+                <div>
+                  <Label className="text-base">{settings.chat_show_model_selector?.label}</Label>
+                  <p className="text-sm text-slate-500 mt-1">{settings.chat_show_model_selector?.description}</p>
+                </div>
+                <Switch
+                  checked={settings.chat_show_model_selector?.value === 'true'}
+                  onCheckedChange={(checked) => updateSetting('chat_show_model_selector', checked.toString())}
+                />
+              </div>
+
+              {/* 计费提示文案 */}
+              <div className="space-y-3 pt-4">
                 <div>
                   <Label className="text-base">{settings.chat_billing_hint?.label}</Label>
                   <p className="text-sm text-slate-500 mt-1">{settings.chat_billing_hint?.description}</p>

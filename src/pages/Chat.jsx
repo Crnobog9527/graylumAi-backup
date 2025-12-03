@@ -104,6 +104,7 @@ export default function Chat() {
   const chatBillingHint = getSettingValue('chat_billing_hint', '⚡ 按实际Token消耗计费：输入 {input}积分/1K tokens，输出 {output}积分/1K tokens')
     .replace('{input}', inputCreditsPerK)
     .replace('{output}', outputCreditsPerK);
+  const showModelSelector = getSettingValue('chat_show_model_selector', 'true') === 'true';
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
@@ -612,27 +613,29 @@ ${selectedModule.system_prompt}
           </div>
 
           {/* Model Selector */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 h-9 px-3 border-slate-200">
-                <Bot className="h-4 w-4 text-blue-600" />
-                <span className="text-sm">{selectedModel?.name || '选择模型'}</span>
-                <ChevronDown className="h-4 w-4 text-slate-400" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {models.map(model => (
-                <DropdownMenuItem
-                  key={model.id}
-                  onClick={() => setSelectedModel(model)}
-                  className="gap-2"
-                >
-                  <Bot className="h-4 w-4" />
-                  {model.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {showModelSelector && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2 h-9 px-3 border-slate-200">
+                  <Bot className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm">{selectedModel?.name || '选择模型'}</span>
+                  <ChevronDown className="h-4 w-4 text-slate-400" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {models.map(model => (
+                  <DropdownMenuItem
+                    key={model.id}
+                    onClick={() => setSelectedModel(model)}
+                    className="gap-2"
+                  >
+                    <Bot className="h-4 w-4" />
+                    {model.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Messages Area */}
