@@ -261,19 +261,37 @@ function AdminPackagesContent() {
       <AdminSidebar currentPage="AdminPackages" />
       
       <div className="flex-1 p-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">{t('packagesTitle')}</h1>
-            <p className="text-slate-500 mt-1">{t('packagesSubtitle')}</p>
-          </div>
-          <Button 
-            onClick={() => { resetForm(); setDialogOpen(true); }}
-            className="bg-violet-600 hover:bg-violet-700 gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            {t('addPackage')}
-          </Button>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900">积分与会员管理</h1>
+          <p className="text-slate-500 mt-1">管理积分套餐和会员等级</p>
         </div>
+
+        <Tabs defaultValue="packages" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="packages" className="gap-2">
+              <Package className="h-4 w-4" />
+              积分加油包
+            </TabsTrigger>
+            <TabsTrigger value="memberships" className="gap-2">
+              <Crown className="h-4 w-4" />
+              会员等级
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="packages">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-800">积分加油包</h2>
+                <p className="text-sm text-slate-500">积分永不过期，可与会员月度积分叠加使用</p>
+              </div>
+              <Button 
+                onClick={() => { resetForm(); setDialogOpen(true); }}
+                className="bg-violet-600 hover:bg-violet-700 gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                {t('addPackage')}
+              </Button>
+            </div>
 
         <Card>
           <CardContent className="p-0">
