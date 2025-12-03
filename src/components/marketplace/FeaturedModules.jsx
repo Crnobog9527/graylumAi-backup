@@ -76,52 +76,71 @@ export default function FeaturedModules() {
       {featuredModules.slice(0, 2).map((featured, index) => (
         <div 
           key={featured.id} 
-          className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+          className={`rounded-2xl overflow-hidden relative min-h-[220px] flex flex-col justify-between group ${
+            featured.card_style === 'dark' 
+              ? 'bg-slate-900' 
+              : 'bg-white border border-slate-200'
+          }`}
         >
-          {/* 顶部：图标 + 标题 + 标签 + 描述 */}
-          <div className="p-5 pb-3">
-            <div className="flex items-start gap-3">
-              <div className="bg-blue-100 p-2.5 rounded-xl shrink-0">
-                <span className="text-2xl">{featured.icon}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-lg font-bold text-slate-900">{featured.title}</h3>
-                  {featured.badge_text && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      featured.badge_type === 'new' ? 'bg-green-100 text-green-600' :
-                      featured.badge_type === 'hot' ? 'bg-amber-100 text-amber-600' :
-                      'bg-blue-100 text-blue-600'
-                    }`}>
-                      {featured.badge_text}
-                    </span>
-                  )}
-                </div>
-                <p className="text-slate-500 text-sm mt-1 line-clamp-2">
-                  {featured.description}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          {/* 中间：横幅大图 */}
-          {featured.banner_image && (
-            <div className="px-5">
-              <div className="rounded-xl overflow-hidden border border-slate-100">
-                <img 
-                  src={featured.banner_image} 
-                  alt={featured.title}
-                  className="w-full h-32 object-cover"
-                />
-              </div>
+          {/* 右侧横幅大图 */}
+          {featured.image_url && (
+            <div className="absolute right-0 top-0 w-1/2 h-full">
+              <img 
+                src={featured.image_url} 
+                alt="" 
+                className="w-full h-full object-cover"
+              />
+              <div className={`absolute inset-0 ${
+                featured.card_style === 'dark' 
+                  ? 'bg-gradient-to-r from-slate-900 via-slate-900/50 to-transparent' 
+                  : 'bg-gradient-to-r from-white via-white/70 to-transparent'
+              }`} />
             </div>
           )}
           
-          {/* 底部：按钮 */}
-          <div className="p-5 pt-4 flex justify-end">
+          {/* Default gradient if no image */}
+          {!featured.image_url && (
+            featured.card_style === 'dark' ? (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-black z-0"></div>
+                <div className="absolute right-0 bottom-0 w-1/2 h-full bg-gradient-to-l from-indigo-900/50 to-transparent z-0"></div>
+              </>
+            ) : (
+              <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-blue-50 to-transparent opacity-50"></div>
+            )
+          )}
+          
+          <div className="relative z-10 p-6 pb-0">
+            <div className="flex items-center gap-3 mb-2">
+              <div className={`p-2.5 rounded-xl ${
+                featured.card_style === 'dark' 
+                  ? 'bg-indigo-500/20 backdrop-blur-sm' 
+                  : 'bg-blue-100'
+              }`}>
+                <span className="text-2xl">{featured.icon}</span>
+              </div>
+              <h3 className={`text-xl font-bold ${
+                featured.card_style === 'dark' ? 'text-white' : 'text-slate-900'
+              }`}>
+                {featured.title}
+              </h3>
+              {featured.badge_text && (
+                <span className={`text-xs px-2 py-0.5 rounded border ${getBadgeStyle(featured.badge_type)}`}>
+                  {featured.badge_text}
+                </span>
+              )}
+            </div>
+            <p className={`text-sm leading-relaxed max-w-md ${
+              featured.card_style === 'dark' ? 'text-slate-300' : 'text-slate-600'
+            }`}>
+              {featured.description}
+            </p>
+          </div>
+          
+          <div className="relative z-10 p-6 pt-4 flex items-center justify-end">
             <Button 
               onClick={() => handleClick(featured)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-5 h-10"
             >
               立即体验
               <ArrowRight className="h-4 w-4 ml-1" />
