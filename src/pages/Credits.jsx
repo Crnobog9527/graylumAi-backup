@@ -172,7 +172,7 @@ export default function Credits() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-            {membershipPlans.filter(p => p.level !== 'free').map((plan) => {
+            {membershipPlans.map((plan) => {
               const isCurrentPlan = user?.subscription_tier === plan.level;
               return (
                 <div 
@@ -205,13 +205,19 @@ export default function Credits() {
                   </div>
                   
                   <div className="text-center mb-4">
-                    <div className="flex items-baseline justify-center gap-1">
-                      <span className="text-3xl font-bold text-slate-900">¥{plan.monthly_price}</span>
-                      <span className="text-slate-500">/月</span>
-                    </div>
-                    <div className="text-sm text-slate-500 mt-1">
-                      年付 ¥{plan.yearly_price}/年
-                    </div>
+                    {plan.level === 'free' ? (
+                      <div className="text-2xl font-bold text-slate-900">免费</div>
+                    ) : (
+                      <>
+                        <div className="flex items-baseline justify-center gap-1">
+                          <span className="text-3xl font-bold text-slate-900">${plan.monthly_price}</span>
+                          <span className="text-slate-500">/月</span>
+                        </div>
+                        <div className="text-sm text-slate-500 mt-1">
+                          年付 ${plan.yearly_price}/年
+                        </div>
+                      </>
+                    )}
                   </div>
                   
                   <div className="space-y-2 mb-6">
@@ -282,7 +288,7 @@ export default function Credits() {
                     )}
                     
                     <div className="text-2xl font-bold text-blue-600 mb-4">
-                      ¥{pkg.price}
+                      ${pkg.price}
                     </div>
                     
                     <Button
