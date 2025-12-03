@@ -26,6 +26,7 @@ const defaultSettings = {
   
   // Features
   max_messages_per_conversation: { value: '100', type: 'number', label: '单对话最大消息数', description: '每个对话允许的最大消息数' },
+  max_input_characters: { value: '2000', type: 'number', label: '输入框字符上限', description: '用户单次输入的最大字符数' },
   enable_free_tier: { value: 'false', type: 'boolean', label: '启用免费体验', description: '允许用户在无积分时使用有限功能' },
   free_tier_messages: { value: '5', type: 'number', label: '免费消息数/天', description: '每天免费消息数量' },
   long_text_warning_threshold: { value: '5000', type: 'number', label: '长文本预警阈值(tokens)', description: '输入token超过此值时弹窗提示用户确认' },
@@ -308,7 +309,7 @@ function AdminSettingsContent() {
                 <CardDescription>启用或禁用平台功能</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {['enable_free_tier', 'free_tier_messages', 'max_messages_per_conversation', 'enable_long_text_warning', 'long_text_warning_threshold'].map(key => {
+                {['enable_free_tier', 'free_tier_messages', 'max_messages_per_conversation', 'max_input_characters', 'enable_long_text_warning', 'long_text_warning_threshold'].map(key => {
                   const data = settings[key];
                   if (!data) return null;
                   return (

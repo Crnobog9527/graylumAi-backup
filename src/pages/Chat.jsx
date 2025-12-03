@@ -105,6 +105,7 @@ export default function Chat() {
     .replace('{input}', inputCreditsPerK)
     .replace('{output}', outputCreditsPerK);
   const showModelSelector = getSettingValue('chat_show_model_selector', 'true') === 'true';
+  const maxInputCharacters = parseInt(getSettingValue('max_input_characters', '2000')) || 2000;
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
@@ -746,7 +747,7 @@ ${selectedModule.system_prompt}
                   rows={1}
                 />
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-slate-400">{inputMessage.length}/2000</span>
+                  <span className="text-xs text-slate-400">{inputMessage.length}/{maxInputCharacters}</span>
                   <Button
                     data-send-button
                     onClick={() => handleSendMessage(false)}
