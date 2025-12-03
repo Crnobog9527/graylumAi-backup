@@ -120,7 +120,7 @@ export default function AppHeader({ user }) {
                     </Link>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-red-600" onClick={() => base44.auth.logout()}>
+                  <DropdownMenuItem className="text-red-600" onClick={() => base44.auth.logout(createPageUrl('Landing'))}>
                     <LogOut className="h-4 w-4 mr-2" />
                     退出登录
                   </DropdownMenuItem>
