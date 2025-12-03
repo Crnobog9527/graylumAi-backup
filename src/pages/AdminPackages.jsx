@@ -293,8 +293,8 @@ function AdminPackagesContent() {
               </Button>
             </div>
 
-        <Card>
-          <CardContent className="p-0">
+            <Card>
+              <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
