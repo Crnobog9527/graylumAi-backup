@@ -59,7 +59,6 @@ const initialFormData = {
   provider: 'anthropic',
   api_key: '',
   api_endpoint: '',
-  credits_per_message: 1,
   is_active: true,
   description: '',
   max_tokens: 4096,
@@ -147,7 +146,6 @@ function AdminModelsContent() {
       provider: model.provider || 'anthropic',
       api_key: model.api_key || '',
       api_endpoint: model.api_endpoint || '',
-      credits_per_message: model.credits_per_message || 1,
       is_active: model.is_active !== false,
       description: model.description || '',
       max_tokens: model.max_tokens || 4096,
@@ -257,14 +255,13 @@ function AdminModelsContent() {
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('displayName')}</TableHead>
-                    <TableHead>{t('provider')}</TableHead>
-                    <TableHead>{t('creditsPerMessage')}</TableHead>
-                    <TableHead>{t('status')}</TableHead>
-                    <TableHead className="w-[100px]">{t('actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
+                <TableRow>
+                  <TableHead>{t('displayName')}</TableHead>
+                  <TableHead>{t('provider')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead className="w-[100px]">{t('actions')}</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
                 {models.map((model) => {
                   const Icon = providerIcons[model.provider] || Bot;
@@ -286,7 +283,6 @@ function AdminModelsContent() {
                           {model.provider}
                         </Badge>
                       </TableCell>
-                      <TableCell>{model.credits_per_message}</TableCell>
                       <TableCell>
                         <Badge variant={model.is_active ? "default" : "secondary"}>
                           {model.is_active ? t('active') : t('inactive')}
@@ -324,7 +320,7 @@ function AdminModelsContent() {
                 })}
                 {models.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12 text-slate-500">
+                    <TableCell colSpan={4} className="text-center py-12 text-slate-500">
                       {t('noModelsYet')}
                     </TableCell>
                   </TableRow>
@@ -401,16 +397,7 @@ function AdminModelsContent() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>{t('creditsPerMessage')}</Label>
-                  <Input
-                    type="number"
-                    value={formData.credits_per_message}
-                    onChange={(e) => setFormData({ ...formData, credits_per_message: parseInt(e.target.value) })}
-                    min={1}
-                  />
-                </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t('maxTokens')}</Label>
                   <Input
