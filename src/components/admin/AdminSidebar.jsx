@@ -16,6 +16,7 @@ const menuItems = [
   { nameKey: 'creditPackages', icon: Package, page: 'AdminPackages' },
   { nameKey: 'users', icon: Users, page: 'AdminUsers' },
   { nameKey: 'transactions', icon: CreditCard, page: 'AdminTransactions' },
+  { nameKey: 'finance', icon: CreditCard, page: 'AdminFinance' },
   { nameKey: 'settings', icon: Settings, page: 'AdminSettings' },
 ];
 

@@ -64,6 +64,8 @@ const initialFormData = {
   description: '',
   max_tokens: 4096,
   enable_web_search: false,
+  input_token_cost: 0,
+  output_token_cost: 0,
 };
 
 function AdminModelsContent() {
@@ -142,6 +144,8 @@ function AdminModelsContent() {
       description: model.description || '',
       max_tokens: model.max_tokens || 4096,
       enable_web_search: model.enable_web_search || false,
+      input_token_cost: model.input_token_cost || 0,
+      output_token_cost: model.output_token_cost || 0,
     });
     setDialogOpen(true);
   };
@@ -374,6 +378,37 @@ function AdminModelsContent() {
                   checked={formData.enable_web_search}
                   onCheckedChange={(checked) => setFormData({ ...formData, enable_web_search: checked })}
                 />
+              </div>
+
+              {/* Token 成本设置 */}
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-100 space-y-3">
+                <Label className="text-amber-900 font-medium">{t('tokenCostSettings')}</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-amber-700">{t('inputTokenCost')}</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.input_token_cost}
+                      onChange={(e) => setFormData({ ...formData, input_token_cost: parseFloat(e.target.value) || 0 })}
+                      placeholder="0.00"
+                      className="h-9"
+                    />
+                    <p className="text-xs text-amber-600">$/1M tokens</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-amber-700">{t('outputTokenCost')}</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.output_token_cost}
+                      onChange={(e) => setFormData({ ...formData, output_token_cost: parseFloat(e.target.value) || 0 })}
+                      placeholder="0.00"
+                      className="h-9"
+                    />
+                    <p className="text-xs text-amber-600">$/1M tokens</p>
+                  </div>
+                </div>
               </div>
               </div>
 
