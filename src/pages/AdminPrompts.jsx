@@ -82,6 +82,7 @@ const initialFormData = {
   icon: 'Sparkles',
   color: 'violet',
   model_id: '',
+  platform: '',
   is_active: true,
   sort_order: 0,
 };
@@ -166,6 +167,7 @@ function AdminPromptsContent() {
       icon: module.icon || 'Sparkles',
       color: module.color || 'violet',
       model_id: module.model_id || '',
+      platform: module.platform || '',
       is_active: module.is_active !== false,
       sort_order: module.sort_order || 0,
     });
@@ -369,6 +371,18 @@ function AdminPromptsContent() {
                 </Select>
                 <p className="text-xs text-slate-500">
                   为此模块指定专用模型，留空则使用用户在对话中选择的模型
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>适用平台</Label>
+                <Input
+                  value={formData.platform}
+                  onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
+                  placeholder="如：小红书、抖音、公众号等"
+                />
+                <p className="text-xs text-slate-500">
+                  标注此模块适用的平台，留空显示为"通用"
                 </p>
               </div>
 

@@ -91,7 +91,7 @@ export default function ModuleCard({ module, models = [], className }) {
       <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
         <div className="flex items-center gap-1.5 text-slate-400 text-xs">
           <span className={cn("font-medium", color.text)}>
-            {creditsPerUse > 0 ? `${creditsPerUse}积分/次` : '免费'}
+            {module.platform || '通用'}
           </span>
         </div>
         
