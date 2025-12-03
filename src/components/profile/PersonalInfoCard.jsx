@@ -53,16 +53,20 @@ export function CreditsAndSubscriptionCards({ user }) {
   const credits = user?.credits || 0;
   const totalUsed = user?.total_credits_used || 0;
   const totalPurchased = user?.total_credits_purchased || 0;
+  const userEmail = user?.email;
   
   // 获取本月消耗数据
   const { data: transactions = [] } = useQuery({
-    queryKey: ['monthly-transactions', user?.email],
-    queryFn: () => base44.entities.CreditTransaction.filter(
-      { user_email: user?.email, type: 'usage' },
-      '-created_date',
-      100
-    ),
-    enabled: !!user?.email,
+    queryKey: ['monthly-transactions', userEmail],
+    queryFn: async () => {
+      if (!userEmail) return [];
+      return base44.entities.CreditTransaction.filter(
+        { user_email: userEmail, type: 'usage' },
+        '-created_date',
+        100
+      );
+    },
+    enabled: !!userEmail,
   });
 
   const now = new Date();
@@ -134,25 +138,33 @@ export function CreditsAndSubscriptionCards({ user }) {
 }
 
 export function UsageStatsCard({ user }) {
+  const userEmail = user?.email;
+  
   // 获取对话和交易数据
   const { data: conversations = [] } = useQuery({
-    queryKey: ['all-conversations', user?.email],
-    queryFn: () => base44.entities.Conversation.filter(
-      { created_by: user?.email },
-      '-created_date',
-      1000
-    ),
-    enabled: !!user?.email,
+    queryKey: ['all-conversations', userEmail],
+    queryFn: async () => {
+      if (!userEmail) return [];
+      return base44.entities.Conversation.filter(
+        { created_by: userEmail },
+        '-created_date',
+        1000
+      );
+    },
+    enabled: !!userEmail,
   });
 
   const { data: transactions = [] } = useQuery({
-    queryKey: ['all-usage-transactions', user?.email],
-    queryFn: () => base44.entities.CreditTransaction.filter(
-      { user_email: user?.email, type: 'usage' },
-      '-created_date',
-      1000
-    ),
-    enabled: !!user?.email,
+    queryKey: ['all-usage-transactions', userEmail],
+    queryFn: async () => {
+      if (!userEmail) return [];
+      return base44.entities.CreditTransaction.filter(
+        { user_email: userEmail, type: 'usage' },
+        '-created_date',
+        1000
+      );
+    },
+    enabled: !!userEmail,
   });
 
   // 计算统计数据
