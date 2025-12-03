@@ -1,15 +1,33 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function FeaturedModules() {
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, featured: null });
+  const navigate = useNavigate();
+
   const { data: featuredModules = [] } = useQuery({
     queryKey: ['featured-modules-active'],
     queryFn: () => base44.entities.FeaturedModule.filter({ is_active: true }, 'sort_order'),
+  });
+
+  const { data: promptModules = [] } = useQuery({
+    queryKey: ['prompt-modules-for-featured'],
+    queryFn: () => base44.entities.PromptModule.filter({ is_active: true }),
   });
 
   if (featuredModules.length === 0) {
@@ -24,6 +42,20 @@ export default function FeaturedModules() {
       return featured.link_url;
     }
     return createPageUrl('Chat');
+  };
+
+  const handleClick = (featured) => {
+    // 查找关联的模块信息
+    const linkedModule = featured.link_module_id 
+      ? promptModules.find(m => m.id === featured.link_module_id)
+      : null;
+    setConfirmDialog({ open: true, featured, linkedModule });
+  };
+
+  const handleConfirm = () => {
+    const { featured } = confirmDialog;
+    navigate(getLink(featured));
+    setConfirmDialog({ open: false, featured: null });
   };
 
   const getBadgeStyle = (type) => {
@@ -69,12 +101,13 @@ export default function FeaturedModules() {
                 {featured.credits_display && <span>💎 {featured.credits_display}</span>}
                 {featured.usage_count > 0 && <span>👤 已有{featured.usage_count.toLocaleString()}人使用</span>}
               </div>
-              <Link to={getLink(featured)}>
-                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6">
-                  立即体验
-                  <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
+              <Button 
+                onClick={() => handleClick(featured)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6"
+              >
+                立即体验
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
           </div>
         ) : (
@@ -103,16 +136,43 @@ export default function FeaturedModules() {
                 {featured.credits_display && <span>💎 {featured.credits_display}</span>}
                 {featured.usage_count > 0 && <span>👤 已有{featured.usage_count.toLocaleString()}人使用</span>}
               </div>
-              <Link to={getLink(featured)}>
-                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6">
-                  立即体验
-                  <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
+              <Button 
+                onClick={() => handleClick(featured)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6"
+              >
+                立即体验
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
           </div>
         )
       ))}
+
+      {/* 确认弹窗 */}
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认使用「{confirmDialog.featured?.title}」</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>{confirmDialog.featured?.description}</p>
+              {confirmDialog.featured?.credits_display && (
+                <p className="text-amber-600 font-medium">
+                  点击"确认"以后，将开始消耗积分（{confirmDialog.featured?.credits_display}）
+                </p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirm}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
+              确认
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
