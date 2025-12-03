@@ -173,16 +173,20 @@ export function SubscriptionCard({ user }) {
 
 export function CreditStatsCard({ user }) {
   const credits = user?.credits || 0;
+  const userEmail = user?.email;
   
   // 获取本月积分消耗
   const { data: transactions = [] } = useQuery({
-    queryKey: ['user-transactions', user?.email],
-    queryFn: () => base44.entities.CreditTransaction.filter(
-      { user_email: user?.email },
-      '-created_date',
-      100
-    ),
-    enabled: !!user?.email,
+    queryKey: ['user-transactions', userEmail],
+    queryFn: async () => {
+      if (!userEmail) return [];
+      return base44.entities.CreditTransaction.filter(
+        { user_email: userEmail },
+        '-created_date',
+        100
+      );
+    },
+    enabled: !!userEmail,
   });
 
   // 计算本月消耗
@@ -270,14 +274,19 @@ export function CreditStatsCard({ user }) {
 }
 
 export function OrderHistory({ user }) {
+  const userEmail = user?.email;
+  
   const { data: transactions = [] } = useQuery({
-    queryKey: ['all-transactions', user?.email],
-    queryFn: () => base44.entities.CreditTransaction.filter(
-      { user_email: user?.email },
-      '-created_date',
-      50
-    ),
-    enabled: !!user?.email,
+    queryKey: ['all-transactions', userEmail],
+    queryFn: async () => {
+      if (!userEmail) return [];
+      return base44.entities.CreditTransaction.filter(
+        { user_email: userEmail },
+        '-created_date',
+        50
+      );
+    },
+    enabled: !!userEmail,
   });
 
   const typeLabels = {
@@ -366,14 +375,19 @@ export function OrderHistory({ user }) {
 }
 
 export function UsageHistoryCard({ user }) {
+  const userEmail = user?.email;
+  
   const { data: conversations = [] } = useQuery({
-    queryKey: ['user-conversations', user?.email],
-    queryFn: () => base44.entities.Conversation.filter(
-      { created_by: user?.email },
-      '-created_date',
-      20
-    ),
-    enabled: !!user?.email,
+    queryKey: ['user-conversations', userEmail],
+    queryFn: async () => {
+      if (!userEmail) return [];
+      return base44.entities.Conversation.filter(
+        { created_by: userEmail },
+        '-created_date',
+        20
+      );
+    },
+    enabled: !!userEmail,
   });
 
   if (conversations.length === 0) {
