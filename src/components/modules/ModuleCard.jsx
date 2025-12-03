@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { cn } from '@/lib/utils';
+import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -95,9 +96,8 @@ export default function ModuleCard({ module, models = [], className }) {
           </span>
         </div>
         
-        {/* Fake usage count for demo */}
         <span className="text-xs text-slate-400">
-          {Math.floor(Math.random() * 5000) + 1000}次使用
+          {(module.usage_count || 0).toLocaleString()}次使用
         </span>
       </div>
 
@@ -123,7 +123,17 @@ export default function ModuleCard({ module, models = [], className }) {
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={() => navigate(targetUrl)}
+              onClick={async () => {
+                // 增加使用次数
+                try {
+                  await base44.entities.PromptModule.update(module.id, {
+                    usage_count: (module.usage_count || 0) + 1
+                  });
+                } catch (e) {
+                  console.error('Failed to update usage count:', e);
+                }
+                navigate(targetUrl);
+              }}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
               确认

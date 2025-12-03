@@ -83,6 +83,7 @@ const initialFormData = {
   color: 'violet',
   model_id: '',
   platform: '',
+  usage_count: 0,
   is_active: true,
   sort_order: 0,
 };
@@ -168,6 +169,7 @@ function AdminPromptsContent() {
       color: module.color || 'violet',
       model_id: module.model_id || '',
       platform: module.platform || '',
+      usage_count: module.usage_count || 0,
       is_active: module.is_active !== false,
       sort_order: module.sort_order || 0,
     });
@@ -428,14 +430,23 @@ function AdminPromptsContent() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>{t('sortOrder')}</Label>
                   <Input
                     type="number"
                     value={formData.sort_order}
-                    onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label>使用次数</Label>
+                  <Input
+                    type="number"
+                    value={formData.usage_count}
+                    onChange={(e) => setFormData({ ...formData, usage_count: parseInt(e.target.value) || 0 })}
+                  />
+                  <p className="text-xs text-slate-500">用户使用后自动增长</p>
                 </div>
                 <div className="flex items-center justify-between pt-6">
                   <Label>{t('active')}</Label>
