@@ -695,7 +695,7 @@ ${selectedModule.system_prompt}
 
             {/* Token Billing Info */}
             <div className="text-center mt-2">
-              <span className="text-xs text-slate-500">{chatBillingHint}</span>
+              <span className="text-xs text-slate-500 whitespace-pre-line">{chatBillingHint}</span>
             </div>
           </div>
         </div>
