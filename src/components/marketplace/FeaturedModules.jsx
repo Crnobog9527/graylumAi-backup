@@ -99,7 +99,7 @@ export default function FeaturedModules() {
             <div className="relative z-10 flex items-center justify-between">
               <div className="flex gap-4 text-xs text-slate-400">
                 {featured.credits_display && <span>💎 {featured.credits_display}</span>}
-                {featured.usage_count > 0 && <span>👤 已有{featured.usage_count.toLocaleString()}人使用</span>}
+                {featured.usage_count != null && featured.usage_count > 0 && <span>👤 已有{featured.usage_count.toLocaleString()}人使用</span>}
               </div>
               <Button 
                 onClick={() => handleClick(featured)}
@@ -134,7 +134,7 @@ export default function FeaturedModules() {
             <div className="relative z-10 flex items-center justify-between">
               <div className="flex gap-4 text-xs text-slate-500">
                 {featured.credits_display && <span>💎 {featured.credits_display}</span>}
-                {featured.usage_count > 0 && <span>👤 已有{featured.usage_count.toLocaleString()}人使用</span>}
+                {featured.usage_count != null && featured.usage_count > 0 && <span>👤 已有{featured.usage_count.toLocaleString()}人使用</span>}
               </div>
               <Button 
                 onClick={() => handleClick(featured)}
