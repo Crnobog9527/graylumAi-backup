@@ -32,7 +32,7 @@ const initialFeaturedForm = {
   link_module_id: '',
   link_url: '',
   credits_display: '',
-  usage_count: 0,
+  usage_count: null,
   is_active: true,
   sort_order: 0,
 };
@@ -169,7 +169,7 @@ function AdminAnnouncementsContent() {
         link_module_id: featured.link_module_id || '',
         link_url: featured.link_url || '',
         credits_display: featured.credits_display || '',
-        usage_count: featured.usage_count || 0,
+        usage_count: featured.usage_count ?? null,
         is_active: featured.is_active !== false,
         sort_order: featured.sort_order || 0,
       });
@@ -491,9 +491,9 @@ function AdminAnnouncementsContent() {
                   <Label>使用人数</Label>
                   <Input
                     type="number"
-                    value={featuredForm.usage_count}
-                    onChange={(e) => setFeaturedForm({ ...featuredForm, usage_count: parseInt(e.target.value) || 0 })}
-                    placeholder="0"
+                    value={featuredForm.usage_count || ''}
+                    onChange={(e) => setFeaturedForm({ ...featuredForm, usage_count: e.target.value ? parseInt(e.target.value) : null })}
+                    placeholder="留空则不显示"
                   />
                 </div>
                 <div className="space-y-2">
