@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Save, Megaphone, RefreshCw, Plus, Pencil, Trash2, Star, GripVertical, Upload, X, Image } from 'lucide-react';
+import { Save, Megaphone, RefreshCw, Plus, Pencil, Trash2, Star, GripVertical, Upload, X, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,7 @@ const initialFeaturedForm = {
   title: '',
   description: '',
   icon: '🚀',
-  banner_image: '',
+  image_url: '',
   badge_text: '',
   badge_type: 'none',
   card_style: 'light',
@@ -47,7 +47,6 @@ function AdminAnnouncementsContent() {
   const [editingFeatured, setEditingFeatured] = useState(null);
   const [featuredForm, setFeaturedForm] = useState(initialFeaturedForm);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -166,7 +165,7 @@ function AdminAnnouncementsContent() {
         title: featured.title || '',
         description: featured.description || '',
         icon: featured.icon || '🚀',
-        banner_image: featured.banner_image || '',
+        image_url: featured.image_url || '',
         badge_text: featured.badge_text || '',
         badge_type: featured.badge_type || 'none',
         card_style: featured.card_style || 'light',
@@ -191,15 +190,13 @@ function AdminAnnouncementsContent() {
     setUploadingImage(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setFeaturedForm({ ...featuredForm, banner_image: file_url });
+      setFeaturedForm(prev => ({ ...prev, image_url: file_url }));
       toast.success('图片上传成功');
     } catch (error) {
+      console.error('Upload error:', error);
       toast.error('图片上传失败');
     } finally {
       setUploadingImage(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -430,52 +427,44 @@ function AdminAnnouncementsContent() {
                 />
               </div>
 
-              {/* 横幅图片上传 */}
+              {/* 横幅大图上传 */}
               <div className="space-y-2">
                 <Label>横幅大图</Label>
-                <div className="flex items-start gap-4">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                  {featuredForm.banner_image ? (
-                    <div className="relative w-full">
-                      <img 
-                        src={featuredForm.banner_image} 
-                        alt="横幅预览" 
-                        className="w-full h-32 object-cover rounded-lg border"
-                      />
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 h-6 w-6"
-                        onClick={() => setFeaturedForm({ ...featuredForm, banner_image: '' })}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingImage}
-                      className="w-full h-32 border-dashed flex flex-col gap-2"
+                {featuredForm.image_url ? (
+                  <div className="relative rounded-lg overflow-hidden border border-slate-200">
+                    <img 
+                      src={featuredForm.image_url} 
+                      alt="横幅预览" 
+                      className="w-full h-32 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFeaturedForm(prev => ({ ...prev, image_url: '' }))}
+                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
                     >
-                      {uploadingImage ? (
-                        <RefreshCw className="h-6 w-6 animate-spin" />
-                      ) : (
-                        <>
-                          <Image className="h-6 w-6 text-slate-400" />
-                          <span className="text-slate-500">点击上传横幅图片</span>
-                          <span className="text-xs text-slate-400">建议尺寸：800x200px</span>
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </div>
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={uploadingImage}
+                    />
+                    {uploadingImage ? (
+                      <Loader2 className="h-8 w-8 text-violet-500 animate-spin" />
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 text-slate-400 mb-2" />
+                        <span className="text-sm text-slate-500">点击上传横幅图片</span>
+                        <span className="text-xs text-slate-400 mt-1">建议尺寸: 800x200</span>
+                      </>
+                    )}
+                  </label>
+                )}
               </div>
 
               <div className="grid grid-cols-3 gap-4">
