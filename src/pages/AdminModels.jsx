@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import AdminSidebar from '../components/admin/AdminSidebar';
+import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
 
 const providerIcons = {
   anthropic: Sparkles,
@@ -65,7 +66,8 @@ const initialFormData = {
   enable_web_search: false,
 };
 
-export default function AdminModels() {
+function AdminModelsContent() {
+  const { t } = useLanguage();
   const [user, setUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -171,31 +173,31 @@ export default function AdminModels() {
       
       <div className="flex-1 p-8">
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">AI Models</h1>
-            <p className="text-slate-500 mt-1">Manage available AI models and their configurations</p>
-          </div>
-          <Button 
-            onClick={() => { resetForm(); setDialogOpen(true); }}
-            className="bg-violet-600 hover:bg-violet-700 gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Add Model
-          </Button>
-        </div>
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">{t('modelsTitle')}</h1>
+                <p className="text-slate-500 mt-1">{t('modelsSubtitle')}</p>
+              </div>
+              <Button 
+                onClick={() => { resetForm(); setDialogOpen(true); }}
+                className="bg-violet-600 hover:bg-violet-700 gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                {t('addModel')}
+              </Button>
+            </div>
 
         <Card>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead>Credits/Message</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+                  <TableRow>
+                    <TableHead>{t('displayName')}</TableHead>
+                    <TableHead>{t('provider')}</TableHead>
+                    <TableHead>{t('creditsPerMessage')}</TableHead>
+                    <TableHead>{t('status')}</TableHead>
+                    <TableHead className="w-[100px]">{t('actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {models.map((model) => {
                   const Icon = providerIcons[model.provider] || Bot;
@@ -220,7 +222,7 @@ export default function AdminModels() {
                       <TableCell>{model.credits_per_message}</TableCell>
                       <TableCell>
                         <Badge variant={model.is_active ? "default" : "secondary"}>
-                          {model.is_active ? 'Active' : 'Inactive'}
+                          {model.is_active ? t('active') : t('inactive')}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -248,7 +250,7 @@ export default function AdminModels() {
                 {models.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-12 text-slate-500">
-                      No AI models configured yet. Add your first model to get started.
+                      {t('noModelsYet')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -262,14 +264,14 @@ export default function AdminModels() {
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>
-                {selectedModel ? 'Edit Model' : 'Add New Model'}
+                {selectedModel ? t('editModel') : t('addModel')}
               </DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Display Name</Label>
+                  <Label>{t('displayName')}</Label>
                   <Input
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -277,7 +279,7 @@ export default function AdminModels() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Model ID</Label>
+                  <Label>{t('modelId')}</Label>
                   <Input
                     value={formData.model_id}
                     onChange={(e) => setFormData({ ...formData, model_id: e.target.value })}
@@ -287,7 +289,7 @@ export default function AdminModels() {
               </div>
 
               <div className="space-y-2">
-                <Label>Provider</Label>
+                <Label>{t('provider')}</Label>
                 <Select
                   value={formData.provider}
                   onValueChange={(value) => setFormData({ ...formData, provider: value })}
@@ -306,7 +308,7 @@ export default function AdminModels() {
               </div>
 
               <div className="space-y-2">
-                <Label>API Key</Label>
+                <Label>{t('apiKey')}</Label>
                 <Input
                   type="password"
                   value={formData.api_key}
@@ -316,7 +318,7 @@ export default function AdminModels() {
               </div>
 
               <div className="space-y-2">
-                <Label>API Endpoint (optional)</Label>
+                <Label>{t('apiEndpoint')}</Label>
                 <Input
                   value={formData.api_endpoint}
                   onChange={(e) => setFormData({ ...formData, api_endpoint: e.target.value })}
@@ -326,7 +328,7 @@ export default function AdminModels() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Credits per Message</Label>
+                  <Label>{t('creditsPerMessage')}</Label>
                   <Input
                     type="number"
                     value={formData.credits_per_message}
@@ -335,7 +337,7 @@ export default function AdminModels() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Max Tokens</Label>
+                  <Label>{t('maxTokens')}</Label>
                   <Input
                     type="number"
                     value={formData.max_tokens}
@@ -346,7 +348,7 @@ export default function AdminModels() {
               </div>
 
               <div className="space-y-2">
-                <Label>Description</Label>
+                <Label>{t('description')}</Label>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -356,7 +358,7 @@ export default function AdminModels() {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label>Active</Label>
+                <Label>{t('active')}</Label>
                 <Switch
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
@@ -365,52 +367,60 @@ export default function AdminModels() {
 
               <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
                 <div>
-                  <Label className="text-blue-900">启用联网搜索</Label>
-                  <p className="text-xs text-blue-600 mt-0.5">开启后将使用内置集成，支持实时联网获取信息</p>
+                  <Label className="text-blue-900">{t('enableWebSearch')}</Label>
+                  <p className="text-xs text-blue-600 mt-0.5">{t('webSearchNote')}</p>
                 </div>
                 <Switch
                   checked={formData.enable_web_search}
                   onCheckedChange={(checked) => setFormData({ ...formData, enable_web_search: checked })}
                 />
               </div>
-            </div>
+              </div>
 
-            <DialogFooter>
+              <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button 
                 onClick={handleSubmit}
                 disabled={!formData.name || !formData.model_id}
                 className="bg-violet-600 hover:bg-violet-700"
               >
-                {selectedModel ? 'Update' : 'Create'}
+                {selectedModel ? t('update') : t('create')}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              </DialogFooter>
+              </DialogContent>
+              </Dialog>
 
-        {/* Delete Confirmation */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Model</AlertDialogTitle>
+              {/* Delete Confirmation */}
+              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+              <AlertDialogHeader>
+              <AlertDialogTitle>{t('deleteModel')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete "{selectedModel?.name}"? This action cannot be undone.
+                {t('deleteModelConfirm')}
               </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => deleteMutation.mutate(selectedModel?.id)}
                 className="bg-red-600 hover:bg-red-700"
               >
-                Delete
+                {t('delete')}
               </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </div>
-  );
-}
+              </AlertDialogFooter>
+              </AlertDialogContent>
+              </AlertDialog>
+              </div>
+              </div>
+              );
+              }
+
+              export default function AdminModels() {
+              return (
+              <LanguageProvider>
+              <AdminModelsContent />
+              </LanguageProvider>
+              );
+              }
