@@ -562,7 +562,7 @@ function AdminPackagesContent() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation */}
+        {/* Delete Package Confirmation */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -575,6 +575,178 @@ function AdminPackagesContent() {
               <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => deleteMutation.mutate(selectedPackage?.id)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {t('delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Add/Edit Membership Dialog */}
+        <Dialog open={membershipDialogOpen} onOpenChange={setMembershipDialogOpen}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedMembership ? '编辑会员等级' : '添加会员等级'}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>会员名称</Label>
+                  <Input
+                    value={membershipFormData.name}
+                    onChange={(e) => setMembershipFormData({ ...membershipFormData, name: e.target.value })}
+                    placeholder="进阶会员"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>等级类型</Label>
+                  <Select
+                    value={membershipFormData.level}
+                    onValueChange={(value) => setMembershipFormData({ ...membershipFormData, level: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="free">免费会员</SelectItem>
+                      <SelectItem value="pro">进阶会员</SelectItem>
+                      <SelectItem value="gold">黄金会员</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <p className="text-sm font-medium text-blue-800 mb-2">月付方案</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs">月付价格 (USD)</Label>
+                    <Input
+                      type="number"
+                      value={membershipFormData.monthly_price}
+                      onChange={(e) => setMembershipFormData({ ...membershipFormData, monthly_price: parseFloat(e.target.value) || 0 })}
+                      step="0.1"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">月度积分</Label>
+                    <Input
+                      type="number"
+                      value={membershipFormData.monthly_credits}
+                      onChange={(e) => setMembershipFormData({ ...membershipFormData, monthly_credits: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-100">
+                <p className="text-sm font-medium text-amber-800 mb-2">年付方案</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs">年付价格 (USD)</Label>
+                    <Input
+                      type="number"
+                      value={membershipFormData.yearly_price}
+                      onChange={(e) => setMembershipFormData({ ...membershipFormData, yearly_price: parseFloat(e.target.value) || 0 })}
+                      step="1"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">年付总积分</Label>
+                    <Input
+                      type="number"
+                      value={membershipFormData.yearly_credits}
+                      onChange={(e) => setMembershipFormData({ ...membershipFormData, yearly_credits: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>月度赠送积分</Label>
+                  <Input
+                    type="number"
+                    value={membershipFormData.monthly_bonus_credits}
+                    onChange={(e) => setMembershipFormData({ ...membershipFormData, monthly_bonus_credits: parseInt(e.target.value) || 0 })}
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-slate-500">每月额外赠送的加油包积分</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>加油包折扣</Label>
+                  <Input
+                    type="number"
+                    value={membershipFormData.package_discount}
+                    onChange={(e) => setMembershipFormData({ ...membershipFormData, package_discount: parseInt(e.target.value) || 100 })}
+                    min={1}
+                    max={100}
+                  />
+                  <p className="text-xs text-slate-500">如95表示95折，100为无折扣</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>会员权益（每行一条）</Label>
+                <Textarea
+                  value={featuresText}
+                  onChange={(e) => setFeaturesText(e.target.value)}
+                  placeholder="对话历史保存1个月&#10;对话记录批量导出&#10;购买加油包享受95折"
+                  rows={4}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center justify-between">
+                  <Label>启用</Label>
+                  <Switch
+                    checked={membershipFormData.is_active}
+                    onCheckedChange={(checked) => setMembershipFormData({ ...membershipFormData, is_active: checked })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>排序</Label>
+                  <Input
+                    type="number"
+                    value={membershipFormData.sort_order}
+                    onChange={(e) => setMembershipFormData({ ...membershipFormData, sort_order: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setMembershipDialogOpen(false)}>
+                {t('cancel')}
+              </Button>
+              <Button 
+                onClick={handleMembershipSubmit}
+                disabled={!membershipFormData.name}
+                className="bg-violet-600 hover:bg-violet-700"
+              >
+                {selectedMembership ? t('update') : t('create')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Membership Confirmation */}
+        <AlertDialog open={membershipDeleteOpen} onOpenChange={setMembershipDeleteOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>删除会员等级</AlertDialogTitle>
+              <AlertDialogDescription>
+                确定要删除此会员等级吗？此操作无法撤销。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteMembershipMutation.mutate(selectedMembership?.id)}
                 className="bg-red-600 hover:bg-red-700"
               >
                 {t('delete')}
