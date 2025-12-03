@@ -59,25 +59,53 @@ function AdminFinanceContent() {
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['admin-transactions'],
-    queryFn: () => base44.entities.CreditTransaction.filter({ type: 'purchase' }),
+    queryFn: () => base44.entities.CreditTransaction.list('-created_date', 1000),
     enabled: !!user,
+  });
+
+  // 从交易记录计算各模型的实际token消耗
+  const usageTransactions = transactions.filter(t => t.type === 'usage');
+  
+  // 按模型分组统计
+  const modelUsageMap = {};
+  usageTransactions.forEach(tx => {
+    const modelName = tx.model_used || 'Unknown';
+    if (!modelUsageMap[modelName]) {
+      modelUsageMap[modelName] = {
+        inputTokens: 0,
+        outputTokens: 0,
+        inputCredits: 0,
+        outputCredits: 0,
+        totalCredits: 0,
+        requests: 0
+      };
+    }
+    modelUsageMap[modelName].inputTokens += tx.input_tokens || 0;
+    modelUsageMap[modelName].outputTokens += tx.output_tokens || 0;
+    modelUsageMap[modelName].inputCredits += tx.input_credits || 0;
+    modelUsageMap[modelName].outputCredits += tx.output_credits || 0;
+    modelUsageMap[modelName].totalCredits += Math.abs(tx.amount || 0);
+    modelUsageMap[modelName].requests += 1;
   });
 
   // 计算各模型的统计数据
   const modelStats = models.map(model => {
+    // 优先使用交易记录中的数据
+    const txStats = modelUsageMap[model.name] || {};
     const stats = usageStats.filter(s => s.model_id === model.id);
-    const totalInputTokens = stats.reduce((sum, s) => sum + (s.input_tokens || 0), 0);
-    const totalOutputTokens = stats.reduce((sum, s) => sum + (s.output_tokens || 0), 0);
-    const totalRequests = stats.reduce((sum, s) => sum + (s.total_requests || 0), 0);
-    const creditsEarned = stats.reduce((sum, s) => sum + (s.credits_earned || 0), 0);
+    
+    const totalInputTokens = txStats.inputTokens || stats.reduce((sum, s) => sum + (s.input_tokens || 0), 0);
+    const totalOutputTokens = txStats.outputTokens || stats.reduce((sum, s) => sum + (s.output_tokens || 0), 0);
+    const totalRequests = txStats.requests || stats.reduce((sum, s) => sum + (s.total_requests || 0), 0);
+    const creditsEarned = txStats.totalCredits || stats.reduce((sum, s) => sum + (s.credits_earned || 0), 0);
 
     // 计算成本 (每百万tokens的价格)
     const inputCost = (totalInputTokens / 1000000) * (model.input_token_cost || 0);
     const outputCost = (totalOutputTokens / 1000000) * (model.output_token_cost || 0);
     const totalCost = inputCost + outputCost;
 
-    // 假设每积分对应的收入（可从设置中获取，这里假设1积分=0.01美元）
-    const creditsToUSD = 0.01;
+    // 积分价值（1积分 ≈ $0.007-0.008）
+    const creditsToUSD = 0.0075;
     const revenue = creditsEarned * creditsToUSD;
     const profit = revenue - totalCost;
 
@@ -268,8 +296,19 @@ function AdminFinanceContent() {
           </CardContent>
         </Card>
 
+        {/* 积分计费规则说明 */}
+        <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-100">
+          <p className="text-sm text-amber-800 font-medium mb-2">积分换算规则：</p>
+          <ul className="text-sm text-amber-700 space-y-1">
+            <li>• 基础换算：1 积分 = 1,000 tokens</li>
+            <li>• Input Token：消耗 1 积分/1K tokens</li>
+            <li>• Output Token：消耗 5 积分/1K tokens</li>
+            <li>• 积分定价：1 积分 ≈ $0.007-0.008</li>
+          </ul>
+        </div>
+
         {/* 提示信息 */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
           <p className="text-sm text-blue-700">
             <strong>{t('note')}:</strong> {t('financeNote')}
           </p>
