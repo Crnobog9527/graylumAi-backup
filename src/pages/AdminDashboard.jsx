@@ -83,14 +83,14 @@ const [user, setUser] = useState(null);
       
       <div className="flex-1 p-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-500 mt-1">Overview of your platform</p>
+          <h1 className="text-3xl font-bold text-slate-900">{t('dashboardTitle')}</h1>
+          <p className="text-slate-500 mt-1">{t('dashboardSubtitle')}</p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard
-            title="Total Users"
+            title={t('totalUsers')}
             value={users.length}
             icon={Users}
             color="violet"
@@ -98,21 +98,21 @@ const [user, setUser] = useState(null);
             trendValue="+12%"
           />
           <StatsCard
-            title="AI Models"
+            title={t('totalModels')}
             value={models.length}
-            subtitle={`${models.filter(m => m.is_active).length} active`}
+            subtitle={`${models.filter(m => m.is_active).length} ${t('active').toLowerCase()}`}
             icon={Bot}
             color="blue"
           />
           <StatsCard
-            title="Prompt Modules"
+            title={t('totalModules')}
             value={promptModules.length}
-            subtitle={`${promptModules.filter(m => m.is_active).length} active`}
+            subtitle={`${promptModules.filter(m => m.is_active).length} ${t('active').toLowerCase()}`}
             icon={Wand2}
             color="emerald"
           />
           <StatsCard
-            title="Total Conversations"
+            title={t('recentConversations')}
             value={conversations.length}
             icon={MessageSquare}
             color="amber"
@@ -121,13 +121,13 @@ const [user, setUser] = useState(null);
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <StatsCard
-            title="Credits Used"
+            title={t('totalCreditsUsed')}
             value={totalCreditsUsed.toLocaleString()}
             icon={Coins}
             color="rose"
           />
           <StatsCard
-            title="Credits Purchased"
+            title={t('totalPurchased')}
             value={totalRevenue.toLocaleString()}
             icon={TrendingUp}
             color="emerald"
@@ -140,7 +140,7 @@ const [user, setUser] = useState(null);
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5 text-violet-500" />
-                Recent Transactions
+                {t('recentTransactions')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -172,7 +172,7 @@ const [user, setUser] = useState(null);
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-violet-500" />
-                Recent Conversations
+                {t('recentConversations')}
               </CardTitle>
             </CardHeader>
             <CardContent>
