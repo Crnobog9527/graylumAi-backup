@@ -3,11 +3,12 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { ArrowLeft, Coins, History, TrendingUp, TrendingDown, Zap, Sparkles, Crown, Package } from 'lucide-react';
+import { ArrowLeft, Coins, History, TrendingUp, TrendingDown, Zap, Sparkles, Crown, Package, Check, Gift } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -33,15 +34,26 @@ export default function Credits() {
     queryFn: () => base44.entities.CreditPackage.filter({ is_active: true }, 'sort_order'),
   });
 
-  const { data: transactions = [] } = useQuery({
+  const { data: membershipPlans = [] } = useQuery({
+    queryKey: ['membershipPlans'],
+    queryFn: () => base44.entities.MembershipPlan.filter({ is_active: true }, 'sort_order'),
+  });
+
+  const { data: allTransactions = [] } = useQuery({
     queryKey: ['transactions', user?.email],
-    queryFn: () => base44.entities.CreditTransaction.filter(
-      { user_email: user?.email },
-      '-created_date',
-      20
-    ),
+    queryFn: async () => {
+      if (!user?.email) return [];
+      return base44.entities.CreditTransaction.filter(
+        { user_email: user?.email },
+        '-created_date',
+        50
+      );
+    },
     enabled: !!user?.email,
   });
+
+  // 只显示积分获取记录（正数金额）
+  const incomeTransactions = allTransactions.filter(tx => tx.amount > 0);
 
   const updateUserMutation = useMutation({
     mutationFn: (data) => base44.auth.updateMe(data),
@@ -152,6 +164,84 @@ export default function Credits() {
           </div>
         </div>
 
+        {/* Membership Plans */}
+        <section className="mb-12">
+          <div className="flex items-center gap-2 mb-6">
+            <Crown className="h-5 w-5 text-slate-600" />
+            <h2 className="text-xl font-semibold text-slate-800">会员订阅</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+            {membershipPlans.filter(p => p.level !== 'free').map((plan) => {
+              const isCurrentPlan = user?.subscription_tier === plan.level;
+              return (
+                <div 
+                  key={plan.id}
+                  className={cn(
+                    "relative bg-white rounded-2xl border-2 p-6 transition-all hover:shadow-lg",
+                    plan.level === 'gold' 
+                      ? "border-amber-400 shadow-amber-100 shadow-lg" 
+                      : "border-slate-200 hover:border-slate-300"
+                  )}
+                >
+                  {plan.level === 'gold' && (
+                    <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs px-3">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      推荐
+                    </Badge>
+                  )}
+                  
+                  <div className="text-center mb-4">
+                    <div className={cn(
+                      "inline-flex items-center justify-center w-12 h-12 rounded-xl mb-3",
+                      plan.level === 'gold' ? "bg-amber-100" : "bg-indigo-100"
+                    )}>
+                      <Crown className={cn(
+                        "h-6 w-6",
+                        plan.level === 'gold' ? "text-amber-600" : "text-indigo-600"
+                      )} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
+                  </div>
+                  
+                  <div className="text-center mb-4">
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-3xl font-bold text-slate-900">¥{plan.monthly_price}</span>
+                      <span className="text-slate-500">/月</span>
+                    </div>
+                    <div className="text-sm text-slate-500 mt-1">
+                      年付 ¥{plan.yearly_price}/年
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 mb-6">
+                    {plan.features?.map((feature, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-sm">
+                        <Check className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-slate-600">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <Button
+                    className={cn(
+                      "w-full",
+                      isCurrentPlan
+                        ? "bg-slate-200 text-slate-600 cursor-default"
+                        : plan.level === 'gold' 
+                          ? "bg-amber-500 hover:bg-amber-600" 
+                          : "bg-indigo-600 hover:bg-indigo-700"
+                    )}
+                    disabled={isCurrentPlan || purchasing}
+                  >
+                    {isCurrentPlan ? '当前套餐' : '立即订阅'}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         {/* Credit Packages */}
         <section className="mb-12">
           <div className="flex items-center gap-2 mb-6">
@@ -221,25 +311,22 @@ export default function Credits() {
           )}
         </section>
 
-        {/* Transaction History */}
+        {/* Transaction History - Only Income */}
         <section>
           <div className="flex items-center gap-2 mb-6">
-            <History className="h-5 w-5 text-slate-600" />
-            <h2 className="text-xl font-semibold text-slate-800">交易记录</h2>
+            <Gift className="h-5 w-5 text-slate-600" />
+            <h2 className="text-xl font-semibold text-slate-800">积分获取记录</h2>
           </div>
           
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
             <ScrollArea className="h-[400px]">
-              {transactions.length > 0 ? (
+              {incomeTransactions.length > 0 ? (
                 <div className="divide-y divide-slate-100">
-                  {transactions.map((tx) => (
+                  {incomeTransactions.map((tx) => (
                     <div key={tx.id} className="flex items-center justify-between p-4 hover:bg-slate-50">
                       <div className="flex items-center gap-4">
-                        <div className={cn(
-                          "p-2 rounded-lg",
-                          tx.amount >= 0 ? "bg-green-100" : "bg-red-100"
-                        )}>
-                          {getTransactionIcon(tx.type)}
+                        <div className="p-2 rounded-lg bg-green-100">
+                          <TrendingUp className="h-4 w-4 text-green-600" />
                         </div>
                         <div>
                           <p className="font-medium text-slate-800">{tx.description || tx.type}</p>
@@ -249,11 +336,8 @@ export default function Credits() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={cn(
-                          "font-semibold",
-                          tx.amount >= 0 ? 'text-green-600' : 'text-red-600'
-                        )}>
-                          {tx.amount >= 0 ? '+' : ''}{tx.amount} 积分
+                        <p className="font-semibold text-green-600">
+                          +{tx.amount} 积分
                         </p>
                         <p className="text-xs text-slate-400">
                           余额: {tx.balance_after}
@@ -264,8 +348,8 @@ export default function Credits() {
                 </div>
               ) : (
                 <div className="py-12 text-center">
-                  <History className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-500">暂无交易记录</p>
+                  <Gift className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-500">暂无获取记录</p>
                 </div>
               )}
             </ScrollArea>
