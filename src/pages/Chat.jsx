@@ -98,6 +98,9 @@ export default function Chat() {
   const longTextThreshold = parseInt(getSettingValue('long_text_warning_threshold', '5000')) || 5000;
   const inputCreditsPerK = parseInt(getSettingValue('input_credits_per_1k', '1')) || 1;
   const outputCreditsPerK = parseInt(getSettingValue('output_credits_per_1k', '5')) || 5;
+  const chatBillingHint = getSettingValue('chat_billing_hint', '⚡ 按实际Token消耗计费：输入 {input}积分/1K tokens，输出 {output}积分/1K tokens')
+    .replace('{input}', inputCreditsPerK)
+    .replace('{output}', outputCreditsPerK);
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
@@ -692,7 +695,7 @@ ${selectedModule.system_prompt}
 
             {/* Token Billing Info */}
             <div className="text-center mt-2">
-              <span className="text-xs text-slate-500">⚡ 按实际Token消耗计费：输入 {inputCreditsPerK}积分/1K tokens，输出 {outputCreditsPerK}积分/1K tokens</span>
+              <span className="text-xs text-slate-500">{chatBillingHint}</span>
             </div>
           </div>
         </div>
