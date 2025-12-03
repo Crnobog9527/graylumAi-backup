@@ -60,7 +60,7 @@ export default function Chat() {
         const userData = await base44.auth.me();
         setUser(userData);
       } catch (e) {
-        base44.auth.redirectToLogin();
+        // 未登录用户由Layout处理重定向到Landing页面
       }
     };
     loadUser();
