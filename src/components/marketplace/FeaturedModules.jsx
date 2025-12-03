@@ -74,78 +74,79 @@ export default function FeaturedModules() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
       {featuredModules.slice(0, 2).map((featured, index) => (
-        featured.card_style === 'dark' ? (
-          <div key={featured.id} className="bg-slate-900 rounded-2xl overflow-hidden relative min-h-[240px] flex flex-col justify-between p-8 group">
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-black z-0"></div>
-            <div className="absolute right-0 bottom-0 w-1/2 h-full bg-gradient-to-l from-indigo-900/50 to-transparent z-0"></div>
-            
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="bg-indigo-500/20 p-2 rounded-lg backdrop-blur-sm">
-                  <span className="text-2xl">{featured.icon}</span>
-                </div>
-                <h3 className="text-2xl font-bold text-white">{featured.title}</h3>
-                {featured.badge_text && (
-                  <span className={`text-xs px-2 py-0.5 rounded border ${getBadgeStyle(featured.badge_type)}`}>
-                    {featured.badge_text}
-                  </span>
-                )}
-              </div>
-              <p className="text-slate-400 mb-6 max-w-md text-sm leading-relaxed">
-                {featured.description}
-              </p>
+        <div 
+          key={featured.id} 
+          className={`rounded-2xl overflow-hidden relative min-h-[220px] flex flex-col justify-between group ${
+            featured.card_style === 'dark' 
+              ? 'bg-slate-900' 
+              : 'bg-white border border-slate-200'
+          }`}
+        >
+          {/* Background Image */}
+          {featured.image_url && (
+            <div className="absolute inset-0">
+              <img 
+                src={featured.image_url} 
+                alt="" 
+                className="w-full h-full object-cover"
+              />
+              <div className={`absolute inset-0 ${
+                featured.card_style === 'dark' 
+                  ? 'bg-gradient-to-r from-slate-900 via-slate-900/70 to-slate-900/30' 
+                  : 'bg-gradient-to-r from-white via-white/80 to-white/40'
+              }`} />
             </div>
-            
-            <div className="relative z-10 flex items-center justify-between">
-              <div className="flex gap-4 text-xs text-slate-400">
-                {featured.credits_display && <span>💎 {featured.credits_display}</span>}
-                {featured.usage_count != null && featured.usage_count > 0 && <span>👤 已有{featured.usage_count.toLocaleString()}人使用</span>}
+          )}
+          
+          {/* Default gradient if no image */}
+          {!featured.image_url && (
+            featured.card_style === 'dark' ? (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-black z-0"></div>
+                <div className="absolute right-0 bottom-0 w-1/2 h-full bg-gradient-to-l from-indigo-900/50 to-transparent z-0"></div>
+              </>
+            ) : (
+              <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-blue-50 to-transparent opacity-50"></div>
+            )
+          )}
+          
+          <div className="relative z-10 p-6 pb-0">
+            <div className="flex items-center gap-3 mb-2">
+              <div className={`p-2.5 rounded-xl ${
+                featured.card_style === 'dark' 
+                  ? 'bg-indigo-500/20 backdrop-blur-sm' 
+                  : 'bg-blue-100'
+              }`}>
+                <span className="text-2xl">{featured.icon}</span>
               </div>
-              <Button 
-                onClick={() => handleClick(featured)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6"
-              >
-                立即体验
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
+              <h3 className={`text-xl font-bold ${
+                featured.card_style === 'dark' ? 'text-white' : 'text-slate-900'
+              }`}>
+                {featured.title}
+              </h3>
+              {featured.badge_text && (
+                <span className={`text-xs px-2 py-0.5 rounded border ${getBadgeStyle(featured.badge_type)}`}>
+                  {featured.badge_text}
+                </span>
+              )}
             </div>
+            <p className={`text-sm leading-relaxed max-w-md ${
+              featured.card_style === 'dark' ? 'text-slate-300' : 'text-slate-600'
+            }`}>
+              {featured.description}
+            </p>
           </div>
-        ) : (
-          <div key={featured.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden relative min-h-[240px] flex flex-col justify-between p-8 group">
-            <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-orange-50 to-transparent opacity-50"></div>
-            
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="bg-orange-100 p-2 rounded-lg">
-                  <span className="text-2xl">{featured.icon}</span>
-                </div>
-                <h3 className="text-2xl font-bold text-slate-900">{featured.title}</h3>
-                {featured.badge_text && (
-                  <span className={`text-xs px-2 py-0.5 rounded border ${getBadgeStyle(featured.badge_type)}`}>
-                    {featured.badge_text}
-                  </span>
-                )}
-              </div>
-              <p className="text-slate-500 mb-6 max-w-md text-sm leading-relaxed">
-                {featured.description}
-              </p>
-            </div>
-            
-            <div className="relative z-10 flex items-center justify-between">
-              <div className="flex gap-4 text-xs text-slate-500">
-                {featured.credits_display && <span>💎 {featured.credits_display}</span>}
-                {featured.usage_count != null && featured.usage_count > 0 && <span>👤 已有{featured.usage_count.toLocaleString()}人使用</span>}
-              </div>
-              <Button 
-                onClick={() => handleClick(featured)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6"
-              >
-                立即体验
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
+          
+          <div className="relative z-10 p-6 pt-4 flex items-center justify-end">
+            <Button 
+              onClick={() => handleClick(featured)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-5 h-10"
+            >
+              立即体验
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
           </div>
-        )
+        </div>
       ))}
 
       {/* 确认弹窗 */}
