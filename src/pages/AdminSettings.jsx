@@ -28,6 +28,7 @@ const defaultSettings = {
   max_messages_per_conversation: { value: '100', type: 'number', label: '单对话最大消息数', description: '每个对话允许的最大消息数' },
   enable_free_tier: { value: 'false', type: 'boolean', label: '启用免费体验', description: '允许用户在无积分时使用有限功能' },
   free_tier_messages: { value: '5', type: 'number', label: '免费消息数/天', description: '每天免费消息数量' },
+  long_text_warning_threshold: { value: '2000', type: 'number', label: '长文本预警阈值(tokens)', description: '输入token超过此值时弹窗提醒用户确认' },
   
   // Checkin
   checkin_day1: { value: '5', type: 'number', label: '签到第1天', description: '第1天签到奖励积分' },
