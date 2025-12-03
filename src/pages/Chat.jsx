@@ -209,10 +209,10 @@ export default function Chat() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !selectedModel || !user || isStreaming) return;
 
-    // 检查积分（月度积分+购买积分）
-    const currentCredits = (user.credits || 0) + (user.monthly_credits || 0);
+    const currentCredits = user.credits || 0;
 
-    if (currentCredits < 5) { // 最低需要5积分（1个output token的基础消耗）
+    // 预估最低消耗（至少需要1积分）
+    if (currentCredits < 1) {
       alert('积分不足，请充值后继续使用。');
       return;
     }
@@ -251,11 +251,19 @@ ${selectedModule.system_prompt}
       }
       const response = result.response;
 
-      // 从API返回结果获取实际消耗
-      const creditsUsed = result.credits_used || 0;
+      // 从API返回的实际token消耗计算积分
+      const creditsUsed = result.credits_used || 1;
       const inputTokens = result.input_tokens || 0;
       const outputTokens = result.output_tokens || 0;
-      const newBalance = result.balance || 0;
+      const inputCredits = result.input_credits || 0;
+      const outputCredits = result.output_credits || 0;
+
+      // 检查积分是否足够
+      if (currentCredits < creditsUsed) {
+        alert(`积分不足！本次对话需要 ${creditsUsed} 积分，您当前只有 ${currentCredits} 积分。`);
+        setMessages(messages); // 恢复消息
+        return;
+      }
 
       const assistantMessage = {
         role: 'assistant',
@@ -269,9 +277,25 @@ ${selectedModule.system_prompt}
       const updatedMessages = [...newMessages, assistantMessage];
       setMessages(updatedMessages);
 
-      // 刷新用户数据以获取最新积分
-      const updatedUser = await base44.auth.me();
-      setUser(updatedUser);
+      const newBalance = currentCredits - creditsUsed;
+      await updateUserMutation.mutateAsync({
+        credits: newBalance,
+        total_credits_used: (user.total_credits_used || 0) + creditsUsed,
+      });
+
+      await createTransactionMutation.mutateAsync({
+        user_email: user.email,
+        type: 'usage',
+        amount: -creditsUsed,
+        balance_after: newBalance,
+        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)`,
+        model_used: selectedModel.name,
+        prompt_module_used: selectedModule?.title,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        input_credits: inputCredits,
+        output_credits: outputCredits,
+      });
 
       const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
 
@@ -280,7 +304,7 @@ ${selectedModule.system_prompt}
           id: currentConversation.id,
           data: {
             messages: updatedMessages,
-            total_credits_used: (currentConversation.total_credits_used || 0) + creditsNeeded,
+            total_credits_used: (currentConversation.total_credits_used || 0) + creditsUsed,
           }
         });
       } else {
@@ -290,7 +314,7 @@ ${selectedModule.system_prompt}
           prompt_module_id: selectedModule?.id,
           system_prompt: systemPrompt,
           messages: updatedMessages,
-          total_credits_used: creditsNeeded,
+          total_credits_used: creditsUsed,
         });
         setCurrentConversation(newConv);
       }
@@ -567,13 +591,8 @@ ${selectedModule.system_prompt}
           <div className="max-w-3xl mx-auto">
             {/* Credits Info */}
             <div className="flex items-center justify-center gap-2 text-xs text-slate-500 mb-3">
-              {messages[messages.length - 1]?.credits_used > 0 && (
-                <span>
-                  上一条消耗 {messages[messages.length - 1]?.credits_used || 0} 积分
-                  ({messages[messages.length - 1]?.input_tokens || 0} + {messages[messages.length - 1]?.output_tokens || 0} tokens)，
-                </span>
-              )}
-              <span>您还剩 <span className="text-blue-600 font-medium">{((user.credits || 0) + (user.monthly_credits || 0)).toLocaleString()}</span> 积分</span>
+              <span>上一条消息消耗了 {messages[messages.length - 1]?.credits_used || 0} 积分，</span>
+              <span>您还剩 <span className="text-blue-600 font-medium">{user.credits?.toLocaleString() || 0}</span> 积分</span>
             </div>
 
             {/* Input Box */}
@@ -613,9 +632,9 @@ ${selectedModule.system_prompt}
               </div>
             </div>
 
-            {/* Token计费说明 */}
+            {/* Token Billing Info */}
             <div className="text-center mt-2">
-              <span className="text-xs text-slate-400">⚡ 计费规则: Input 1积分/1K tokens, Output 5积分/1K tokens</span>
+              <span className="text-xs text-slate-500">⚡ 按实际Token消耗计费：输入 1积分/1K tokens，输出 5积分/1K tokens</span>
             </div>
           </div>
         </div>
@@ -759,7 +778,12 @@ function ChatMessageItem({ message, isStreaming, user }) {
         {/* Message Footer */}
         <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
           <span>{time}</span>
-          {message.credits_used && <span>消耗 {message.credits_used} 积分</span>}
+          {message.credits_used && (
+            <span title={message.input_tokens ? `输入: ${message.input_tokens} tokens, 输出: ${message.output_tokens} tokens` : ''}>
+              消耗 {message.credits_used} 积分
+              {message.input_tokens && <span className="text-slate-300 ml-1">({message.input_tokens}+{message.output_tokens} tokens)</span>}
+            </span>
+          )}
           <div className="flex items-center gap-1 ml-auto">
             <Button
               variant="ghost"
