@@ -11,7 +11,6 @@ import Home from './pages/Home';
 import Marketplace from './pages/Marketplace';
 import Profile from './pages/Profile';
 import AdminFinance from './pages/AdminFinance';
-import AdminAnnouncements from './pages/AdminAnnouncements';
 import __Layout from './Layout.jsx';
 
 
@@ -29,7 +28,6 @@ export const PAGES = {
     "Marketplace": Marketplace,
     "Profile": Profile,
     "AdminFinance": AdminFinance,
-    "AdminAnnouncements": AdminAnnouncements,
 }
 
 export const pagesConfig = {
