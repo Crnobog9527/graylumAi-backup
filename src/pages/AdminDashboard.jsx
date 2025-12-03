@@ -12,8 +12,7 @@ import { LanguageProvider, useLanguage } from '../components/admin/LanguageConte
 
 function AdminDashboardContent() {
   const { t } = useLanguage();
-
-const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const loadUser = async () => {
