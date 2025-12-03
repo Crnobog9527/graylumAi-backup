@@ -362,7 +362,6 @@ function AdminPromptsContent() {
                         <div className="flex items-center gap-2">
                           <Bot className="h-4 w-4" />
                           {model.name}
-                          <span className="text-slate-400">({model.credits_per_message} 积分/次)</span>
                         </div>
                       </SelectItem>
                     ))}
