@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, Bot, Sparkles, Brain, Zap, Check, X, FlaskConical, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Bot, Sparkles, Brain, Zap, Check, X, FlaskConical, Loader2, Code, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -80,6 +80,7 @@ function AdminModelsContent() {
   const [testingModel, setTestingModel] = useState(null);
   const [testResult, setTestResult] = useState(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [showCode, setShowCode] = useState(false);
   const [selectedModel, setSelectedModel] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
   const queryClient = useQueryClient();
@@ -599,6 +600,56 @@ function AdminModelsContent() {
                           </div>
                         ) : (
                           <p className="text-sm text-red-700">{testResult.error}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 核心代码展示 */}
+                    {testResult?.success && (
+                      <div className="mt-4">
+                        <button
+                          onClick={() => setShowCode(!showCode)}
+                          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          <Code className="h-4 w-4" />
+                          {t('viewImplementationCode')}
+                          {showCode ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </button>
+                        
+                        {showCode && (
+                          <div className="mt-3 p-3 bg-slate-900 rounded-lg overflow-auto max-h-64">
+                            <pre className="text-xs text-slate-300 whitespace-pre-wrap">
+{`// ========== 上下文阈值 (input_limit) ==========
+// Token 估算函数
+const estimateTokens = (text) => Math.ceil((text || '').length / 4);
+
+// 截断历史记录，保持在安全阈值内
+const truncateMessages = (msgs, sysPrompt, maxTokens) => {
+  let truncatedMsgs = [...msgs];
+  let totalTokens = calculateTotalTokens(truncatedMsgs, sysPrompt);
+  
+  // 当超过阈值时，从最早的对话开始删除
+  while (totalTokens > maxTokens && truncatedMsgs.length > 2) {
+    truncatedMsgs = truncatedMsgs.slice(2);
+    totalTokens = calculateTotalTokens(truncatedMsgs, sysPrompt);
+  }
+  return { truncatedMsgs, totalTokens };
+};
+
+// 使用模型配置的 input_limit: ${testingModel?.input_limit || 180000}
+const { truncatedMsgs } = truncateMessages(messages, system_prompt, ${testingModel?.input_limit || 180000});
+
+// ========== 最大Token数 (max_tokens) ==========
+// API 请求时限制输出 Token 数
+fetch(endpoint, {
+  body: JSON.stringify({
+    model: "${testingModel?.model_id}",
+    messages: formattedMessages,
+    max_tokens: ${testingModel?.max_tokens || 4096}  // ← 限制输出
+  })
+});`}
+                            </pre>
+                          </div>
                         )}
                       </div>
                     )}

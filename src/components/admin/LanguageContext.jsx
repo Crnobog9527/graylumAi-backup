@@ -64,6 +64,7 @@ const translations = {
     testFailed: '测试失败',
     testResponsePreview: '响应预览',
     retest: '重新测试',
+    viewImplementationCode: '查看实现代码',
     
     // Prompts
     promptsTitle: '提示词模块',
@@ -240,6 +241,7 @@ const translations = {
     testFailed: 'Test Failed',
     testResponsePreview: 'Response Preview',
     retest: 'Retest',
+    viewImplementationCode: 'View Implementation Code',
     
     // Prompts
     promptsTitle: 'Prompt Modules',
