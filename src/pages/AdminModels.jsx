@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, Bot, Sparkles, Brain, Zap, Check, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Bot, Sparkles, Brain, Zap, Check, X, FlaskConical, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -76,6 +76,10 @@ function AdminModelsContent() {
   const [user, setUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [testingModel, setTestingModel] = useState(null);
+  const [testResult, setTestResult] = useState(null);
+  const [isTesting, setIsTesting] = useState(false);
   const [selectedModel, setSelectedModel] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
   const queryClient = useQueryClient();
@@ -169,6 +173,58 @@ function AdminModelsContent() {
     setDeleteDialogOpen(true);
   };
 
+  const handleTest = async (model) => {
+    setTestingModel(model);
+    setTestResult(null);
+    setTestDialogOpen(true);
+    setIsTesting(true);
+
+    try {
+      // 生成测试消息，模拟接近 input_limit 的场景
+      const inputLimit = model.input_limit || 180000;
+      const maxTokens = model.max_tokens || 4096;
+      
+      // 创建一个较大的测试消息来验证截断功能
+      const testContent = '测试消息内容。'.repeat(100);
+      const testMessages = [
+        { role: 'user', content: `这是一个API测试请求，请简短回复"测试成功"。附加内容: ${testContent}` }
+      ];
+
+      const { data: result } = await base44.functions.invoke('callAIModel', {
+        model_id: model.id,
+        messages: testMessages,
+        system_prompt: '你是一个测试助手，请简短回复。'
+      });
+
+      if (result.error) {
+        setTestResult({
+          success: false,
+          error: result.error,
+          inputLimit,
+          maxTokens
+        });
+      } else {
+        setTestResult({
+          success: true,
+          response: result.response?.substring(0, 200) + (result.response?.length > 200 ? '...' : ''),
+          inputLimit,
+          maxTokens,
+          usage: result.usage || null,
+          modelVersion: result.modelVersion || result.model || null
+        });
+      }
+    } catch (error) {
+      setTestResult({
+        success: false,
+        error: error.message,
+        inputLimit: model.input_limit || 180000,
+        maxTokens: model.max_tokens || 4096
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
@@ -237,6 +293,14 @@ function AdminModelsContent() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleTest(model)}
+                            title={t('testModel')}
+                          >
+                            <FlaskConical className="h-4 w-4 text-blue-600" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -476,6 +540,84 @@ function AdminModelsContent() {
               </Button>
               </DialogFooter>
               </DialogContent>
+              </Dialog>
+
+              {/* Test Dialog */}
+              <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <FlaskConical className="h-5 w-5 text-blue-600" />
+                      {t('testModel')} - {testingModel?.name}
+                    </DialogTitle>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4 py-4">
+                    {/* 配置信息 */}
+                    <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 rounded-lg">
+                      <div>
+                        <p className="text-xs text-slate-500">{t('maxTokens')}</p>
+                        <p className="font-medium">{testingModel?.max_tokens || 4096}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500">{t('inputLimit')}</p>
+                        <p className="font-medium">{(testingModel?.input_limit || 180000).toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    {/* 测试状态 */}
+                    {isTesting && (
+                      <div className="flex items-center justify-center gap-3 py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                        <span className="text-slate-600">{t('testingInProgress')}</span>
+                      </div>
+                    )}
+
+                    {/* 测试结果 */}
+                    {testResult && !isTesting && (
+                      <div className={`p-4 rounded-lg border ${testResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          {testResult.success ? (
+                            <Check className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <X className="h-5 w-5 text-red-600" />
+                          )}
+                          <span className={`font-medium ${testResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                            {testResult.success ? t('testSuccess') : t('testFailed')}
+                          </span>
+                        </div>
+                        
+                        {testResult.success ? (
+                          <div className="space-y-2 text-sm">
+                            <p className="text-green-700">{t('testResponsePreview')}:</p>
+                            <p className="text-slate-600 bg-white p-2 rounded border">{testResult.response}</p>
+                            {testResult.usage && (
+                              <div className="text-xs text-slate-500 mt-2">
+                                Tokens: {testResult.usage.prompt_tokens} (input) / {testResult.usage.completion_tokens} (output)
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-red-700">{testResult.error}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setTestDialogOpen(false)}>
+                      {t('cancel')}
+                    </Button>
+                    <Button 
+                      onClick={() => handleTest(testingModel)}
+                      disabled={isTesting}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {isTesting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FlaskConical className="h-4 w-4 mr-2" />}
+                      {t('retest')}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
               </Dialog>
 
               {/* Delete Confirmation */}

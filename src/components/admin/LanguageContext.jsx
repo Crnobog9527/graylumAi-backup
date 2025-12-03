@@ -58,6 +58,12 @@ const translations = {
     deleteModel: '删除模型',
     deleteModelConfirm: '确定要删除这个模型吗？此操作无法撤销。',
     noModelsYet: '暂无AI模型配置。添加第一个模型以开始使用。',
+    testModel: '测试模型',
+    testingInProgress: '正在测试API连接...',
+    testSuccess: '测试成功',
+    testFailed: '测试失败',
+    testResponsePreview: '响应预览',
+    retest: '重新测试',
     
     // Prompts
     promptsTitle: '提示词模块',
@@ -228,6 +234,12 @@ const translations = {
     deleteModel: 'Delete Model',
     deleteModelConfirm: 'Are you sure you want to delete this model? This action cannot be undone.',
     noModelsYet: 'No AI models configured yet. Add your first model to get started.',
+    testModel: 'Test Model',
+    testingInProgress: 'Testing API connection...',
+    testSuccess: 'Test Successful',
+    testFailed: 'Test Failed',
+    testResponsePreview: 'Response Preview',
+    retest: 'Retest',
     
     // Prompts
     promptsTitle: 'Prompt Modules',
