@@ -373,7 +373,7 @@ function AdminPackagesContent() {
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
+            </Card>
           </TabsContent>
 
           {/* Membership Tab */}
