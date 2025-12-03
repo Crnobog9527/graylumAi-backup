@@ -45,6 +45,7 @@ export default function Chat() {
   const [inputMessage, setInputMessage] = useState('');
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedConversations, setSelectedConversations] = useState([]);
+  const [longTextWarning, setLongTextWarning] = useState({ open: false, estimatedCredits: 0, estimatedTokens: 0 });
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const queryClient = useQueryClient();
