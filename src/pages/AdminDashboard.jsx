@@ -8,9 +8,12 @@ import { format } from 'date-fns';
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import StatsCard from '../components/admin/StatsCard';
+import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
 
-export default function AdminDashboard() {
-  const [user, setUser] = useState(null);
+function AdminDashboardContent() {
+  const { t } = useLanguage();
+
+const [user, setUser] = useState(null);
 
   useEffect(() => {
     const loadUser = async () => {
