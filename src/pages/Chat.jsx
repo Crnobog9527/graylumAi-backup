@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, MessageSquare, Pencil, ChevronDown, Paperclip, Send, Loader2, Copy, RefreshCw, ThumbsUp, ThumbsDown, Bot, Trash2, CheckSquare, Square, Settings2 } from 'lucide-react';
+import { Plus, MessageSquare, Pencil, ChevronDown, Paperclip, Send, Loader2, Copy, RefreshCw, ThumbsUp, ThumbsDown, Bot, Trash2, CheckSquare, Square, Settings2, AlertTriangle } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
+import { format, isToday, isYesterday, differenceInDays } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,10 +28,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn } from '@/lib/utils';
-import ReactMarkdown from 'react-markdown';
-import { format, isToday, isYesterday, differenceInDays } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+
+// 估算token数量 (约4字符=1token)
+function estimateTokens(text) {
+  if (!text) return 0;
+  return Math.ceil(text.length / 4);
+}
 
 export default function Chat() {
   const [user, setUser] = useState(null);
@@ -39,7 +45,6 @@ export default function Chat() {
   const [inputMessage, setInputMessage] = useState('');
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedConversations, setSelectedConversations] = useState([]);
-  const [longTextWarning, setLongTextWarning] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const queryClient = useQueryClient();
