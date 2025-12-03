@@ -19,11 +19,6 @@ export default function Layout({ children, currentPageName }) {
       try {
         const userData = await base44.auth.me();
         setUser(userData);
-        
-        // 如果已登录用户访问Landing页面，重定向到Home
-        if (currentPageName === 'Landing') {
-          navigate(createPageUrl('Home'), { replace: true });
-        }
       } catch (e) {
         setUser(null);
         // 如果未登录且不是公开页面，重定向到Landing
