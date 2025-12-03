@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 import AdminSidebar from '../components/admin/AdminSidebar';
+import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
 
 const defaultSettings = {
   new_user_credits: { value: '10', type: 'number', label: 'New User Credits', description: 'Credits given to new users upon registration' },
@@ -22,7 +23,8 @@ const defaultSettings = {
   support_email: { value: 'support@example.com', type: 'string', label: 'Support Email', description: 'Email for user support inquiries' },
 };
 
-export default function AdminSettings() {
+function AdminSettingsContent() {
+  const { t } = useLanguage();
   const [user, setUser] = useState(null);
   const [settings, setSettings] = useState({});
   const [saving, setSaving] = useState(false);
@@ -144,8 +146,8 @@ export default function AdminSettings() {
       <div className="flex-1 p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
-            <p className="text-slate-500 mt-1">Configure platform settings and defaults</p>
+            <h1 className="text-3xl font-bold text-slate-900">{t('settingsTitle')}</h1>
+            <p className="text-slate-500 mt-1">{t('settingsSubtitle')}</p>
           </div>
           <Button 
             onClick={handleSave}
@@ -157,15 +159,15 @@ export default function AdminSettings() {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            Save Changes
+            {saving ? t('saving') : t('saveSettings')}
           </Button>
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="credits">Credits</TabsTrigger>
-            <TabsTrigger value="features">Features</TabsTrigger>
+            <TabsTrigger value="general">{t('general')}</TabsTrigger>
+            <TabsTrigger value="credits">{t('creditsSettings')}</TabsTrigger>
+            <TabsTrigger value="features">{t('features')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
@@ -242,5 +244,13 @@ export default function AdminSettings() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+export default function AdminSettings() {
+  return (
+    <LanguageProvider>
+      <AdminSettingsContent />
+    </LanguageProvider>
   );
 }

@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import AdminSidebar from '../components/admin/AdminSidebar';
+import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
 
 const categories = [
   { value: 'writing', label: '写作' },
@@ -86,7 +87,8 @@ const initialFormData = {
   sort_order: 0,
 };
 
-export default function AdminPrompts() {
+function AdminPromptsContent() {
+  const { t } = useLanguage();
   const [user, setUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -200,15 +202,15 @@ export default function AdminPrompts() {
       <div className="flex-1 p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">提示词模块管理</h1>
-            <p className="text-slate-500 mt-1">创建和管理预设的AI提示词模块，用户可一键调用</p>
+            <h1 className="text-3xl font-bold text-slate-900">{t('promptsTitle')}</h1>
+            <p className="text-slate-500 mt-1">{t('promptsSubtitle')}</p>
           </div>
           <Button 
             onClick={() => { resetForm(); setDialogOpen(true); }}
             className="bg-violet-600 hover:bg-violet-700 gap-2"
           >
             <Plus className="h-4 w-4" />
-            添加模块
+            {t('addPrompt')}
           </Button>
         </div>
 
@@ -230,7 +232,7 @@ export default function AdminPrompts() {
                     </div>
                   </div>
                   <Badge variant={module.is_active ? "default" : "secondary"}>
-                    {module.is_active ? 'Active' : 'Inactive'}
+                    {module.is_active ? t('active') : t('inactive')}
                   </Badge>
                 </div>
                 <p className="text-sm text-slate-500 mb-4 line-clamp-2">{module.description}</p>
@@ -269,7 +271,7 @@ export default function AdminPrompts() {
           ))}
           {modules.length === 0 && (
             <div className="col-span-full text-center py-12 text-slate-500">
-              暂无提示词模块，点击上方按钮创建您的第一个模块
+              {t('noPromptsYet')}
             </div>
           )}
         </div>
@@ -279,14 +281,14 @@ export default function AdminPrompts() {
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {selectedModule ? '编辑提示词模块' : '创建提示词模块'}
+                {selectedModule ? t('editPrompt') : t('addPrompt')}
               </DialogTitle>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>模块名称</Label>
+                  <Label>{t('title')}</Label>
                   <Input
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -294,7 +296,7 @@ export default function AdminPrompts() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>分类</Label>
+                  <Label>{t('category')}</Label>
                   <Select
                     value={formData.category}
                     onValueChange={(value) => setFormData({ ...formData, category: value })}
@@ -314,7 +316,7 @@ export default function AdminPrompts() {
               </div>
 
               <div className="space-y-2">
-                <Label>功能描述</Label>
+                <Label>{t('description')}</Label>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -324,7 +326,7 @@ export default function AdminPrompts() {
               </div>
 
               <div className="space-y-2">
-                <Label>系统提示词（核心约束）</Label>
+                <Label>{t('systemPrompt')}</Label>
                 <Textarea
                   value={formData.system_prompt}
                   onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
@@ -337,7 +339,7 @@ export default function AdminPrompts() {
               </div>
 
               <div className="space-y-2">
-                <Label>用户引导模板（可选）</Label>
+                <Label>{t('userPromptTemplate')}</Label>
                 <Textarea
                   value={formData.user_prompt_template}
                   onChange={(e) => setFormData({ ...formData, user_prompt_template: e.target.value })}
@@ -350,16 +352,16 @@ export default function AdminPrompts() {
               </div>
 
               <div className="space-y-2">
-                <Label>指定使用模型</Label>
+                <Label>{t('assignedModel')}</Label>
                 <Select
                   value={formData.model_id}
                   onValueChange={(value) => setFormData({ ...formData, model_id: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="使用用户选择的模型" />
+                    <SelectValue placeholder={t('useUserModel')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={null}>使用用户选择的模型</SelectItem>
+                    <SelectItem value={null}>{t('useUserModel')}</SelectItem>
                     {models.map((model) => (
                       <SelectItem key={model.id} value={model.id}>
                         <div className="flex items-center gap-2">
@@ -378,7 +380,7 @@ export default function AdminPrompts() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>图标</Label>
+                  <Label>{t('icon')}</Label>
                   <Select
                     value={formData.icon}
                     onValueChange={(value) => setFormData({ ...formData, icon: value })}
@@ -396,7 +398,7 @@ export default function AdminPrompts() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>颜色</Label>
+                  <Label>{t('color')}</Label>
                   <Select
                     value={formData.color}
                     onValueChange={(value) => setFormData({ ...formData, color: value })}
@@ -417,7 +419,7 @@ export default function AdminPrompts() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>积分倍率</Label>
+                  <Label>{t('creditsMultiplier')}</Label>
                   <Input
                     type="number"
                     value={formData.credits_multiplier}
@@ -431,7 +433,7 @@ export default function AdminPrompts() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>排序权重</Label>
+                  <Label>{t('sortOrder')}</Label>
                   <Input
                     type="number"
                     value={formData.sort_order}
@@ -439,7 +441,7 @@ export default function AdminPrompts() {
                   />
                 </div>
                 <div className="flex items-center justify-between pt-6">
-                  <Label>启用状态</Label>
+                  <Label>{t('active')}</Label>
                   <Switch
                     checked={formData.is_active}
                     onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
@@ -450,14 +452,14 @@ export default function AdminPrompts() {
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                取消
+                {t('cancel')}
               </Button>
               <Button 
                 onClick={handleSubmit}
                 disabled={!formData.title || !formData.system_prompt}
                 className="bg-violet-600 hover:bg-violet-700"
               >
-                {selectedModule ? '保存修改' : '创建模块'}
+                {selectedModule ? t('update') : t('create')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -467,23 +469,31 @@ export default function AdminPrompts() {
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Prompt Module</AlertDialogTitle>
+              <AlertDialogTitle>{t('deletePrompt')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete "{selectedModule?.title}"? This action cannot be undone.
+                {t('deletePromptConfirm')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => deleteMutation.mutate(selectedModule?.id)}
                 className="bg-red-600 hover:bg-red-700"
               >
-                Delete
+                {t('delete')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
       </div>
     </div>
+  );
+}
+
+export default function AdminPrompts() {
+  return (
+    <LanguageProvider>
+      <AdminPromptsContent />
+    </LanguageProvider>
   );
 }

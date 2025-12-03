@@ -23,6 +23,7 @@ import {
 import { format } from 'date-fns';
 
 import AdminSidebar from '../components/admin/AdminSidebar';
+import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
 
 const typeColors = {
   purchase: 'bg-emerald-100 text-emerald-700',
@@ -32,7 +33,8 @@ const typeColors = {
   admin_adjustment: 'bg-violet-100 text-violet-700',
 };
 
-export default function AdminTransactions() {
+function AdminTransactionsContent() {
+  const { t } = useLanguage();
   const [user, setUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -89,8 +91,8 @@ export default function AdminTransactions() {
       
       <div className="flex-1 p-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">Transactions</h1>
-          <p className="text-slate-500 mt-1">View all credit transactions</p>
+          <h1 className="text-3xl font-bold text-slate-900">{t('transactionsTitle')}</h1>
+          <p className="text-slate-500 mt-1">{t('transactionsSubtitle')}</p>
         </div>
 
         {/* Summary Cards */}
@@ -101,7 +103,7 @@ export default function AdminTransactions() {
                 <TrendingUp className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Total Purchased</p>
+                <p className="text-sm text-slate-500">{t('totalPurchased')}</p>
                 <p className="text-2xl font-bold text-slate-900">{totalPurchased.toLocaleString()}</p>
               </div>
             </CardContent>
@@ -112,7 +114,7 @@ export default function AdminTransactions() {
                 <TrendingDown className="h-5 w-5 text-rose-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Total Used</p>
+                <p className="text-sm text-slate-500">{t('totalUsed')}</p>
                 <p className="text-2xl font-bold text-slate-900">{totalUsed.toLocaleString()}</p>
               </div>
             </CardContent>
@@ -123,7 +125,7 @@ export default function AdminTransactions() {
                 <Coins className="h-5 w-5 text-violet-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Net Credits</p>
+                <p className="text-sm text-slate-500">{t('netCredits')}</p>
                 <p className="text-2xl font-bold text-slate-900">{(totalPurchased - totalUsed).toLocaleString()}</p>
               </div>
             </CardContent>
@@ -147,12 +149,12 @@ export default function AdminTransactions() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="purchase">Purchases</SelectItem>
-              <SelectItem value="usage">Usage</SelectItem>
-              <SelectItem value="bonus">Bonuses</SelectItem>
-              <SelectItem value="refund">Refunds</SelectItem>
-              <SelectItem value="admin_adjustment">Admin Adjustments</SelectItem>
+              <SelectItem value="all">{t('allTypes')}</SelectItem>
+              <SelectItem value="purchase">{t('purchase')}</SelectItem>
+              <SelectItem value="usage">{t('usage')}</SelectItem>
+              <SelectItem value="bonus">{t('bonus')}</SelectItem>
+              <SelectItem value="refund">{t('refund')}</SelectItem>
+              <SelectItem value="admin_adjustment">{t('adminAdjustment')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -162,12 +164,12 @@ export default function AdminTransactions() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Balance After</TableHead>
-                  <TableHead>Date</TableHead>
+                  <TableHead>{t('user')}</TableHead>
+                  <TableHead>{t('type')}</TableHead>
+                  <TableHead>{t('description')}</TableHead>
+                  <TableHead>{t('amount')}</TableHead>
+                  <TableHead>{t('currentBalance')}</TableHead>
+                  <TableHead>{t('date')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -196,7 +198,7 @@ export default function AdminTransactions() {
                 {filteredTransactions.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-12 text-slate-500">
-                      No transactions found
+                      {t('noTransactionsFound')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -206,5 +208,13 @@ export default function AdminTransactions() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function AdminTransactions() {
+  return (
+    <LanguageProvider>
+      <AdminTransactionsContent />
+    </LanguageProvider>
   );
 }

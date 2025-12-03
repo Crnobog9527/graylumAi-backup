@@ -26,8 +26,10 @@ import {
 import { format } from 'date-fns';
 
 import AdminSidebar from '../components/admin/AdminSidebar';
+import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
 
-export default function AdminUsers() {
+function AdminUsersContent() {
+  const { t } = useLanguage();
   const [user, setUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -109,8 +111,8 @@ export default function AdminUsers() {
       <div className="flex-1 p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Users</h1>
-            <p className="text-slate-500 mt-1">Manage user accounts and credits</p>
+            <h1 className="text-3xl font-bold text-slate-900">{t('usersTitle')}</h1>
+            <p className="text-slate-500 mt-1">{t('usersSubtitle')}</p>
           </div>
         </div>
 
@@ -118,7 +120,7 @@ export default function AdminUsers() {
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Search by email or name..."
+              placeholder={t('searchUsers')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -131,12 +133,12 @@ export default function AdminUsers() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Credits</TableHead>
-                  <TableHead>Total Used</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableHead>{t('user')}</TableHead>
+                  <TableHead>{t('role')}</TableHead>
+                  <TableHead>{t('creditBalance')}</TableHead>
+                  <TableHead>{t('totalCreditsUsed')}</TableHead>
+                  <TableHead>{t('joinDate')}</TableHead>
+                  <TableHead className="w-[100px]">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -191,7 +193,7 @@ export default function AdminUsers() {
                 {filteredUsers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-12 text-slate-500">
-                      No users found
+                      {t('noUsersFound')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -204,7 +206,7 @@ export default function AdminUsers() {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Adjust Credits</DialogTitle>
+              <DialogTitle>{t('adjustCredits')}</DialogTitle>
             </DialogHeader>
             
             {selectedUser && (
@@ -220,13 +222,13 @@ export default function AdminUsers() {
                     <p className="font-medium">{selectedUser.full_name || 'Unknown'}</p>
                     <p className="text-sm text-slate-500">{selectedUser.email}</p>
                     <p className="text-sm text-amber-600 mt-1">
-                      Current balance: {selectedUser.credits || 0} credits
+                      {t('currentBalance')}: {selectedUser.credits || 0}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Credit Adjustment</Label>
+                  <Label>{t('adjustmentAmount')}</Label>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -255,7 +257,7 @@ export default function AdminUsers() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Reason (optional)</Label>
+                  <Label>{t('reason')}</Label>
                   <Input
                     value={creditAdjustment.reason}
                     onChange={(e) => setCreditAdjustment(prev => ({ ...prev, reason: e.target.value }))}
@@ -266,7 +268,7 @@ export default function AdminUsers() {
                 {creditAdjustment.amount !== 0 && (
                   <div className="p-3 bg-amber-50 rounded-lg text-center">
                     <p className="text-sm text-amber-700">
-                      New balance: <span className="font-bold">{(selectedUser.credits || 0) + creditAdjustment.amount}</span> credits
+                      {t('newBalance')}: <span className="font-bold">{(selectedUser.credits || 0) + creditAdjustment.amount}</span>
                     </p>
                   </div>
                 )}
@@ -275,19 +277,27 @@ export default function AdminUsers() {
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button 
                 onClick={handleAdjustCredits}
                 disabled={creditAdjustment.amount === 0}
                 className="bg-violet-600 hover:bg-violet-700"
               >
-                Apply Adjustment
+                {t('save')}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
     </div>
+  );
+}
+
+export default function AdminUsers() {
+  return (
+    <LanguageProvider>
+      <AdminUsersContent />
+    </LanguageProvider>
   );
 }
