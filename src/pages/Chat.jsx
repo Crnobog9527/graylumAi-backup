@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, MessageSquare, Pencil, ChevronDown, Paperclip, Send, Loader2, Copy, RefreshCw, ThumbsUp, ThumbsDown, Bot, Trash2, CheckSquare, Square, Settings2 } from 'lucide-react';
+import { Plus, MessageSquare, Pencil, ChevronDown, Paperclip, Send, Loader2, Copy, RefreshCw, ThumbsUp, ThumbsDown, Bot, Trash2, CheckSquare, Square, Settings2, AlertTriangle } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
+import { format, isToday, isYesterday, differenceInDays } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,10 +28,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn } from '@/lib/utils';
-import ReactMarkdown from 'react-markdown';
-import { format, isToday, isYesterday, differenceInDays } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+
+// 估算token数量 (约4字符=1token)
+function estimateTokens(text) {
+  if (!text) return 0;
+  return Math.ceil(text.length / 4);
+}
 
 export default function Chat() {
   const [user, setUser] = useState(null);
@@ -39,7 +45,7 @@ export default function Chat() {
   const [inputMessage, setInputMessage] = useState('');
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedConversations, setSelectedConversations] = useState([]);
-  const [longTextWarning, setLongTextWarning] = useState(null);
+  const [longTextWarning, setLongTextWarning] = useState({ open: false, estimatedCredits: 0, estimatedTokens: 0 });
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const queryClient = useQueryClient();
@@ -76,34 +82,22 @@ export default function Chat() {
     enabled: !!user?.email,
   });
 
+  // 获取系统设置
   const { data: systemSettings = [] } = useQuery({
     queryKey: ['system-settings'],
     queryFn: () => base44.entities.SystemSettings.list(),
   });
 
-  // 获取长文本预警阈值
-  const longTextThreshold = React.useMemo(() => {
-    const setting = systemSettings.find(s => s.setting_key === 'long_text_warning_threshold');
-    return setting ? parseInt(setting.setting_value) || 2000 : 2000;
-  }, [systemSettings]);
-
-  // 获取积分换算设置
-  const creditsSettings = React.useMemo(() => {
-    const inputSetting = systemSettings.find(s => s.setting_key === 'input_credits_per_1k');
-    const outputSetting = systemSettings.find(s => s.setting_key === 'output_credits_per_1k');
-    return {
-      inputCreditsPerK: inputSetting ? parseInt(inputSetting.setting_value) || 1 : 1,
-      outputCreditsPerK: outputSetting ? parseInt(outputSetting.setting_value) || 5 : 5,
-    };
-  }, [systemSettings]);
-
-  // 估算token数量（简单估算：1个中文字符约1.5tokens，1个英文单词约1token）
-  const estimateTokens = (text) => {
-    if (!text) return 0;
-    const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
-    const otherChars = text.length - chineseChars;
-    return Math.ceil(chineseChars * 1.5 + otherChars * 0.25);
+  // 解析系统设置
+  const getSettingValue = (key, defaultValue) => {
+    const setting = systemSettings.find(s => s.setting_key === key);
+    return setting ? setting.setting_value : defaultValue;
   };
+
+  const longTextWarningEnabled = getSettingValue('enable_long_text_warning', 'true') === 'true';
+  const longTextThreshold = parseInt(getSettingValue('long_text_warning_threshold', '5000')) || 5000;
+  const inputCreditsPerK = parseInt(getSettingValue('input_credits_per_1k', '1')) || 1;
+  const outputCreditsPerK = parseInt(getSettingValue('output_credits_per_1k', '5')) || 5;
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
@@ -258,21 +252,22 @@ export default function Chat() {
     }
 
     // 长文本预警检查
-    if (!skipWarning && longTextThreshold > 0) {
-      const estimatedInputTokens = estimateTokens(inputMessage);
-      if (estimatedInputTokens > longTextThreshold) {
-        // 估算积分消耗（输入tokens + 预估输出tokens约为输入的1.5倍）
-        const estimatedOutputTokens = Math.ceil(estimatedInputTokens * 0.5);
-        const estimatedCredits = Math.ceil(
-          (estimatedInputTokens / 1000) * creditsSettings.inputCreditsPerK +
-          (estimatedOutputTokens / 1000) * creditsSettings.outputCreditsPerK
-        );
-        setLongTextWarning({
-          tokens: estimatedInputTokens,
-          credits: estimatedCredits,
-        });
-        return;
-      }
+    const allContent = messages.map(m => m.content).join('') + inputMessage;
+    const estimatedInputTokens = estimateTokens(allContent);
+    
+    if (!skipWarning && longTextWarningEnabled && estimatedInputTokens > longTextThreshold) {
+      // 预估积分消耗 (输入 + 预估输出)
+      const estimatedOutputTokens = Math.min(estimatedInputTokens * 0.5, 4000); // 预估输出为输入的50%，最多4000
+      const inputCost = Math.ceil(estimatedInputTokens / 1000) * inputCreditsPerK;
+      const outputCost = Math.ceil(estimatedOutputTokens / 1000) * outputCreditsPerK;
+      const totalEstimatedCredits = inputCost + outputCost;
+      
+      setLongTextWarning({
+        open: true,
+        estimatedCredits: totalEstimatedCredits,
+        estimatedTokens: estimatedInputTokens
+      });
+      return;
     }
 
     const userMessage = {
