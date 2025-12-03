@@ -24,13 +24,12 @@ Deno.serve(async (req) => {
     };
 
     // 截断历史记录，保持在安全阈值内
-    const MAX_TOKENS = 180000; // 安全阈值
-    const truncateMessages = (msgs, sysPrompt) => {
+    const truncateMessages = (msgs, sysPrompt, maxTokens) => {
       let truncatedMsgs = [...msgs];
       let totalTokens = calculateTotalTokens(truncatedMsgs, sysPrompt);
       
       // 当超过阈值时，从最早的对话开始删除
-      while (totalTokens > MAX_TOKENS && truncatedMsgs.length > 2) {
+      while (totalTokens > maxTokens && truncatedMsgs.length > 2) {
         // 删除最早的一对消息 (user + assistant)
         if (truncatedMsgs.length >= 2) {
           truncatedMsgs = truncatedMsgs.slice(2);
@@ -43,9 +42,6 @@ Deno.serve(async (req) => {
       return { truncatedMsgs, totalTokens };
     };
 
-    // 执行截断
-    const { truncatedMsgs: processedMessages, totalTokens } = truncateMessages(messages, system_prompt);
-
     // 获取模型配置
     const models = await base44.asServiceRole.entities.AIModel.filter({ id: model_id });
     const model = models[0];
@@ -53,6 +49,12 @@ Deno.serve(async (req) => {
     if (!model) {
       return Response.json({ error: 'Model not found' }, { status: 404 });
     }
+
+    // 使用模型配置的 input_limit，默认 180000
+    const inputLimit = model.input_limit || 180000;
+    
+    // 执行截断
+    const { truncatedMsgs: processedMessages, totalTokens } = truncateMessages(messages, system_prompt, inputLimit);
 
     // 如果使用内置集成（支持联网）
     if (model.provider === 'builtin' || model.enable_web_search) {

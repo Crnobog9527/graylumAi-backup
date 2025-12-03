@@ -63,6 +63,7 @@ const initialFormData = {
   is_active: true,
   description: '',
   max_tokens: 4096,
+  input_limit: 180000,
   enable_web_search: false,
   input_token_cost: 0,
   output_token_cost: 0,
@@ -145,6 +146,7 @@ function AdminModelsContent() {
       is_active: model.is_active !== false,
       description: model.description || '',
       max_tokens: model.max_tokens || 4096,
+      input_limit: model.input_limit || 180000,
       enable_web_search: model.enable_web_search || false,
       input_token_cost: model.input_token_cost || 0,
       output_token_cost: model.output_token_cost || 0,
@@ -334,7 +336,7 @@ function AdminModelsContent() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>{t('creditsPerMessage')}</Label>
                   <Input
@@ -351,6 +353,15 @@ function AdminModelsContent() {
                     value={formData.max_tokens}
                     onChange={(e) => setFormData({ ...formData, max_tokens: parseInt(e.target.value) })}
                     min={256}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('inputLimit')}</Label>
+                  <Input
+                    type="number"
+                    value={formData.input_limit}
+                    onChange={(e) => setFormData({ ...formData, input_limit: parseInt(e.target.value) || 180000 })}
+                    min={1000}
                   />
                 </div>
               </div>
