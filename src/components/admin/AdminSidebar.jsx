@@ -4,7 +4,7 @@ import { createPageUrl } from '@/utils';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, Bot, Wand2, Package, Users, 
-  CreditCard, Settings, ChevronLeft, Shield, Globe, DollarSign
+  CreditCard, Settings, ChevronLeft, Shield, Globe, DollarSign, Megaphone
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useLanguage } from './LanguageContext';
@@ -17,6 +17,7 @@ const menuItems = [
   { nameKey: 'users', icon: Users, page: 'AdminUsers' },
   { nameKey: 'transactions', icon: CreditCard, page: 'AdminTransactions' },
   { nameKey: 'finance', icon: DollarSign, page: 'AdminFinance' },
+  { nameKey: 'announcements', icon: Megaphone, page: 'AdminAnnouncements' },
   { nameKey: 'settings', icon: Settings, page: 'AdminSettings' },
 ];
 

@@ -134,6 +134,9 @@ const translations = {
     adminAdjustment: '管理员调整',
     noTransactionsFound: '未找到交易记录',
     
+    // Announcements
+    announcements: '公告管理',
+
     // Finance
     finance: '财务统计',
     financeTitle: '财务统计',
@@ -311,6 +314,9 @@ const translations = {
     adminAdjustment: 'Admin Adjustment',
     noTransactionsFound: 'No transactions found',
     
+    // Announcements
+    announcements: 'Announcements',
+
     // Finance
     finance: 'Finance',
     financeTitle: 'Finance Statistics',

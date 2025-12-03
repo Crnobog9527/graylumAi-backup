@@ -46,9 +46,6 @@ const defaultSettings = {
   
   // First Purchase
   first_purchase_bonus_percent: { value: '20', type: 'number', label: '首充赠送%', description: '首次购买额外赠送积分百分比' },
-  
-  // Chat UI
-  chat_billing_hint: { value: '⚡ 按实际Token消耗计费：输入 {input}积分/1K tokens，输出 {output}积分/1K tokens', type: 'string', label: '计费提示文案', description: '聊天页面底部显示的计费说明，{input}和{output}会替换为实际值' },
 };
 
 function AdminSettingsContent() {
@@ -311,7 +308,7 @@ function AdminSettingsContent() {
                 <CardDescription>启用或禁用平台功能</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {['enable_free_tier', 'free_tier_messages', 'max_messages_per_conversation', 'enable_long_text_warning', 'long_text_warning_threshold', 'chat_billing_hint'].map(key => {
+                {['enable_free_tier', 'free_tier_messages', 'max_messages_per_conversation', 'enable_long_text_warning', 'long_text_warning_threshold'].map(key => {
                   const data = settings[key];
                   if (!data) return null;
                   return (
