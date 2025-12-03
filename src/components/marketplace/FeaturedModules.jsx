@@ -154,12 +154,10 @@ export default function FeaturedModules() {
           <AlertDialogHeader>
             <AlertDialogTitle>确认使用「{confirmDialog.featured?.title}」</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>{confirmDialog.featured?.description}</p>
-              {confirmDialog.featured?.credits_display && (
-                <p className="text-amber-600 font-medium">
-                  点击"确认"以后，将开始消耗积分（{confirmDialog.featured?.credits_display}）
-                </p>
-              )}
+              <p>{confirmDialog.linkedModule?.description || confirmDialog.featured?.description}</p>
+              <p className="text-amber-600 font-medium">
+                点击"确认"以后，将按实际Token消耗计费
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
