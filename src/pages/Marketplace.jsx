@@ -77,22 +77,6 @@ export default function Marketplace() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {/* Search Header */}
-      <div className="flex justify-center mb-10">
-        <div className="relative w-full max-w-2xl">
-          <input
-            type="text"
-            placeholder="搜索功能..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-12 pl-5 pr-12 rounded-full border border-slate-200 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-base"
-          />
-          <Button size="icon" className="absolute right-1.5 top-1.5 h-9 w-9 rounded-full bg-indigo-600 hover:bg-indigo-700">
-            <Search className="h-4 w-4 text-white" />
-          </Button>
-        </div>
-      </div>
-
       <FeaturedModules />
 
       {/* Filter Bar */}
