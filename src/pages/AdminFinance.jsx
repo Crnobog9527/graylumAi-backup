@@ -127,19 +127,23 @@ function AdminFinanceContent() {
     };
   });
 
-  // 计算全站总计
+  // 积分价值（1积分 ≈ $0.007-0.008）
+  const creditsToUSD = 0.0075;
+
+  // 计算全站总计 - 收入只计算真实购买的积分，不包含管理员手动添加
   const totalStats = {
     inputTokens: modelStats.reduce((sum, m) => sum + m.totalInputTokens, 0),
     outputTokens: modelStats.reduce((sum, m) => sum + m.totalOutputTokens, 0),
     totalRequests: modelStats.reduce((sum, m) => sum + m.totalRequests, 0),
     totalCost: modelStats.reduce((sum, m) => sum + m.totalCost, 0),
-    totalRevenue: modelStats.reduce((sum, m) => sum + m.revenue, 0),
-    totalProfit: modelStats.reduce((sum, m) => sum + m.profit, 0),
-    creditsEarned: modelStats.reduce((sum, m) => sum + m.creditsEarned, 0),
+    // 收入基于真实购买的积分
+    totalRevenue: totalPurchasedCredits * creditsToUSD,
+    totalProfit: (totalPurchasedCredits * creditsToUSD) - modelStats.reduce((sum, m) => sum + m.totalCost, 0),
+    // 用户消耗的积分（用于显示）
+    creditsUsed: modelStats.reduce((sum, m) => sum + m.creditsEarned, 0),
+    // 真实购买的积分
+    creditsPurchased: totalPurchasedCredits,
   };
-
-  // 从购买交易计算实际收入
-  const actualPurchaseRevenue = transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0);
 
   const formatNumber = (num) => {
     if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
