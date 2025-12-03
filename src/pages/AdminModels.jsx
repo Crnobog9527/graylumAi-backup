@@ -66,6 +66,8 @@ const initialFormData = {
   enable_web_search: false,
   input_token_cost: 0,
   output_token_cost: 0,
+  input_token_cost_above_200k: 0,
+  output_token_cost_above_200k: 0,
 };
 
 function AdminModelsContent() {
@@ -146,6 +148,8 @@ function AdminModelsContent() {
       enable_web_search: model.enable_web_search || false,
       input_token_cost: model.input_token_cost || 0,
       output_token_cost: model.output_token_cost || 0,
+      input_token_cost_above_200k: model.input_token_cost_above_200k || 0,
+      output_token_cost_above_200k: model.output_token_cost_above_200k || 0,
     });
     setDialogOpen(true);
   };
@@ -381,32 +385,68 @@ function AdminModelsContent() {
               </div>
 
               {/* Token 成本设置 */}
-              <div className="p-3 bg-amber-50 rounded-lg border border-amber-100 space-y-3">
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-100 space-y-4">
                 <Label className="text-amber-900 font-medium">{t('tokenCostSettings')}</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-amber-700">{t('inputTokenCost')}</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.input_token_cost}
-                      onChange={(e) => setFormData({ ...formData, input_token_cost: parseFloat(e.target.value) || 0 })}
-                      placeholder="0.00"
-                      className="h-9"
-                    />
-                    <p className="text-xs text-amber-600">$/1M tokens</p>
+                
+                {/* ≤200K tokens 区间 */}
+                <div className="space-y-2">
+                  <p className="text-xs text-amber-800 font-medium">≤ 200K tokens</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-amber-700">{t('inputTokenCost')}</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.input_token_cost}
+                        onChange={(e) => setFormData({ ...formData, input_token_cost: parseFloat(e.target.value) || 0 })}
+                        placeholder="0.00"
+                        className="h-9"
+                      />
+                      <p className="text-xs text-amber-600">$/1M tokens</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-amber-700">{t('outputTokenCost')}</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.output_token_cost}
+                        onChange={(e) => setFormData({ ...formData, output_token_cost: parseFloat(e.target.value) || 0 })}
+                        placeholder="0.00"
+                        className="h-9"
+                      />
+                      <p className="text-xs text-amber-600">$/1M tokens</p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-amber-700">{t('outputTokenCost')}</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.output_token_cost}
-                      onChange={(e) => setFormData({ ...formData, output_token_cost: parseFloat(e.target.value) || 0 })}
-                      placeholder="0.00"
-                      className="h-9"
-                    />
-                    <p className="text-xs text-amber-600">$/1M tokens</p>
+                </div>
+
+                {/* >200K tokens 区间 */}
+                <div className="space-y-2 pt-2 border-t border-amber-200">
+                  <p className="text-xs text-amber-800 font-medium">&gt; 200K tokens</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-amber-700">{t('inputTokenCost')}</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.input_token_cost_above_200k}
+                        onChange={(e) => setFormData({ ...formData, input_token_cost_above_200k: parseFloat(e.target.value) || 0 })}
+                        placeholder="0.00"
+                        className="h-9"
+                      />
+                      <p className="text-xs text-amber-600">$/1M tokens</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-amber-700">{t('outputTokenCost')}</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.output_token_cost_above_200k}
+                        onChange={(e) => setFormData({ ...formData, output_token_cost_above_200k: parseFloat(e.target.value) || 0 })}
+                        placeholder="0.00"
+                        className="h-9"
+                      />
+                      <p className="text-xs text-amber-600">$/1M tokens</p>
+                    </div>
                   </div>
                 </div>
               </div>
