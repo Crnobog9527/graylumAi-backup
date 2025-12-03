@@ -374,8 +374,102 @@ function AdminPackagesContent() {
             </Table>
           </CardContent>
         </Card>
+          </TabsContent>
 
-        {/* Add/Edit Dialog */}
+          {/* Membership Tab */}
+          <TabsContent value="memberships">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-800">会员等级设置</h2>
+                <p className="text-sm text-slate-500">配置不同会员等级的权益和定价</p>
+              </div>
+              <Button 
+                onClick={() => { resetMembershipForm(); setMembershipDialogOpen(true); }}
+                className="bg-violet-600 hover:bg-violet-700 gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                添加会员等级
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {memberships.map((plan) => (
+                <Card key={plan.id} className={`relative ${!plan.is_active ? 'opacity-60' : ''}`}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <Badge className={levelColors[plan.level]}>
+                        {levelLabels[plan.level]}
+                      </Badge>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditMembership(plan)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-red-600"
+                          onClick={() => { setSelectedMembership(plan); setMembershipDeleteOpen(true); }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <CardTitle className="text-lg">{plan.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">月付</span>
+                        <span className="font-medium">${plan.monthly_price}/月 → {plan.monthly_credits?.toLocaleString()} 积分</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">年付</span>
+                        <span className="font-medium">${plan.yearly_price}/年 → {plan.yearly_credits?.toLocaleString()} 积分</span>
+                      </div>
+                      {plan.monthly_bonus_credits > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-500">月度赠送</span>
+                          <span className="font-medium text-emerald-600">+{plan.monthly_bonus_credits} 积分</span>
+                        </div>
+                      )}
+                      {plan.package_discount < 100 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-500">加油包折扣</span>
+                          <span className="font-medium text-blue-600">{plan.package_discount}折</span>
+                        </div>
+                      )}
+                    </div>
+                    {plan.features?.length > 0 && (
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-slate-500 mb-2">权益列表：</p>
+                        <ul className="text-xs text-slate-600 space-y-1">
+                          {plan.features.slice(0, 4).map((f, i) => (
+                            <li key={i} className="flex items-center gap-1">
+                              <Zap className="h-3 w-3 text-amber-500" />
+                              {f}
+                            </li>
+                          ))}
+                          {plan.features.length > 4 && (
+                            <li className="text-slate-400">+{plan.features.length - 4} 更多权益...</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+              {memberships.length === 0 && (
+                <Card className="col-span-full">
+                  <CardContent className="py-12 text-center text-slate-500">
+                    暂无会员等级，点击上方按钮添加
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Add/Edit Package Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
