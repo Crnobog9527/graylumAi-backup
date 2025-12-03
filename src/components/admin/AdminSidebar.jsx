@@ -4,21 +4,24 @@ import { createPageUrl } from '@/utils';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, Bot, Wand2, Package, Users, 
-  CreditCard, Settings, ChevronLeft, Shield
+  CreditCard, Settings, ChevronLeft, Shield, Globe
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useLanguage } from './LanguageContext';
 
 const menuItems = [
-  { name: 'Dashboard', icon: LayoutDashboard, page: 'AdminDashboard' },
-  { name: 'AI Models', icon: Bot, page: 'AdminModels' },
-  { name: 'Prompt Modules', icon: Wand2, page: 'AdminPrompts' },
-  { name: 'Credit Packages', icon: Package, page: 'AdminPackages' },
-  { name: 'Users', icon: Users, page: 'AdminUsers' },
-  { name: 'Transactions', icon: CreditCard, page: 'AdminTransactions' },
-  { name: 'Settings', icon: Settings, page: 'AdminSettings' },
+  { nameKey: 'dashboard', icon: LayoutDashboard, page: 'AdminDashboard' },
+  { nameKey: 'aiModels', icon: Bot, page: 'AdminModels' },
+  { nameKey: 'promptModules', icon: Wand2, page: 'AdminPrompts' },
+  { nameKey: 'creditPackages', icon: Package, page: 'AdminPackages' },
+  { nameKey: 'users', icon: Users, page: 'AdminUsers' },
+  { nameKey: 'transactions', icon: CreditCard, page: 'AdminTransactions' },
+  { nameKey: 'settings', icon: Settings, page: 'AdminSettings' },
 ];
 
 export default function AdminSidebar({ currentPage }) {
+  const { language, toggleLanguage, t } = useLanguage();
+  
   return (
     <div className="w-64 bg-slate-900 min-h-screen flex flex-col">
       <div className="p-6 border-b border-slate-800">
@@ -27,7 +30,7 @@ export default function AdminSidebar({ currentPage }) {
             <Shield className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-white">Admin Panel</h1>
+            <h1 className="font-bold text-white">{t('adminPanel')}</h1>
             <p className="text-xs text-slate-400">Manage your platform</p>
           </div>
         </div>
@@ -49,21 +52,31 @@ export default function AdminSidebar({ currentPage }) {
                 )}
               >
                 <Icon className="h-5 w-5" />
-                {item.name}
+                {t(item.nameKey)}
               </Button>
             </Link>
           );
         })}
       </nav>
       
-      <div className="p-4 border-t border-slate-800">
+      <div className="p-4 border-t border-slate-800 space-y-2">
+        {/* Language Toggle */}
+        <Button
+          variant="ghost"
+          onClick={toggleLanguage}
+          className="w-full justify-start gap-3 text-slate-400 hover:bg-slate-800 hover:text-white"
+        >
+          <Globe className="h-4 w-4" />
+          {language === 'zh' ? 'English' : '中文'}
+        </Button>
+        
         <Link to={createPageUrl('Chat')}>
           <Button
             variant="outline"
             className="w-full justify-start gap-3 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to App
+            {t('backToApp')}
           </Button>
         </Link>
       </div>
