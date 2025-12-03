@@ -11,6 +11,41 @@ Deno.serve(async (req) => {
 
     const { model_id, messages, system_prompt } = await req.json();
 
+    // Token 估算函数 (字符数 / 4)
+    const estimateTokens = (text) => Math.ceil((text || '').length / 4);
+
+    // 计算消息列表的总 token 数
+    const calculateTotalTokens = (msgs, sysPrompt) => {
+      let total = estimateTokens(sysPrompt);
+      for (const m of msgs) {
+        total += estimateTokens(m.content);
+      }
+      return total;
+    };
+
+    // 截断历史记录，保持在安全阈值内
+    const MAX_TOKENS = 180000; // 安全阈值
+    const truncateMessages = (msgs, sysPrompt) => {
+      let truncatedMsgs = [...msgs];
+      let totalTokens = calculateTotalTokens(truncatedMsgs, sysPrompt);
+      
+      // 当超过阈值时，从最早的对话开始删除
+      while (totalTokens > MAX_TOKENS && truncatedMsgs.length > 2) {
+        // 删除最早的一对消息 (user + assistant)
+        if (truncatedMsgs.length >= 2) {
+          truncatedMsgs = truncatedMsgs.slice(2);
+        } else {
+          truncatedMsgs = truncatedMsgs.slice(1);
+        }
+        totalTokens = calculateTotalTokens(truncatedMsgs, sysPrompt);
+      }
+      
+      return { truncatedMsgs, totalTokens };
+    };
+
+    // 执行截断
+    const { truncatedMsgs: processedMessages, totalTokens } = truncateMessages(messages, system_prompt);
+
     // 获取模型配置
     const models = await base44.asServiceRole.entities.AIModel.filter({ id: model_id });
     const model = models[0];
@@ -22,7 +57,7 @@ Deno.serve(async (req) => {
     // 如果使用内置集成（支持联网）
     if (model.provider === 'builtin' || model.enable_web_search) {
       // 构建完整的提示
-      const fullPrompt = messages.map(m => {
+      const fullPrompt = processedMessages.map(m => {
         if (m.role === 'user') return `用户: ${m.content}`;
         if (m.role === 'assistant') return `助手: ${m.content}`;
         return m.content;
@@ -52,7 +87,7 @@ Deno.serve(async (req) => {
     let responseText;
 
     // 构建消息列表
-    const formattedMessages = messages.map(m => ({
+    const formattedMessages = processedMessages.map(m => ({
       role: m.role,
       content: m.content
     }));
