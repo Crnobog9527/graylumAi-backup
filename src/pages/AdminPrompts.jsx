@@ -81,7 +81,6 @@ const initialFormData = {
   category: 'writing',
   icon: 'Sparkles',
   color: 'violet',
-  credits_multiplier: 1,
   model_id: '',
   is_active: true,
   sort_order: 0,
@@ -166,7 +165,6 @@ function AdminPromptsContent() {
       category: module.category || 'writing',
       icon: module.icon || 'Sparkles',
       color: module.color || 'violet',
-      credits_multiplier: module.credits_multiplier || 1,
       model_id: module.model_id || '',
       is_active: module.is_active !== false,
       sort_order: module.sort_order || 0,
@@ -238,9 +236,6 @@ function AdminPromptsContent() {
                 <p className="text-sm text-slate-500 mb-4 line-clamp-2">{module.description}</p>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">
-                      {module.credits_multiplier}x credits
-                    </span>
                     {module.model_id && (
                       <Badge variant="outline" className="text-xs gap-1">
                         <Bot className="h-3 w-3" />
@@ -378,7 +373,7 @@ function AdminPromptsContent() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t('icon')}</Label>
                   <Select
@@ -417,17 +412,6 @@ function AdminPromptsContent() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('creditsMultiplier')}</Label>
-                  <Input
-                    type="number"
-                    value={formData.credits_multiplier}
-                    onChange={(e) => setFormData({ ...formData, credits_multiplier: parseFloat(e.target.value) })}
-                    min={0.5}
-                    max={10}
-                    step={0.5}
-                  />
                 </div>
               </div>
 
