@@ -46,7 +46,7 @@ import {
 import AdminSidebar from '../components/admin/AdminSidebar';
 import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
 
-const initialFormData = {
+const initialPackageFormData = {
   name: '',
   credits: 100,
   price: 9.99,
@@ -56,13 +56,44 @@ const initialFormData = {
   sort_order: 0,
 };
 
+const initialMembershipFormData = {
+  name: '',
+  level: 'pro',
+  monthly_price: 9.9,
+  yearly_price: 99,
+  monthly_credits: 1500,
+  yearly_credits: 20000,
+  monthly_bonus_credits: 0,
+  package_discount: 100,
+  features: [],
+  is_active: true,
+  sort_order: 0,
+};
+
+const levelLabels = {
+  free: '免费会员',
+  pro: '进阶会员',
+  gold: '黄金会员'
+};
+
+const levelColors = {
+  free: 'bg-slate-100 text-slate-700',
+  pro: 'bg-blue-100 text-blue-700',
+  gold: 'bg-amber-100 text-amber-700'
+};
+
 function AdminPackagesContent() {
   const { t } = useLanguage();
   const [user, setUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [membershipDialogOpen, setMembershipDialogOpen] = useState(false);
+  const [membershipDeleteOpen, setMembershipDeleteOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
-  const [formData, setFormData] = useState(initialFormData);
+  const [selectedMembership, setSelectedMembership] = useState(null);
+  const [formData, setFormData] = useState(initialPackageFormData);
+  const [membershipFormData, setMembershipFormData] = useState(initialMembershipFormData);
+  const [featuresText, setFeaturesText] = useState('');
   const queryClient = useQueryClient();
 
   useEffect(() => {
