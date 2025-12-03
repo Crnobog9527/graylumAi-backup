@@ -1,239 +1,276 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { 
-  Coins, CreditCard, TrendingUp, TrendingDown, 
-  ArrowUpRight, ArrowDownRight, Clock, Sparkles,
-  Check, Zap
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { ArrowLeft, Coins, History, TrendingUp, TrendingDown, Zap, Sparkles, Crown, Package } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-
-const creditPackages = [
-  { id: 1, credits: 100, price: 9.99, popular: false },
-  { id: 2, credits: 500, price: 39.99, popular: true, savings: '20%' },
-  { id: 3, credits: 1000, price: 69.99, popular: false, savings: '30%' },
-  { id: 4, credits: 5000, price: 299.99, popular: false, savings: '40%' },
-];
+import { Badge } from "@/components/ui/badge";
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export default function Credits() {
   const [user, setUser] = useState(null);
+  const [purchasing, setPurchasing] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const loadUser = async () => {
-      const userData = await base44.auth.me();
-      setUser(userData);
+      try {
+        const userData = await base44.auth.me();
+        setUser(userData);
+      } catch (e) {
+        base44.auth.redirectToLogin();
+      }
     };
     loadUser();
   }, []);
+
+  const { data: packages = [] } = useQuery({
+    queryKey: ['creditPackages'],
+    queryFn: () => base44.entities.CreditPackage.filter({ is_active: true }, 'sort_order'),
+  });
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions', user?.email],
     queryFn: () => base44.entities.CreditTransaction.filter(
       { user_email: user?.email },
       '-created_date',
-      50
+      20
     ),
     enabled: !!user?.email,
   });
 
+  const updateUserMutation = useMutation({
+    mutationFn: (data) => base44.auth.updateMe(data),
+    onSuccess: (data) => setUser(prev => ({ ...prev, ...data })),
+  });
+
+  const createTransactionMutation = useMutation({
+    mutationFn: (data) => base44.entities.CreditTransaction.create(data),
+    onSuccess: () => queryClient.invalidateQueries(['transactions']),
+  });
+
   const handlePurchase = async (pkg) => {
-    // In a real app, this would integrate with a payment provider
-    toast.info('Payment integration coming soon!');
+    setPurchasing(true);
+    try {
+      // In a real implementation, this would integrate with a payment provider
+      // For now, we'll simulate a successful purchase
+      const totalCredits = pkg.credits + (pkg.bonus_credits || 0);
+      const newBalance = (user.credits || 0) + totalCredits;
+      
+      await updateUserMutation.mutateAsync({
+        credits: newBalance,
+        total_credits_purchased: (user.total_credits_purchased || 0) + totalCredits,
+      });
+
+      await createTransactionMutation.mutateAsync({
+        user_email: user.email,
+        type: 'purchase',
+        amount: totalCredits,
+        balance_after: newBalance,
+        description: `Purchased ${pkg.name} - ${totalCredits} credits`,
+      });
+
+      alert(`Successfully purchased ${totalCredits} credits!`);
+    } catch (error) {
+      console.error('Purchase error:', error);
+      alert('Purchase failed. Please try again.');
+    } finally {
+      setPurchasing(false);
+    }
   };
 
-  const totalUsed = transactions
-    .filter(t => t.type === 'usage')
-    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  const getTransactionIcon = (type) => {
+    switch (type) {
+      case 'purchase':
+      case 'bonus':
+        return <TrendingUp className="h-4 w-4 text-emerald-500" />;
+      case 'usage':
+        return <TrendingDown className="h-4 w-4 text-rose-500" />;
+      default:
+        return <Coins className="h-4 w-4 text-slate-500" />;
+    }
+  };
 
-  const totalPurchased = transactions
-    .filter(t => t.type === 'purchase' || t.type === 'bonus')
-    .reduce((sum, t) => sum + t.amount, 0);
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div>
+      </div>
+    );
+  }
+
+  // 计算统计数据
+  const totalPurchased = user?.total_credits_purchased || 0;
+  const totalUsed = user?.total_credits_used || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-amber-50/30">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200">
-        <div className="max-w-5xl mx-auto px-6 py-12">
-          <div className="text-center mb-8">
-            <div className="inline-flex p-4 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 mb-4">
-              <Coins className="h-8 w-8 text-amber-600" />
-            </div>
-            <h1 className="text-3xl font-bold text-slate-800 mb-3">
-              Credits & Billing
-            </h1>
-            <p className="text-slate-500 max-w-lg mx-auto">
-              Manage your credits and view transaction history
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-4 lg:p-8">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-2xl mb-4">
+            <Coins className="h-8 w-8 text-amber-600" />
           </div>
+          <h1 className="text-3xl font-bold text-slate-900">充值中心</h1>
+          <p className="text-slate-500 mt-2">购买积分，畅享AI功能</p>
         </div>
-      </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-10">
-          <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-200">
-                  <Coins className="h-5 w-5 text-white" />
-                </div>
-                <Badge className="bg-amber-100 text-amber-700 border-0">Current</Badge>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <Coins className="h-5 w-5 text-amber-600" />
               </div>
-              <p className="text-sm text-amber-600 font-medium">Available Credits</p>
-              <p className="text-3xl font-bold text-amber-800">{(user?.credits || 0).toLocaleString()}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 shadow-lg shadow-green-200">
-                  <TrendingUp className="h-5 w-5 text-white" />
-                </div>
+              <span className="text-sm text-slate-500">当前积分</span>
+            </div>
+            <div className="text-3xl font-bold text-amber-600">{(user?.credits || 0).toLocaleString()}</div>
+          </div>
+          
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-green-600" />
               </div>
-              <p className="text-sm text-green-600 font-medium">Total Purchased</p>
-              <p className="text-3xl font-bold text-green-800">{totalPurchased.toLocaleString()}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 shadow-lg shadow-indigo-200">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
+              <span className="text-sm text-slate-500">累计购买</span>
+            </div>
+            <div className="text-3xl font-bold text-slate-900">{totalPurchased.toLocaleString()}</div>
+          </div>
+          
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Zap className="h-5 w-5 text-blue-600" />
               </div>
-              <p className="text-sm text-indigo-600 font-medium">Total Used</p>
-              <p className="text-3xl font-bold text-indigo-800">{totalUsed.toLocaleString()}</p>
-            </CardContent>
-          </Card>
+              <span className="text-sm text-slate-500">累计消耗</span>
+            </div>
+            <div className="text-3xl font-bold text-slate-900">{totalUsed.toLocaleString()}</div>
+          </div>
         </div>
 
         {/* Credit Packages */}
-        <div className="mb-10">
-          <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-slate-600" />
-            Purchase Credits
-          </h2>
-          
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {creditPackages.map((pkg) => (
-              <Card
-                key={pkg.id}
-                className={cn(
-                  "relative overflow-hidden transition-all duration-300 hover:-translate-y-1 cursor-pointer",
-                  pkg.popular
-                    ? "border-indigo-300 shadow-xl shadow-indigo-100"
-                    : "border-slate-200 hover:border-indigo-200 hover:shadow-lg"
-                )}
-                onClick={() => handlePurchase(pkg)}
-              >
-                {pkg.popular && (
-                  <div className="absolute top-0 right-0 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
-                    POPULAR
-                  </div>
-                )}
-                {pkg.savings && (
-                  <Badge className="absolute top-3 left-3 bg-green-100 text-green-700 border-0">
-                    Save {pkg.savings}
-                  </Badge>
-                )}
-                <CardContent className="p-6 pt-10">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Zap className={cn(
-                      "h-5 w-5",
-                      pkg.popular ? "text-indigo-500" : "text-amber-500"
-                    )} />
-                    <span className="text-2xl font-bold text-slate-800">
-                      {pkg.credits.toLocaleString()}
-                    </span>
-                    <span className="text-slate-500">credits</span>
-                  </div>
-                  
-                  <p className="text-3xl font-bold text-slate-800 mb-4">
-                    ${pkg.price}
-                  </p>
-                  
-                  <Button
-                    className={cn(
-                      "w-full",
-                      pkg.popular
-                        ? "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
-                        : "bg-slate-800 hover:bg-slate-900"
-                    )}
-                  >
-                    Purchase
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+        <section className="mb-12">
+          <div className="flex items-center gap-2 mb-6">
+            <Package className="h-5 w-5 text-slate-600" />
+            <h2 className="text-xl font-semibold text-slate-800">积分加油包</h2>
           </div>
-        </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {packages.map((pkg) => {
+              const totalCredits = pkg.credits + (pkg.bonus_credits || 0);
+              return (
+                <div 
+                  key={pkg.id}
+                  className={cn(
+                    "relative bg-white rounded-2xl border-2 p-5 transition-all hover:shadow-lg",
+                    pkg.is_popular 
+                      ? "border-blue-400 shadow-blue-100 shadow-lg" 
+                      : "border-slate-200 hover:border-slate-300"
+                  )}
+                >
+                  {pkg.is_popular && (
+                    <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-3">
+                      推荐
+                    </Badge>
+                  )}
+                  
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 mb-2">
+                      <Zap className="h-5 w-5 text-amber-500" />
+                      <span className="text-2xl font-bold text-slate-900">{pkg.credits.toLocaleString()}</span>
+                      <span className="text-sm text-slate-500">积分</span>
+                    </div>
+                    
+                    {pkg.bonus_credits > 0 && (
+                      <div className="text-sm text-green-600 mb-2">
+                        +{pkg.bonus_credits} 赠送积分
+                      </div>
+                    )}
+                    
+                    <div className="text-2xl font-bold text-blue-600 mb-4">
+                      ¥{pkg.price}
+                    </div>
+                    
+                    <Button
+                      className={cn(
+                        "w-full",
+                        pkg.is_popular 
+                          ? "bg-blue-600 hover:bg-blue-700" 
+                          : "bg-slate-800 hover:bg-slate-900"
+                      )}
+                      onClick={() => handlePurchase(pkg)}
+                      disabled={purchasing}
+                    >
+                      立即购买
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {packages.length === 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+              <Coins className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-500">暂无可用套餐</p>
+            </div>
+          )}
+        </section>
 
         {/* Transaction History */}
-        <Card>
-          <CardHeader className="border-b border-slate-100">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Clock className="h-5 w-5 text-slate-600" />
-              Transaction History
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+        <section>
+          <div className="flex items-center gap-2 mb-6">
+            <History className="h-5 w-5 text-slate-600" />
+            <h2 className="text-xl font-semibold text-slate-800">交易记录</h2>
+          </div>
+          
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
             <ScrollArea className="h-[400px]">
-              {transactions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="p-4 rounded-full bg-slate-100 mb-4">
-                    <Clock className="h-6 w-6 text-slate-400" />
-                  </div>
-                  <p className="text-slate-500">No transactions yet</p>
-                </div>
-              ) : (
+              {transactions.length > 0 ? (
                 <div className="divide-y divide-slate-100">
                   {transactions.map((tx) => (
-                    <div key={tx.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                    <div key={tx.id} className="flex items-center justify-between p-4 hover:bg-slate-50">
                       <div className="flex items-center gap-4">
                         <div className={cn(
                           "p-2 rounded-lg",
-                          tx.amount > 0
-                            ? "bg-green-100"
-                            : "bg-red-100"
+                          tx.amount >= 0 ? "bg-green-100" : "bg-red-100"
                         )}>
-                          {tx.amount > 0 
-                            ? <ArrowUpRight className="h-4 w-4 text-green-600" />
-                            : <ArrowDownRight className="h-4 w-4 text-red-600" />
-                          }
+                          {getTransactionIcon(tx.type)}
                         </div>
                         <div>
-                          <p className="font-medium text-slate-800">{tx.description}</p>
+                          <p className="font-medium text-slate-800">{tx.description || tx.type}</p>
                           <p className="text-sm text-slate-500">
-                            {format(new Date(tx.created_date), 'MMM d, yyyy HH:mm')}
+                            {format(new Date(tx.created_date), 'yyyy-MM-dd HH:mm')}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className={cn(
                           "font-semibold",
-                          tx.amount > 0 ? "text-green-600" : "text-red-600"
+                          tx.amount >= 0 ? 'text-green-600' : 'text-red-600'
                         )}>
-                          {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString()}
+                          {tx.amount >= 0 ? '+' : ''}{tx.amount} 积分
                         </p>
                         <p className="text-xs text-slate-400">
-                          Balance: {tx.balance_after?.toLocaleString()}
+                          余额: {tx.balance_after}
                         </p>
                       </div>
                     </div>
                   ))}
                 </div>
+              ) : (
+                <div className="py-12 text-center">
+                  <History className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-500">暂无交易记录</p>
+                </div>
               )}
             </ScrollArea>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       </div>
     </div>
   );
