@@ -184,7 +184,7 @@ function AdminFinanceContent() {
           <StatsCard
             title={t('totalRevenue')}
             value={formatUSD(totalStats.totalRevenue)}
-            subtitle={`${totalStats.creditsEarned.toLocaleString()} ${t('creditsEarned')}`}
+            subtitle={`${totalStats.creditsPurchased.toLocaleString()} 积分（实际购买）`}
             icon={TrendingUp}
             color="emerald"
           />
