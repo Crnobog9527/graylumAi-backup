@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
@@ -6,12 +6,13 @@ import { useQuery } from '@tanstack/react-query';
 import { 
   User, CreditCard, History, Shield, LogOut, 
   Crown, Zap, Clock, ChevronRight, ChevronLeft,
-  CheckCircle2, RefreshCw, Settings, Wallet, Package
+  CheckCircle2, RefreshCw, Settings, Wallet, Package, Mail, Lock, Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { toast } from 'sonner';
 
 export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
   const menuItems = [
@@ -437,6 +438,30 @@ export function UsageHistoryCard({ user }) {
 }
 
 export function SecuritySettingsCard({ user }) {
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const handleVerifyEmail = async () => {
+    setVerifyLoading(true);
+    try {
+      // 发送验证邮件
+      await base44.integrations.Core.SendEmail({
+        to: user.email,
+        subject: '邮箱验证',
+        body: `您好 ${user.full_name || '用户'}，\n\n感谢您使用我们的服务！您的邮箱已确认为：${user.email}\n\n如果这不是您的操作，请忽略此邮件。\n\n祝好！`
+      });
+      toast.success('验证邮件已发送，请查收邮箱');
+    } catch (error) {
+      toast.error('发送失败，请稍后重试');
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleChangePassword = () => {
+    toast.info('如需修改密码，请联系管理员或通过忘记密码功能重置');
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
       <h3 className="text-lg font-bold text-slate-900 mb-6">账户安全</h3>
@@ -466,7 +491,18 @@ export function SecuritySettingsCard({ user }) {
             {user?.email_verified ? (
               <CheckCircle2 className="h-5 w-5 text-green-500" />
             ) : (
-              <Button variant="outline" size="sm">验证邮箱</Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleVerifyEmail}
+                disabled={verifyLoading}
+              >
+                {verifyLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  '验证邮箱'
+                )}
+              </Button>
             )}
           </div>
         </div>
@@ -478,7 +514,13 @@ export function SecuritySettingsCard({ user }) {
               <div className="font-medium text-slate-900">修改密码</div>
               <div className="text-sm text-slate-500 mt-1">定期更新密码以保障账户安全</div>
             </div>
-            <Button variant="outline" size="sm">修改</Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleChangePassword}
+            >
+              修改
+            </Button>
           </div>
         </div>
 
