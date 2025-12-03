@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -15,6 +15,7 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
 
 export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
+  const navigate = useNavigate();
   const menuItems = [
     { id: 'profile', label: '个人资料', icon: User },
     { id: 'subscription', label: '订阅管理', icon: Crown },
@@ -22,6 +23,10 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
     { id: 'history', label: '使用历史', icon: History },
     { id: 'security', label: '账户安全', icon: Shield },
   ];
+
+  const handleLogout = async () => {
+    await base44.auth.logout(createPageUrl('Landing'));
+  };
 
   return (
     <div className="w-56 shrink-0 hidden md:block bg-white rounded-2xl p-4 border border-slate-200 h-fit">
@@ -52,7 +57,7 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
       
       <div className="pt-4 border-t border-slate-100">
         <button 
-          onClick={onLogout}
+          onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-500 hover:text-red-600 transition-colors"
         >
           <LogOut className="h-4 w-4" />
