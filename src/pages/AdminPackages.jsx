@@ -118,6 +118,12 @@ function AdminPackagesContent() {
     enabled: !!user,
   });
 
+  const { data: memberships = [] } = useQuery({
+    queryKey: ['admin-memberships'],
+    queryFn: () => base44.entities.MembershipPlan.list('sort_order'),
+    enabled: !!user,
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.CreditPackage.create(data),
     onSuccess: () => {
