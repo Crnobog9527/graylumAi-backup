@@ -10,7 +10,7 @@ import {
 
 export default function Landing() {
   const handleLogin = () => {
-    base44.auth.redirectToLogin(createPageUrl('Home'));
+    base44.auth.redirectToLogin();
   };
 
   return (
