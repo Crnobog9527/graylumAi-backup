@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, MessageSquare, Pencil, ChevronDown, Paperclip, Send, Loader2, Copy, RefreshCw, ThumbsUp, ThumbsDown, Bot, Trash2, CheckSquare, Square, Settings2, AlertTriangle } from 'lucide-react';
+import { Plus, MessageSquare, Pencil, ChevronDown, Paperclip, Send, Loader2, Copy, RefreshCw, ThumbsUp, ThumbsDown, Bot, Trash2, CheckSquare, Square, Settings2, AlertTriangle, X, FileText, Image } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
@@ -46,8 +46,11 @@ export default function Chat() {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedConversations, setSelectedConversations] = useState([]);
   const [longTextWarning, setLongTextWarning] = useState({ open: false, estimatedCredits: 0, estimatedTokens: 0 });
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
   const location = useLocation();
 
@@ -393,6 +396,33 @@ ${selectedModule.system_prompt}
     handleSendMessage(true);
   };
 
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
+    setIsUploading(true);
+    try {
+      const uploadPromises = files.map(async (file) => {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        return { name: file.name, url: file_url, type: file.type };
+      });
+      const uploaded = await Promise.all(uploadPromises);
+      setUploadedFiles(prev => [...prev, ...uploaded]);
+    } catch (error) {
+      console.error('文件上传失败:', error);
+      alert('文件上传失败，请重试');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removeUploadedFile = (index) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   // Group conversations by date
   const groupedConversations = React.useMemo(() => {
     const groups = { today: [], yesterday: [], thisWeek: [], older: [] };
@@ -656,11 +686,51 @@ ${selectedModule.system_prompt}
               <span>您还剩 <span className="text-blue-600 font-medium">{user.credits?.toLocaleString() || 0}</span> 积分</span>
             </div>
 
+            {/* Uploaded Files Preview */}
+            {uploadedFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {uploadedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1.5 text-sm">
+                    {file.type?.startsWith('image/') ? (
+                      <Image className="h-4 w-4 text-blue-500" />
+                    ) : (
+                      <FileText className="h-4 w-4 text-blue-500" />
+                    )}
+                    <span className="text-slate-600 max-w-[150px] truncate">{file.name}</span>
+                    <button
+                      onClick={() => removeUploadedFile(index)}
+                      className="text-slate-400 hover:text-red-500"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Input Box */}
             <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm">
               <div className="flex items-end p-3">
-                <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600 shrink-0">
-                  <Paperclip className="h-5 w-5" />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx,.txt,.csv"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-9 w-9 text-slate-400 hover:text-slate-600 shrink-0"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Paperclip className="h-5 w-5" />
+                  )}
                 </Button>
                 <Textarea
                   ref={textareaRef}
