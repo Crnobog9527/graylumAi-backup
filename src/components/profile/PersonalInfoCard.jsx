@@ -1,14 +1,24 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 import { Pencil, Crown, Coins, Plus, RefreshCw, Key, Link2, Users, Headphones, MessageCircle, Code, PenTool } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { format, differenceInDays } from 'date-fns';
+import { format, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 
 export function UserProfileHeader({ user }) {
-  const registerDate = user?.created_date ? format(new Date(user.created_date), 'yyyy年M月d日') : '2023年6月15日';
+  const registerDate = user?.created_date ? format(new Date(user.created_date), 'yyyy年M月d日') : '-';
+  
+  const tierLabels = {
+    free: '免费用户',
+    basic: '基础会员',
+    pro: '专业会员',
+    enterprise: '企业会员'
+  };
+  const subscriptionTier = user?.subscription_tier || 'free';
   
   return (
     <div className="bg-white rounded-2xl p-6 border border-slate-200 mb-6">
@@ -23,34 +33,57 @@ export function UserProfileHeader({ user }) {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-xl font-bold text-slate-900">{user?.full_name || '用户'}</h2>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400">
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
             </div>
             <p className="text-slate-500 text-sm mb-2">{user?.email}</p>
             <div className="flex items-center gap-4 text-sm text-slate-500">
               <span>注册时间：{registerDate}</span>
               <div className="flex items-center gap-1 text-blue-600">
                 <Crown className="h-4 w-4" />
-                <span>高级会员</span>
+                <span>{tierLabels[subscriptionTier]}</span>
               </div>
             </div>
           </div>
         </div>
-        <Button variant="outline" className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50">
-          <Pencil className="h-4 w-4" />
-          编辑资料
-        </Button>
       </div>
     </div>
   );
 }
 
 export function CreditsAndSubscriptionCards({ user }) {
-  const credits = user?.credits || 1250;
-  const usedPercent = 75; // Mock data
-  const subscriptionEndDate = '2024-12-31';
-  const daysRemaining = 98; // Mock data
+  const credits = user?.credits || 0;
+  const totalUsed = user?.total_credits_used || 0;
+  const totalPurchased = user?.total_credits_purchased || 0;
+  
+  // 获取本月消耗数据
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['monthly-transactions', user?.email],
+    queryFn: () => base44.entities.CreditTransaction.filter(
+      { user_email: user?.email, type: 'usage' },
+      '-created_date',
+      100
+    ),
+    enabled: !!user?.email,
+  });
+
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+  
+  const monthlyUsed = transactions
+    .filter(t => {
+      const date = new Date(t.created_date);
+      return date >= monthStart && date <= monthEnd;
+    })
+    .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
+
+  const tierLabels = {
+    free: '免费用户',
+    basic: '基础会员',
+    pro: '专业会员',
+    enterprise: '企业会员'
+  };
+  const subscriptionTier = user?.subscription_tier || 'free';
+  const isFreeTier = subscriptionTier === 'free';
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -58,12 +91,10 @@ export function CreditsAndSubscriptionCards({ user }) {
       <div className="bg-white rounded-2xl p-6 border border-slate-200">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-slate-900">积分余额</h3>
-          <Coins className="h-5 w-5 text-slate-400" />
+          <Coins className="h-5 w-5 text-amber-500" />
         </div>
         <div className="text-4xl font-bold text-blue-600 mb-2">{credits.toLocaleString()}</div>
-        <div className="text-sm text-slate-500 mb-4">积分使用趋势</div>
-        <Progress value={usedPercent} className="h-2 mb-2" />
-        <div className="text-xs text-slate-400 mb-4">本月已使用 {usedPercent}%</div>
+        <div className="text-sm text-slate-500 mb-4">本月已消耗 {Math.round(monthlyUsed).toLocaleString()} 积分</div>
         <Link to={createPageUrl('Credits')}>
           <Button className="w-full bg-blue-600 hover:bg-blue-700 gap-2">
             <Plus className="h-4 w-4" />
@@ -76,35 +107,93 @@ export function CreditsAndSubscriptionCards({ user }) {
       <div className="bg-white rounded-2xl p-6 border border-slate-200">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-slate-900">订阅状态</h3>
-          <Crown className="h-5 w-5 text-slate-400" />
+          <Crown className="h-5 w-5 text-indigo-500" />
         </div>
-        <div className="text-2xl font-bold text-slate-900 mb-1">高级会员</div>
-        <div className="flex items-center gap-4 text-sm text-slate-500 mb-4">
-          <span>有效期至：</span>
-          <span className="text-blue-600 font-medium">{subscriptionEndDate}</span>
+        <div className="text-2xl font-bold text-slate-900 mb-1">{tierLabels[subscriptionTier]}</div>
+        <div className="text-sm text-slate-500 mb-4">
+          {isFreeTier ? '升级会员享受更多权益' : '感谢您的支持'}
         </div>
-        <div className="text-sm text-slate-500 mb-4">剩余 {daysRemaining} 天</div>
-        <Button className="w-full bg-blue-600 hover:bg-blue-700 gap-2">
-          <RefreshCw className="h-4 w-4" />
-          续费订阅
-        </Button>
+        <Link to={createPageUrl('Credits')}>
+          <Button className="w-full bg-blue-600 hover:bg-blue-700 gap-2">
+            {isFreeTier ? (
+              <>
+                <Crown className="h-4 w-4" />
+                升级会员
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                续费订阅
+              </>
+            )}
+          </Button>
+        </Link>
       </div>
     </div>
   );
 }
 
 export function UsageStatsCard({ user }) {
-  const stats = [
-    { label: '累计对话次数', value: '1,456' },
-    { label: '累计使用功能', value: '892' },
-    { label: '本月消耗积分', value: '356' },
-    { label: '使用天数', value: '125' },
-  ];
+  // 获取对话和交易数据
+  const { data: conversations = [] } = useQuery({
+    queryKey: ['all-conversations', user?.email],
+    queryFn: () => base44.entities.Conversation.filter(
+      { created_by: user?.email },
+      '-created_date',
+      1000
+    ),
+    enabled: !!user?.email,
+  });
 
-  const topFeatures = [
-    { name: '智能对话', count: 459, icon: MessageCircle },
-    { name: '智能写作', count: 267, icon: PenTool },
-    { name: '代码生成', count: 166, icon: Code },
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['all-usage-transactions', user?.email],
+    queryFn: () => base44.entities.CreditTransaction.filter(
+      { user_email: user?.email, type: 'usage' },
+      '-created_date',
+      1000
+    ),
+    enabled: !!user?.email,
+  });
+
+  // 计算统计数据
+  const totalConversations = conversations.length;
+  const totalMessages = conversations.reduce((sum, c) => sum + (c.messages?.length || 0), 0);
+  
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+  
+  const monthlyCreditsUsed = transactions
+    .filter(t => {
+      const date = new Date(t.created_date);
+      return date >= monthStart && date <= monthEnd;
+    })
+    .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
+
+  // 计算使用天数
+  const usageDates = new Set(
+    conversations.map(c => format(new Date(c.created_date), 'yyyy-MM-dd'))
+  );
+  const usageDays = usageDates.size;
+
+  // 统计最常使用的功能模块
+  const moduleUsage = {};
+  transactions.forEach(t => {
+    if (t.prompt_module_used) {
+      moduleUsage[t.prompt_module_used] = (moduleUsage[t.prompt_module_used] || 0) + 1;
+    }
+  });
+  
+  const topModules = Object.entries(moduleUsage)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([name, count]) => ({ name, count }));
+
+  const stats = [
+    { label: '累计对话次数', value: totalConversations.toLocaleString() },
+    { label: '累计消息数', value: totalMessages.toLocaleString() },
+    { label: '本月消耗积分', value: Math.round(monthlyCreditsUsed).toLocaleString() },
+    { label: '使用天数', value: usageDays.toString() },
   ];
 
   return (
@@ -120,23 +209,24 @@ export function UsageStatsCard({ user }) {
         ))}
       </div>
 
-      <h4 className="font-medium text-slate-900 mb-4">最常使用功能 Top 3</h4>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {topFeatures.map((feature, index) => {
-          const Icon = feature.icon;
-          return (
-            <div key={index} className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl">
-              <div className="p-2 bg-white rounded-lg border border-slate-200">
-                <Icon className="h-5 w-5 text-slate-600" />
+      {topModules.length > 0 && (
+        <>
+          <h4 className="font-medium text-slate-900 mb-4">最常使用功能 Top 3</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {topModules.map((module, index) => (
+              <div key={index} className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl">
+                <div className="p-2 bg-white rounded-lg border border-slate-200">
+                  <MessageCircle className="h-5 w-5 text-slate-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-slate-900">{module.name}</div>
+                  <div className="text-sm text-slate-500">{module.count}次</div>
+                </div>
               </div>
-              <div>
-                <div className="font-medium text-slate-900">{feature.name}</div>
-                <div className="text-sm text-slate-500">{feature.count}次</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -145,22 +235,12 @@ export function QuickActionsCard() {
   const actions = [
     {
       icon: Key,
-      title: '修改密码',
-      description: '更新账户登录密码，保障账户安全',
+      title: '账户安全',
+      description: '管理登录方式和密码设置',
       linkText: '前往设置',
-      linkUrl: '#',
+      linkUrl: '#security',
       iconBg: 'bg-blue-50',
       iconColor: 'text-blue-600',
-    },
-    {
-      icon: Link2,
-      title: '绑定社交账号',
-      description: '关联Google、微信账号，便捷登录',
-      linkText: '立即绑定',
-      linkUrl: '#',
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-600',
-      showSocialIcons: true,
     },
     {
       icon: Users,
@@ -168,9 +248,9 @@ export function QuickActionsCard() {
       description: '邀请好友注册，获得积分奖励',
       linkText: '生成邀请码',
       linkUrl: '#',
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-600',
-      showBadge: '+100积分',
+      iconBg: 'bg-green-50',
+      iconColor: 'text-green-600',
+      showBadge: '+50积分',
     },
     {
       icon: Headphones,
@@ -178,8 +258,8 @@ export function QuickActionsCard() {
       description: '遇到问题？我们随时为您提供帮助',
       linkText: '立即咨询',
       linkUrl: '#',
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-600',
+      iconBg: 'bg-purple-50',
+      iconColor: 'text-purple-600',
       showOnline: true,
     },
   ];
@@ -187,7 +267,7 @@ export function QuickActionsCard() {
   return (
     <div className="bg-white rounded-2xl p-6 border border-slate-200">
       <h3 className="font-semibold text-slate-900 mb-6">快捷操作</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {actions.map((action, index) => {
           const Icon = action.icon;
           return (
@@ -198,19 +278,8 @@ export function QuickActionsCard() {
               <h4 className="font-medium text-slate-900 mb-1">{action.title}</h4>
               <p className="text-sm text-slate-500 mb-3 min-h-[40px]">{action.description}</p>
               
-              {action.showSocialIcons && (
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-6 h-6 rounded-full bg-white border flex items-center justify-center">
-                    <span className="text-xs">G</span>
-                  </div>
-                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                    <span className="text-xs text-white">微</span>
-                  </div>
-                </div>
-              )}
-              
               {action.showBadge && (
-                <div className="inline-block bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded mb-3">
+                <div className="inline-block bg-green-100 text-green-600 text-xs px-2 py-0.5 rounded mb-3">
                   {action.showBadge}
                 </div>
               )}

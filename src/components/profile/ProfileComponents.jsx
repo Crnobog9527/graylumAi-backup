@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 import { 
   User, CreditCard, History, Shield, LogOut, 
   Crown, Zap, Clock, ChevronRight, ChevronLeft,
-  CheckCircle2, RefreshCw, FileText, Wallet, Receipt,
-  Settings
+  CheckCircle2, RefreshCw, Settings, Wallet, Package
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { cn } from '@/lib/utils';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
   const menuItems = [
@@ -59,7 +62,28 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
   );
 }
 
-export function SubscriptionCard() {
+export function SubscriptionCard({ user }) {
+  const { data: membershipPlans = [] } = useQuery({
+    queryKey: ['membership-plans'],
+    queryFn: () => base44.entities.MembershipPlan.filter({ is_active: true }, 'sort_order'),
+  });
+
+  const subscriptionTier = user?.subscription_tier || 'free';
+  const tierLabels = {
+    free: '免费用户',
+    basic: '基础会员',
+    pro: '专业会员',
+    enterprise: '企业会员'
+  };
+  const tierBadges = {
+    free: '',
+    basic: 'Basic',
+    pro: 'Pro',
+    enterprise: 'Enterprise'
+  };
+
+  const isFreeTier = subscriptionTier === 'free';
+
   return (
     <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm mb-6">
       <div className="flex items-center justify-between mb-6">
@@ -69,224 +93,391 @@ export function SubscriptionCard() {
           </div>
           <h3 className="text-xl font-bold text-slate-900">当前订阅</h3>
         </div>
-        <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-          <span className="w-2 h-2 rounded-full bg-green-500"></span>
-          订阅中
+        <div className={cn(
+          "flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium",
+          isFreeTier ? "bg-slate-100 text-slate-600" : "bg-green-50 text-green-700"
+        )}>
+          <span className={cn("w-2 h-2 rounded-full", isFreeTier ? "bg-slate-400" : "bg-green-500")}></span>
+          {isFreeTier ? '未订阅' : '订阅中'}
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left Details */}
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <h2 className="text-2xl font-bold text-slate-900">高级会员</h2>
-            <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium">Premium</span>
-          </div>
-          <p className="text-slate-500 text-sm mb-6">
-            开始日期：2024-11-29 &nbsp;&nbsp; 到期日期：2024-12-29
-          </p>
-
-          <div className="mb-6">
-            <div className="text-4xl font-bold text-indigo-600 mb-1">30 天</div>
-            <p className="text-sm text-slate-400">距离到期还剩</p>
-          </div>
-
-          <div className="space-y-3">
-            <div className="text-sm font-medium text-slate-900 mb-2">套餐权益</div>
-            {[
-              "500 积分/月",
-              "所有核心功能",
-              "优先响应速度",
-              "专属客服"
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-slate-600">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                {item}
-              </div>
-            ))}
-          </div>
+      {isFreeTier ? (
+        <div className="text-center py-8">
+          <div className="text-slate-500 mb-6">您当前是免费用户，升级会员享受更多权益</div>
+          <Link to={createPageUrl('Credits')}>
+            <Button className="bg-indigo-600 hover:bg-indigo-700">
+              <Crown className="h-4 w-4 mr-2" />
+              升级会员
+            </Button>
+          </Link>
         </div>
-
-        {/* Right Actions */}
-        <div className="lg:w-80 flex flex-col gap-4">
-          <div className="bg-slate-50 rounded-xl p-4 flex items-center justify-between mb-2">
-            <div>
-              <div className="font-medium text-slate-900">自动续费</div>
-              <div className="text-xs text-slate-500">开启后，到期前自动扣费续订</div>
+      ) : (
+        <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-2xl font-bold text-slate-900">{tierLabels[subscriptionTier]}</h2>
+              {tierBadges[subscriptionTier] && (
+                <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded font-medium">
+                  {tierBadges[subscriptionTier]}
+                </span>
+              )}
             </div>
-            <Switch defaultChecked />
+            <p className="text-slate-500 text-sm mb-6">
+              感谢您的支持！
+            </p>
+
+            <div className="space-y-3">
+              <div className="text-sm font-medium text-slate-900 mb-2">套餐权益</div>
+              {[
+                "更多积分配额",
+                "所有核心功能",
+                "优先响应速度",
+                "专属客服"
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm text-slate-600">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  {item}
+                </div>
+              ))}
+            </div>
           </div>
 
-          <Button className="w-full bg-indigo-600 hover:bg-indigo-700 h-11 text-base">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            立即续费
-          </Button>
-          
-          <Button variant="outline" className="w-full border-indigo-200 text-indigo-600 hover:bg-indigo-50 h-11">
-            ↑ 升级套餐
-          </Button>
-          
-          <Button variant="ghost" className="w-full text-slate-500 hover:text-slate-700">
-            <Settings className="h-4 w-4 mr-2" />
-            更改套餐
-          </Button>
+          <div className="lg:w-80 flex flex-col gap-4">
+            <div className="bg-slate-50 rounded-xl p-4 flex items-center justify-between mb-2">
+              <div>
+                <div className="font-medium text-slate-900">自动续费</div>
+                <div className="text-xs text-slate-500">开启后，到期前自动扣费续订</div>
+              </div>
+              <Switch />
+            </div>
+
+            <Link to={createPageUrl('Credits')}>
+              <Button className="w-full bg-indigo-600 hover:bg-indigo-700 h-11 text-base">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                立即续费
+              </Button>
+            </Link>
+            
+            <Link to={createPageUrl('Credits')}>
+              <Button variant="outline" className="w-full border-indigo-200 text-indigo-600 hover:bg-indigo-50 h-11">
+                ↑ 升级套餐
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-export function CreditStatsCard({ credits }) {
+export function CreditStatsCard({ user }) {
+  const credits = user?.credits || 0;
+  
+  // 获取本月积分消耗
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['user-transactions', user?.email],
+    queryFn: () => base44.entities.CreditTransaction.filter(
+      { user_email: user?.email },
+      '-created_date',
+      100
+    ),
+    enabled: !!user?.email,
+  });
+
+  // 计算本月消耗
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+  
+  const monthlyUsed = transactions
+    .filter(t => {
+      const date = new Date(t.created_date);
+      return date >= monthStart && date <= monthEnd && t.type === 'usage';
+    })
+    .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
+
   return (
     <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm mb-6">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-bold text-slate-900">积分概览</h3>
+        <Zap className="h-5 w-5 text-amber-500" />
+      </div>
+      
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <div className="text-sm font-medium text-slate-900 mb-1">积分余额</div>
+            <div className="text-sm font-medium text-slate-500 mb-1">积分余额</div>
             <div className="text-3xl font-bold text-indigo-600">
-              {credits?.toLocaleString() || "1,250"}
+              {credits.toLocaleString()}
             </div>
-            <div className="text-xs text-slate-400 mt-1">当前积分余额</div>
           </div>
           
           <div className="border-l border-slate-100 pl-8 hidden md:block">
-            <div className="text-sm font-medium text-slate-900 mb-1">250</div>
-            <div className="text-xs text-slate-500">本月已消耗</div>
+            <div className="text-sm font-medium text-slate-500 mb-1">本月消耗</div>
+            <div className="text-2xl font-bold text-slate-900">{Math.round(monthlyUsed).toLocaleString()}</div>
           </div>
           
           <div className="border-l border-slate-100 pl-8 hidden md:block">
-            <div className="text-sm font-medium text-slate-900 mb-1">1,000</div>
-            <div className="text-xs text-slate-500">本月剩余可用</div>
+            <div className="text-sm font-medium text-slate-500 mb-1">累计消耗</div>
+            <div className="text-2xl font-bold text-slate-900">{(user?.total_credits_used || 0).toLocaleString()}</div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <Link to={createPageUrl('Credits')}>
-             {/* Wait, I cannot use Link inside this component if I don't import it. I'll import Link or pass onClick */}
-             <Button className="bg-indigo-600 hover:bg-indigo-700 rounded-full px-6">
-               <Zap className="h-4 w-4 mr-2" />
-               购买加油包
-             </Button>
-          </Link>
-        </div>
+        <Link to={createPageUrl('Credits')}>
+          <Button className="bg-indigo-600 hover:bg-indigo-700 rounded-full px-6">
+            <Zap className="h-4 w-4 mr-2" />
+            购买加油包
+          </Button>
+        </Link>
       </div>
 
-      <div className="mt-6 pt-6 border-t border-slate-50 flex items-center justify-between text-sm">
-        <div className="text-slate-500">积分有效期：长期有效</div>
-        <button className="text-indigo-600 hover:text-indigo-700 font-medium">查看积分记录</button>
+      <div className="mt-6 pt-6 border-t border-slate-100">
+        <h4 className="text-sm font-medium text-slate-900 mb-4">最近积分变动</h4>
+        <div className="space-y-3">
+          {transactions.slice(0, 5).map((tx) => (
+            <div key={tx.id} className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center",
+                  tx.amount > 0 ? "bg-green-100" : "bg-red-100"
+                )}>
+                  {tx.amount > 0 ? (
+                    <Zap className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Zap className="h-4 w-4 text-red-600" />
+                  )}
+                </div>
+                <div>
+                  <div className="text-slate-900">{tx.description?.slice(0, 30) || tx.type}</div>
+                  <div className="text-xs text-slate-400">
+                    {format(new Date(tx.created_date), 'MM-dd HH:mm')}
+                  </div>
+                </div>
+              </div>
+              <div className={cn(
+                "font-medium",
+                tx.amount > 0 ? "text-green-600" : "text-red-600"
+              )}>
+                {tx.amount > 0 ? '+' : ''}{tx.amount}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-export function OrderHistory() {
-  const orders = [
-    {
-      id: '2024112900001',
-      title: '订阅高级会员',
-      price: 49,
-      date: '2024-11-29 10:30:45',
-      status: 'completed',
-      icon: Crown,
-      iconBg: 'bg-indigo-100 text-indigo-600',
-      method: '微信支付'
-    },
-    {
-      id: '2024112800002',
-      title: '购买积分加油包',
-      price: 19,
-      date: '2024-11-28 15:22:33',
-      status: 'completed',
-      icon: Zap,
-      iconBg: 'bg-blue-100 text-blue-600',
-      method: '支付宝'
-    },
-    {
-      id: '2024112700003',
-      title: '订阅专业版会员',
-      price: 99,
-      date: '2024-11-27 09:15:20',
-      status: 'pending',
-      icon: Clock,
-      iconBg: 'bg-amber-100 text-amber-600',
-      method: '微信支付'
-    },
-  ];
+export function OrderHistory({ user }) {
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['all-transactions', user?.email],
+    queryFn: () => base44.entities.CreditTransaction.filter(
+      { user_email: user?.email },
+      '-created_date',
+      50
+    ),
+    enabled: !!user?.email,
+  });
+
+  const typeLabels = {
+    purchase: '购买积分',
+    usage: '积分消耗',
+    bonus: '积分奖励',
+    refund: '积分退款',
+    admin_adjustment: '管理员调整',
+    membership: '会员权益',
+    checkin: '签到奖励'
+  };
+
+  const typeIcons = {
+    purchase: { icon: Package, bg: 'bg-green-100', color: 'text-green-600' },
+    usage: { icon: Zap, bg: 'bg-blue-100', color: 'text-blue-600' },
+    bonus: { icon: Crown, bg: 'bg-amber-100', color: 'text-amber-600' },
+    refund: { icon: RefreshCw, bg: 'bg-purple-100', color: 'text-purple-600' },
+    admin_adjustment: { icon: Settings, bg: 'bg-slate-100', color: 'text-slate-600' },
+    membership: { icon: Crown, bg: 'bg-indigo-100', color: 'text-indigo-600' },
+    checkin: { icon: CheckCircle2, bg: 'bg-green-100', color: 'text-green-600' }
+  };
+
+  if (transactions.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <h3 className="text-lg font-bold text-slate-900 mb-6">交易记录</h3>
+        <div className="text-center py-12 text-slate-500">
+          暂无交易记录
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold text-slate-900">订单历史</h3>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="h-8">全部时间</Button>
-          <Button variant="outline" size="sm" className="h-8">全部类型</Button>
-        </div>
+        <h3 className="text-lg font-bold text-slate-900">交易记录</h3>
       </div>
 
       <div className="space-y-4">
-        {orders.map((order) => (
-          <div key={order.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
-            <div className="flex items-start gap-4 mb-4 md:mb-0">
-              <div className={`p-3 rounded-xl ${order.iconBg}`}>
-                <order.icon className="h-6 w-6" />
+        {transactions.map((tx) => {
+          const typeConfig = typeIcons[tx.type] || typeIcons.usage;
+          const Icon = typeConfig.icon;
+          return (
+            <div key={tx.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+              <div className="flex items-start gap-4 mb-4 md:mb-0">
+                <div className={`p-3 rounded-xl ${typeConfig.bg}`}>
+                  <Icon className={`h-5 w-5 ${typeConfig.color}`} />
+                </div>
+                <div>
+                  <div className="font-medium text-slate-900 mb-1">
+                    {typeLabels[tx.type] || tx.type}
+                  </div>
+                  <div className="text-xs text-slate-500 max-w-md truncate">
+                    {tx.description || '-'}
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="font-bold text-slate-900 mb-1">{order.title}</div>
-                <div className="text-xs text-slate-500 font-mono">订单号：{order.id}</div>
+
+              <div className="flex flex-1 md:justify-end items-center gap-4 md:gap-8">
+                <div className="text-right">
+                  <div className={cn(
+                    "font-bold",
+                    tx.amount > 0 ? "text-green-600" : "text-red-600"
+                  )}>
+                    {tx.amount > 0 ? '+' : ''}{tx.amount} 积分
+                  </div>
+                  <div className="text-xs text-slate-400">余额：{tx.balance_after}</div>
+                </div>
+
+                <div className="text-right min-w-[100px]">
+                  <div className="text-xs text-slate-900">{format(new Date(tx.created_date), 'yyyy-MM-dd')}</div>
+                  <div className="text-xs text-slate-400">{format(new Date(tx.created_date), 'HH:mm:ss')}</div>
+                </div>
               </div>
             </div>
+          );
+        })}
+      </div>
 
-            <div className="flex flex-1 md:justify-end items-center gap-4 md:gap-8">
-              <div className="text-right hidden md:block">
-                <div className="font-bold text-slate-900">¥{order.price}</div>
-                <div className="text-xs text-slate-500">{order.method}</div>
+      <div className="flex items-center justify-between mt-8 pt-4 border-t border-slate-50">
+        <span className="text-sm text-slate-500">共 {transactions.length} 条记录</span>
+      </div>
+    </div>
+  );
+}
+
+export function UsageHistoryCard({ user }) {
+  const { data: conversations = [] } = useQuery({
+    queryKey: ['user-conversations', user?.email],
+    queryFn: () => base44.entities.Conversation.filter(
+      { created_by: user?.email },
+      '-created_date',
+      20
+    ),
+    enabled: !!user?.email,
+  });
+
+  if (conversations.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <h3 className="text-lg font-bold text-slate-900 mb-6">使用历史</h3>
+        <div className="text-center py-12 text-slate-500">
+          暂无使用记录
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-bold text-slate-900">使用历史</h3>
+        <Link to={createPageUrl('Chat')}>
+          <Button variant="outline" size="sm">查看全部对话</Button>
+        </Link>
+      </div>
+
+      <div className="space-y-3">
+        {conversations.map((conv) => (
+          <div key={conv.id} className="flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition-colors border border-slate-100">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <History className="h-4 w-4 text-blue-600" />
               </div>
-
-              <div className="min-w-[80px] text-center">
-                {order.status === 'completed' ? (
-                  <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">已完成</span>
-                ) : (
-                  <span className="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full font-medium">待支付</span>
-                )}
+              <div className="min-w-0 flex-1">
+                <div className="font-medium text-slate-900 truncate">{conv.title || '新对话'}</div>
+                <div className="text-xs text-slate-500">
+                  {conv.messages?.length || 0} 条消息 · 消耗 {conv.total_credits_used || 0} 积分
+                </div>
               </div>
-
-              <div className="text-right hidden lg:block min-w-[120px]">
-                <div className="text-xs text-slate-900 font-medium">{order.date.split(' ')[0]}</div>
-                <div className="text-xs text-slate-400">{order.date.split(' ')[1]}</div>
-              </div>
-
-              <div className="flex gap-2">
-                 {order.status === 'pending' ? (
-                    <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 h-8 text-xs">重新支付</Button>
-                 ) : (
-                    <>
-                      <button className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">查看详情</button>
-                      <button className="text-xs text-slate-400 hover:text-slate-600 ml-2">申请退款</button>
-                    </>
-                 )}
+            </div>
+            <div className="text-right shrink-0 ml-4">
+              <div className="text-xs text-slate-500">
+                {format(new Date(conv.created_date), 'MM-dd HH:mm')}
               </div>
             </div>
           </div>
         ))}
       </div>
+    </div>
+  );
+}
 
-      <div className="flex items-center justify-between mt-8 pt-4 border-t border-slate-50">
-        <span className="text-sm text-slate-500">共 15 条订单</span>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button size="sm" className="h-8 w-8 p-0 bg-indigo-600 hover:bg-indigo-700">1</Button>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">2</Button>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">3</Button>
-          <Button variant="outline" size="icon" className="h-8 w-8">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+export function SecuritySettingsCard({ user }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+      <h3 className="text-lg font-bold text-slate-900 mb-6">账户安全</h3>
+      
+      <div className="space-y-6">
+        {/* 登录方式 */}
+        <div className="p-4 border border-slate-100 rounded-xl">
+          <div className="flex items-center justify-between mb-2">
+            <div className="font-medium text-slate-900">登录方式</div>
+            <span className="text-sm text-slate-500">
+              {user?.login_provider === 'google' ? 'Google 账号' : 
+               user?.login_provider === 'wechat' ? '微信' : '邮箱密码'}
+            </span>
+          </div>
+          <div className="text-sm text-slate-500">{user?.email}</div>
+        </div>
+
+        {/* 邮箱验证 */}
+        <div className="p-4 border border-slate-100 rounded-xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium text-slate-900">邮箱验证</div>
+              <div className="text-sm text-slate-500 mt-1">
+                {user?.email_verified ? '已验证' : '未验证'}
+              </div>
+            </div>
+            {user?.email_verified ? (
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+            ) : (
+              <Button variant="outline" size="sm">验证邮箱</Button>
+            )}
+          </div>
+        </div>
+
+        {/* 修改密码 */}
+        <div className="p-4 border border-slate-100 rounded-xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium text-slate-900">修改密码</div>
+              <div className="text-sm text-slate-500 mt-1">定期更新密码以保障账户安全</div>
+            </div>
+            <Button variant="outline" size="sm">修改</Button>
+          </div>
+        </div>
+
+        {/* 账户注册时间 */}
+        <div className="p-4 border border-slate-100 rounded-xl">
+          <div className="flex items-center justify-between">
+            <div className="font-medium text-slate-900">注册时间</div>
+            <span className="text-sm text-slate-500">
+              {user?.created_date ? format(new Date(user.created_date), 'yyyy年MM月dd日') : '-'}
+            </span>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
