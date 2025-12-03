@@ -116,7 +116,7 @@ export default function ModuleCard({ module, models = [], className }) {
             <AlertDialogDescription className="space-y-2">
               <p>{module.description}</p>
               <p className="text-amber-600 font-medium">
-                点击"确认"以后，将开始消耗积分（{creditsPerUse}积分/次）
+                点击"确认"以后，将按实际Token消耗计费
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
