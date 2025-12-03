@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { ProfileSidebar, SubscriptionCard, CreditStatsCard, OrderHistory } from '@/components/profile/ProfileComponents';
+import { ProfileSidebar, SubscriptionCard, CreditStatsCard, OrderHistory, UsageHistoryCard, SecuritySettingsCard } from '@/components/profile/ProfileComponents';
 import { UserProfileHeader, CreditsAndSubscriptionCards, UsageStatsCard, QuickActionsCard } from '@/components/profile/PersonalInfoCard';
 import { Button } from "@/components/ui/button";
 import { Menu } from 'lucide-react';
@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 export default function Profile() {
   const [activeTab, setActiveTab] = useState('profile');
   
-  const { data: user } = useQuery({
+  const { data: user, isLoading } = useQuery({
     queryKey: ['user'],
     queryFn: () => base44.auth.me().catch(() => null),
   });
@@ -19,8 +19,23 @@ export default function Profile() {
     await base44.auth.logout();
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   if (!user) {
-     return <div className="min-h-screen bg-slate-50" />;
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-slate-500 mb-4">请先登录</p>
+          <Button onClick={() => base44.auth.redirectToLogin()}>登录</Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -59,21 +74,16 @@ export default function Profile() {
 
                 {activeTab === 'subscription' && (
                   <>
-                    <SubscriptionCard />
-                    <CreditStatsCard credits={user.credits} />
-                    <OrderHistory />
+                    <SubscriptionCard user={user} />
+                    <CreditStatsCard user={user} />
                   </>
                 )}
                 
-                {activeTab === 'credits' && <CreditStatsCard credits={user.credits} />}
+                {activeTab === 'credits' && <CreditStatsCard user={user} />}
                 
-                {activeTab === 'history' && <OrderHistory />}
+                {activeTab === 'history' && <UsageHistoryCard user={user} />}
                 
-                {activeTab === 'security' && (
-                   <div className="bg-white rounded-2xl p-8 border border-slate-200 text-center py-20 text-slate-500">
-                     安全设置功能开发中...
-                   </div>
-                )}
+                {activeTab === 'security' && <SecuritySettingsCard user={user} />}
              </div>
           </div>
         </div>
