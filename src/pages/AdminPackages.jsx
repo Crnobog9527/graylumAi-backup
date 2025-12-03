@@ -372,7 +372,7 @@ function AdminPackagesContent() {
                 )}
               </TableBody>
             </Table>
-          </CardContent>
+              </CardContent>
             </Card>
           </TabsContent>
 
