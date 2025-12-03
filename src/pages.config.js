@@ -12,6 +12,7 @@ import Marketplace from './pages/Marketplace';
 import Profile from './pages/Profile';
 import AdminFinance from './pages/AdminFinance';
 import AdminAnnouncements from './pages/AdminAnnouncements';
+import Landing from './pages/Landing';
 import __Layout from './Layout.jsx';
 
 
@@ -30,6 +31,7 @@ export const PAGES = {
     "Profile": Profile,
     "AdminFinance": AdminFinance,
     "AdminAnnouncements": AdminAnnouncements,
+    "Landing": Landing,
 }
 
 export const pagesConfig = {
