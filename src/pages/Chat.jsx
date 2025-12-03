@@ -692,11 +692,33 @@ ${selectedModule.system_prompt}
 
             {/* Token Billing Info */}
             <div className="text-center mt-2">
-              <span className="text-xs text-slate-500">⚡ 按实际Token消耗计费：输入 1积分/1K tokens，输出 5积分/1K tokens</span>
+              <span className="text-xs text-slate-500">⚡ 按实际Token消耗计费：输入 {inputCreditsPerK}积分/1K tokens，输出 {outputCreditsPerK}积分/1K tokens</span>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Long Text Warning Dialog */}
+      <AlertDialog open={longTextWarning.open} onOpenChange={(open) => setLongTextWarning(prev => ({ ...prev, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              检测到长文本
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>您的输入内容较长（约 {longTextWarning.estimatedTokens.toLocaleString()} tokens），本次处理预计消耗约 <span className="font-semibold text-amber-600">{longTextWarning.estimatedCredits}</span> 积分。</p>
+              <p className="text-slate-500">是否继续发送？</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmLongText} className="bg-blue-600 hover:bg-blue-700">
+              继续发送
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
