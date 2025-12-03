@@ -63,7 +63,7 @@ function AdminFinanceContent() {
     enabled: !!user,
   });
 
-  // 从交易记录计算各模型的实际token消耗
+  // 从交易记录计算各模型的实际token消耗（只统计usage类型，即AI对话消耗）
   const usageTransactions = transactions.filter(t => t.type === 'usage');
   
   // 按模型分组统计
@@ -87,6 +87,10 @@ function AdminFinanceContent() {
     modelUsageMap[modelName].totalCredits += Math.abs(tx.amount || 0);
     modelUsageMap[modelName].requests += 1;
   });
+
+  // 计算真实收入：只统计purchase（购买）类型的交易，排除admin_adjustment（管理员调整）
+  const purchaseTransactions = transactions.filter(t => t.type === 'purchase');
+  const totalPurchasedCredits = purchaseTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0);
 
   // 计算各模型的统计数据
   const modelStats = models.map(model => {
