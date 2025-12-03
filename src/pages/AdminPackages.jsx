@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import AdminSidebar from '../components/admin/AdminSidebar';
+import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
 
 const initialFormData = {
   name: '',
@@ -46,7 +47,8 @@ const initialFormData = {
   sort_order: 0,
 };
 
-export default function AdminPackages() {
+function AdminPackagesContent() {
+  const { t } = useLanguage();
   const [user, setUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -150,15 +152,15 @@ export default function AdminPackages() {
       <div className="flex-1 p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Credit Packages</h1>
-            <p className="text-slate-500 mt-1">Configure pricing and credit bundles</p>
+            <h1 className="text-3xl font-bold text-slate-900">{t('packagesTitle')}</h1>
+            <p className="text-slate-500 mt-1">{t('packagesSubtitle')}</p>
           </div>
           <Button 
             onClick={() => { resetForm(); setDialogOpen(true); }}
             className="bg-violet-600 hover:bg-violet-700 gap-2"
           >
             <Plus className="h-4 w-4" />
-            Add Package
+            {t('addPackage')}
           </Button>
         </div>
 
@@ -167,13 +169,13 @@ export default function AdminPackages() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Package</TableHead>
-                  <TableHead>Credits</TableHead>
-                  <TableHead>Bonus</TableHead>
-                  <TableHead>Price</TableHead>
+                  <TableHead>{t('packageName')}</TableHead>
+                  <TableHead>{t('credits')}</TableHead>
+                  <TableHead>{t('bonusCredits')}</TableHead>
+                  <TableHead>{t('price')}</TableHead>
                   <TableHead>$/Credit</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead className="w-[100px]">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -207,7 +209,7 @@ export default function AdminPackages() {
                       <TableCell className="text-slate-500">${pricePerCredit}</TableCell>
                       <TableCell>
                         <Badge variant={pkg.is_active ? "default" : "secondary"}>
-                          {pkg.is_active ? 'Active' : 'Inactive'}
+                          {pkg.is_active ? t('active') : t('inactive')}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -235,7 +237,7 @@ export default function AdminPackages() {
                 {packages.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-12 text-slate-500">
-                      No credit packages yet. Create your first package.
+                      {t('noPackagesYet')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -249,13 +251,13 @@ export default function AdminPackages() {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>
-                {selectedPackage ? 'Edit Package' : 'Create Package'}
+                {selectedPackage ? t('editPackage') : t('addPackage')}
               </DialogTitle>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>Package Name</Label>
+                <Label>{t('packageName')}</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -265,7 +267,7 @@ export default function AdminPackages() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Credits</Label>
+                  <Label>{t('credits')}</Label>
                   <Input
                     type="number"
                     value={formData.credits}
@@ -274,7 +276,7 @@ export default function AdminPackages() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Bonus Credits</Label>
+                  <Label>{t('bonusCredits')}</Label>
                   <Input
                     type="number"
                     value={formData.bonus_credits}
@@ -286,7 +288,7 @@ export default function AdminPackages() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Price (USD)</Label>
+                  <Label>{t('price')} (USD)</Label>
                   <Input
                     type="number"
                     value={formData.price}
@@ -296,7 +298,7 @@ export default function AdminPackages() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Sort Order</Label>
+                  <Label>{t('sortOrder')}</Label>
                   <Input
                     type="number"
                     value={formData.sort_order}
@@ -306,7 +308,7 @@ export default function AdminPackages() {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label>Mark as Popular</Label>
+                <Label>{t('isPopular')}</Label>
                 <Switch
                   checked={formData.is_popular}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_popular: checked })}
@@ -314,7 +316,7 @@ export default function AdminPackages() {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label>Active</Label>
+                <Label>{t('active')}</Label>
                 <Switch
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
@@ -324,14 +326,14 @@ export default function AdminPackages() {
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button 
                 onClick={handleSubmit}
                 disabled={!formData.name || formData.credits < 1}
                 className="bg-violet-600 hover:bg-violet-700"
               >
-                {selectedPackage ? 'Update' : 'Create'}
+                {selectedPackage ? t('update') : t('create')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -341,23 +343,31 @@ export default function AdminPackages() {
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Package</AlertDialogTitle>
+              <AlertDialogTitle>{t('deletePackage')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete "{selectedPackage?.name}"? This action cannot be undone.
+                {t('deletePackageConfirm')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => deleteMutation.mutate(selectedPackage?.id)}
                 className="bg-red-600 hover:bg-red-700"
               >
-                Delete
+                {t('delete')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
       </div>
     </div>
+  );
+}
+
+export default function AdminPackages() {
+  return (
+    <LanguageProvider>
+      <AdminPackagesContent />
+    </LanguageProvider>
   );
 }
