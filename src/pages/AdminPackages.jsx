@@ -151,9 +151,74 @@ function AdminPackagesContent() {
     },
   });
 
+  // Membership mutations
+  const createMembershipMutation = useMutation({
+    mutationFn: (data) => base44.entities.MembershipPlan.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-memberships']);
+      setMembershipDialogOpen(false);
+      resetMembershipForm();
+    },
+  });
+
+  const updateMembershipMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.MembershipPlan.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-memberships']);
+      setMembershipDialogOpen(false);
+      resetMembershipForm();
+    },
+  });
+
+  const deleteMembershipMutation = useMutation({
+    mutationFn: (id) => base44.entities.MembershipPlan.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-memberships']);
+      setMembershipDeleteOpen(false);
+      setSelectedMembership(null);
+    },
+  });
+
   const resetForm = () => {
-    setFormData(initialFormData);
+    setFormData(initialPackageFormData);
     setSelectedPackage(null);
+  };
+
+  const resetMembershipForm = () => {
+    setMembershipFormData(initialMembershipFormData);
+    setFeaturesText('');
+    setSelectedMembership(null);
+  };
+
+  const handleEditMembership = (plan) => {
+    setSelectedMembership(plan);
+    setMembershipFormData({
+      name: plan.name || '',
+      level: plan.level || 'pro',
+      monthly_price: plan.monthly_price || 0,
+      yearly_price: plan.yearly_price || 0,
+      monthly_credits: plan.monthly_credits || 0,
+      yearly_credits: plan.yearly_credits || 0,
+      monthly_bonus_credits: plan.monthly_bonus_credits || 0,
+      package_discount: plan.package_discount || 100,
+      features: plan.features || [],
+      is_active: plan.is_active !== false,
+      sort_order: plan.sort_order || 0,
+    });
+    setFeaturesText((plan.features || []).join('\n'));
+    setMembershipDialogOpen(true);
+  };
+
+  const handleMembershipSubmit = () => {
+    const data = {
+      ...membershipFormData,
+      features: featuresText.split('\n').filter(f => f.trim())
+    };
+    if (selectedMembership) {
+      updateMembershipMutation.mutate({ id: selectedMembership.id, data });
+    } else {
+      createMembershipMutation.mutate(data);
+    }
   };
 
   const handleEdit = (pkg) => {
