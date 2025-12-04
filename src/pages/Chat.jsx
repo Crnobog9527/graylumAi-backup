@@ -48,6 +48,8 @@ export default function Chat() {
   const [longTextWarning, setLongTextWarning] = useState({ open: false, estimatedCredits: 0, estimatedTokens: 0 });
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editingTitleValue, setEditingTitleValue] = useState('');
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -237,10 +239,23 @@ export default function Chat() {
     }
   }, [location.search, promptModules, models, user]);
 
+  const handleSaveTitle = async () => {
+    if (!currentConversation || !editingTitleValue.trim()) {
+      setIsEditingTitle(false);
+      return;
+    }
+    await updateConversationMutation.mutateAsync({
+      id: currentConversation.id,
+      data: { title: editingTitleValue.trim() }
+    });
+    setIsEditingTitle(false);
+  };
+
   const handleStartNewChat = (module = null) => {
     setCurrentConversation(null);
     setMessages([]);
     setSelectedModule(module);
+    setIsEditingTitle(false);
     
     if (module?.model_id && models.length > 0) {
       const moduleModel = models.find(m => m.id === module.model_id);
@@ -623,12 +638,60 @@ ${selectedModule.system_prompt}
         {/* Chat Header */}
         <div className="h-14 border-b border-slate-200 flex items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <h1 className="text-lg font-medium text-slate-800">
-              {currentConversation?.title || '新对话'}
-            </h1>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
-              <Pencil className="h-4 w-4" />
-            </Button>
+            {isEditingTitle && currentConversation ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={editingTitleValue}
+                  onChange={(e) => setEditingTitleValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSaveTitle();
+                    } else if (e.key === 'Escape') {
+                      setIsEditingTitle(false);
+                    }
+                  }}
+                  autoFocus
+                  className="text-lg font-medium text-slate-800 border border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleSaveTitle}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  保存
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsEditingTitle(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  取消
+                </Button>
+              </div>
+            ) : (
+              <>
+                <h1 className="text-lg font-medium text-slate-800">
+                  {currentConversation?.title || '新对话'}
+                </h1>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                  onClick={() => {
+                    if (currentConversation) {
+                      setEditingTitleValue(currentConversation.title || '');
+                      setIsEditingTitle(true);
+                    }
+                  }}
+                  disabled={!currentConversation}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Model Selector */}
