@@ -860,15 +860,16 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
 function filterThinkingContent(content) {
   if (!content) return content;
   
-  let filtered = content.replace(/\[思考过程\][\s\S]*?```[\s\S]*?```/g, '');
-  filtered = filtered.replace(/【思考过程】[\s\S]*?```[\s\S]*?```/g, '');
+  let filtered = content;
+  
+  // 只过滤明确的思考标签
   filtered = filtered.replace(/<think>[\s\S]*?<\/think>/gi, '');
   filtered = filtered.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
-  filtered = filtered.replace(/\[思考过程\][^\[]*(?=\n\n|\n[^（\(]|$)/g, '');
-  filtered = filtered.replace(/【思考过程】[^【]*(?=\n\n|\n[^（\(]|$)/g, '');
+  
+  // 清理多余空行
   filtered = filtered.replace(/\n{3,}/g, '\n\n').trim();
   
-  return filtered;
+  return filtered || content; // 如果过滤后为空，返回原内容
 }
 
 // Chat Message Item Component
