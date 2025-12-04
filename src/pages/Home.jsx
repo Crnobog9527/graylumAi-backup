@@ -5,8 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import WelcomeBanner from '@/components/home/WelcomeBanner';
-import QuickStart from '@/components/home/QuickStart';
-import UpdatesSection from '@/components/home/UpdatesSection';
+import QuickStartGuide from '@/components/home/QuickStartGuide';
 import ModuleCard from '@/components/modules/ModuleCard';
 
 export default function Home() {
@@ -29,7 +28,7 @@ export default function Home() {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <WelcomeBanner user={user} />
       
-      <QuickStart />
+      <QuickStartGuide />
       
       <div className="mb-10">
         <div className="flex items-center justify-between mb-4">
@@ -48,8 +47,6 @@ export default function Home() {
           ))}
         </div>
       </div>
-      
-      <UpdatesSection />
     </div>
   );
 }
