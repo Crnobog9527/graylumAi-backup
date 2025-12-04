@@ -126,12 +126,24 @@ export default function Chat() {
 
   const createConversationMutation = useMutation({
     mutationFn: (data) => base44.entities.Conversation.create(data),
-    onSuccess: () => queryClient.invalidateQueries(['conversations']),
+    onSuccess: (newConv) => {
+      // 创建后设置当前对话，并刷新列表
+      setCurrentConversation(newConv);
+      setMessages(newConv.messages || []);
+      queryClient.invalidateQueries(['conversations']);
+    },
   });
 
   const updateConversationMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Conversation.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries(['conversations']),
+    onSuccess: (updatedConv) => {
+      // 更新后同步当前对话状态
+      if (currentConversation?.id === updatedConv.id) {
+        setCurrentConversation(updatedConv);
+        setMessages(updatedConv.messages || []);
+      }
+      queryClient.invalidateQueries(['conversations']);
+    },
   });
 
   const deleteConversationMutation = useMutation({
