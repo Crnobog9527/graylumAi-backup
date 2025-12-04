@@ -40,18 +40,18 @@ const steps = [
 
 
 export default function SixStepsGuide() {
-  // 获取系统设置中的关联模块
+  // 获取系统设置中的关联模块ID
   const { data: systemSettings = [] } = useQuery({
-    queryKey: ['system-settings-six-steps'],
-    queryFn: () => base44.entities.SystemSettings.filter({ setting_key: 'six_steps_module_id' }),
+    queryKey: ['system-settings-guide'],
+    queryFn: () => base44.entities.SystemSettings.list(),
   });
 
-  const linkedModuleId = systemSettings[0]?.setting_value || '';
-  
+  const guideModuleId = systemSettings.find(s => s.setting_key === 'home_guide_button_module_id')?.setting_value;
+
   // 生成跳转链接
-  const getTargetUrl = () => {
-    if (linkedModuleId) {
-      return createPageUrl('Chat') + `?module_id=${linkedModuleId}&auto_start=true`;
+  const getButtonLink = () => {
+    if (guideModuleId) {
+      return createPageUrl('Chat') + `?module_id=${guideModuleId}&auto_start=true`;
     }
     return createPageUrl('Marketplace');
   };
@@ -98,7 +98,7 @@ export default function SixStepsGuide() {
       
       {/* CTA Button */}
       <div className="text-center">
-        <Link to={getTargetUrl()}>
+        <Link to={getButtonLink()}>
           <Button
             size="lg" className="bg-indigo-500 text-slate-50 mx-10 px-8 text-sm font-semibold opacity-100 rounded-full inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow hover:bg-indigo-600 h-12">
             <PlayCircle className="h-5 w-5 mr-2" />

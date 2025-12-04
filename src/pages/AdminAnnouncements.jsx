@@ -20,8 +20,8 @@ const defaultSettings = {
   // 聊天页面
   chat_billing_hint: { value: '⚡ 按实际Token消耗计费：输入 {input}积分/1K tokens，输出 {output}积分/1K tokens', type: 'string', label: '计费提示文案', description: '聊天页面底部显示的计费说明，{input}和{output}会替换为实际值' },
   chat_show_model_selector: { value: 'true', type: 'boolean', label: '显示模型选择器', description: '是否在聊天页面顶部显示模型切换按钮' },
-  // 首页6步引导
-  six_steps_module_id: { value: '', type: 'string', label: '6步引导关联模块', description: '首页"开始分析"按钮点击后跳转的功能模块' },
+  // 首页引导
+  home_guide_button_module_id: { value: '', type: 'string', label: '首页引导按钮关联模块', description: '选择"开始分析"按钮点击后跳转的功能模块' },
 };
 
 const initialFeaturedForm = {
@@ -346,21 +346,22 @@ function AdminAnnouncementsContent() {
             </CardContent>
           </Card>
 
-          {/* 首页6步引导设置 */}
+          {/* 首页引导设置 */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Star className="h-5 w-5 text-blue-500" />
-                首页6步引导
+                首页引导设置
               </CardTitle>
-              <CardDescription>配置首页"开始分析"按钮关联的功能模块</CardDescription>
+              <CardDescription>配置首页"6步打造爆款账号"引导区域</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>{settings.six_steps_module_id?.label}</Label>
+                <Label>{settings.home_guide_button_module_id?.label}</Label>
+                <p className="text-sm text-slate-500">{settings.home_guide_button_module_id?.description}</p>
                 <Select
-                  value={settings.six_steps_module_id?.value || ''}
-                  onValueChange={(v) => updateSetting('six_steps_module_id', v)}
+                  value={settings.home_guide_button_module_id?.value || ''}
+                  onValueChange={(v) => updateSetting('home_guide_button_module_id', v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="选择关联模块" />
@@ -372,7 +373,6 @@ function AdminAnnouncementsContent() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-sm text-slate-500">{settings.six_steps_module_id?.description}</p>
               </div>
             </CardContent>
           </Card>
