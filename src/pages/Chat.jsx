@@ -930,13 +930,18 @@ function ChatMessageItem({ message, isStreaming, user }) {
               ol: ({ children }) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
               li: ({ children }) => <li className="leading-relaxed text-slate-700">{children}</li>,
               strong: ({ children }) => <strong className="font-semibold text-slate-800">{children}</strong>,
+              pre: ({ children }) => (
+                <pre className="bg-slate-100 text-slate-800 p-4 rounded-lg overflow-x-auto my-3 border border-slate-200 whitespace-pre-wrap">
+                  {children}
+                </pre>
+              ),
               code: ({ inline, className, children, ...props }) => {
-                const isCodeBlock = !inline && (className || String(children).includes('\n'));
-                return isCodeBlock ? (
-                  <pre className="bg-slate-100 text-slate-800 p-4 rounded-lg overflow-x-auto my-3 border border-slate-200">
-                    <code className="text-sm font-mono">{children}</code>
-                  </pre>
-                ) : (
+                // 如果是在 pre 标签内（代码块），使用简单样式
+                if (!inline && className) {
+                  return <code className="text-sm font-mono text-slate-800">{children}</code>;
+                }
+                // 行内代码
+                return (
                   <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-blue-600">{children}</code>
                 );
               },
