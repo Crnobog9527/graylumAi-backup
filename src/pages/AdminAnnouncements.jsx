@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Save, Megaphone, RefreshCw, Plus, Pencil, Trash2, Star, GripVertical, Upload, X, Loader2 } from 'lucide-react';
+import { Save, Megaphone, RefreshCw, Plus, Pencil, Trash2, Star, GripVertical, Upload, X, Loader2, ListOrdered } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -82,6 +82,109 @@ function AdminAnnouncementsContent() {
     queryFn: () => base44.entities.PromptModule.filter({ is_active: true }),
     enabled: !!user,
   });
+
+  const { data: quickStartGuides = [] } = useQuery({
+    queryKey: ['quick-start-guides'],
+    queryFn: () => base44.entities.QuickStartGuide.list(),
+    enabled: !!user,
+  });
+
+  // 快速开始引导状态
+  const [guideDialogOpen, setGuideDialogOpen] = useState(false);
+  const [editingGuide, setEditingGuide] = useState(null);
+  const [guideForm, setGuideForm] = useState({
+    title: '',
+    subtitle: '',
+    button_text: '开始分析',
+    link_module_id: '',
+    steps: [],
+    is_active: true,
+  });
+  const [newStepTitle, setNewStepTitle] = useState('');
+  const [newStepDesc, setNewStepDesc] = useState('');
+
+  const createGuideMutation = useMutation({
+    mutationFn: (data) => base44.entities.QuickStartGuide.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['quick-start-guides']);
+      toast.success('快速开始引导已添加');
+    },
+  });
+
+  const updateGuideMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.QuickStartGuide.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['quick-start-guides']);
+      toast.success('快速开始引导已更新');
+    },
+  });
+
+  const deleteGuideMutation = useMutation({
+    mutationFn: (id) => base44.entities.QuickStartGuide.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['quick-start-guides']);
+      toast.success('快速开始引导已删除');
+    },
+  });
+
+  const handleOpenGuideDialog = (guide = null) => {
+    if (guide) {
+      setEditingGuide(guide);
+      setGuideForm({
+        title: guide.title || '',
+        subtitle: guide.subtitle || '',
+        button_text: guide.button_text || '开始分析',
+        link_module_id: guide.link_module_id || '',
+        steps: guide.steps || [],
+        is_active: guide.is_active !== false,
+      });
+    } else {
+      setEditingGuide(null);
+      setGuideForm({
+        title: '',
+        subtitle: '',
+        button_text: '开始分析',
+        link_module_id: '',
+        steps: [],
+        is_active: true,
+      });
+    }
+    setGuideDialogOpen(true);
+  };
+
+  const handleAddStep = () => {
+    if (!newStepTitle.trim()) return;
+    setGuideForm(prev => ({
+      ...prev,
+      steps: [...prev.steps, { title: newStepTitle, description: newStepDesc }]
+    }));
+    setNewStepTitle('');
+    setNewStepDesc('');
+  };
+
+  const handleRemoveStep = (index) => {
+    setGuideForm(prev => ({
+      ...prev,
+      steps: prev.steps.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSaveGuide = async () => {
+    if (!guideForm.title.trim()) {
+      toast.error('请输入标题');
+      return;
+    }
+    try {
+      if (editingGuide) {
+        await updateGuideMutation.mutateAsync({ id: editingGuide.id, data: guideForm });
+      } else {
+        await createGuideMutation.mutateAsync(guideForm);
+      }
+      setGuideDialogOpen(false);
+    } catch (error) {
+      toast.error('保存失败');
+    }
+  };
 
   const createFeaturedMutation = useMutation({
     mutationFn: (data) => base44.entities.FeaturedModule.create(data),
@@ -250,6 +353,88 @@ function AdminAnnouncementsContent() {
         </div>
 
         <div className="space-y-6">
+          {/* 快速开始引导 */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <ListOrdered className="h-5 w-5 text-blue-500" />
+                    快速开始引导
+                  </CardTitle>
+                  <CardDescription>管理首页的步骤引导模块（如：6步打造爆款账号）</CardDescription>
+                </div>
+                <Button onClick={() => handleOpenGuideDialog()} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  添加引导
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {quickStartGuides.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  暂无快速开始引导，点击上方按钮添加
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {quickStartGuides.map((guide) => (
+                    <div
+                      key={guide.id}
+                      className="flex items-center gap-4 p-4 rounded-lg border bg-slate-700 border-slate-600"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-white">{guide.title}</span>
+                          <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-600">
+                            {guide.steps?.length || 0} 步骤
+                          </span>
+                          {!guide.is_active && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-slate-500 text-slate-300">已禁用</span>
+                          )}
+                        </div>
+                        <p className="text-sm truncate text-slate-400">{guide.subtitle}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-slate-300 hover:text-white hover:bg-slate-600"
+                          onClick={() => handleOpenGuideDialog(guide)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-500 hover:bg-red-900/20">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>确认删除</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                确定要删除引导"{guide.title}"吗？此操作无法撤销。
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>取消</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteGuideMutation.mutate(guide.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                删除
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* 功能广场置顶模块 */}
           <Card>
             <CardHeader>
@@ -390,6 +575,131 @@ function AdminAnnouncementsContent() {
             </CardContent>
           </Card>
         </div>
+
+        {/* 快速开始引导编辑弹窗 */}
+        <Dialog open={guideDialogOpen} onOpenChange={setGuideDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingGuide ? '编辑快速开始引导' : '添加快速开始引导'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>大标题 *</Label>
+                <Input
+                  value={guideForm.title}
+                  onChange={(e) => setGuideForm({ ...guideForm, title: e.target.value })}
+                  placeholder="如：从零到百万粉丝：6步打造爆款账号"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>副标题</Label>
+                <Textarea
+                  value={guideForm.subtitle}
+                  onChange={(e) => setGuideForm({ ...guideForm, subtitle: e.target.value })}
+                  placeholder="描述这个引导的价值..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>按钮文字</Label>
+                  <Input
+                    value={guideForm.button_text}
+                    onChange={(e) => setGuideForm({ ...guideForm, button_text: e.target.value })}
+                    placeholder="开始分析"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>关联功能模块</Label>
+                  <Select
+                    value={guideForm.link_module_id}
+                    onValueChange={(v) => setGuideForm({ ...guideForm, link_module_id: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择关联模块" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>不关联</SelectItem>
+                      {promptModules.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* 步骤管理 */}
+              <div className="space-y-3">
+                <Label>步骤列表</Label>
+                {guideForm.steps.length > 0 && (
+                  <div className="space-y-2">
+                    {guideForm.steps.map((step, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
+                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
+                          {String(index + 1).padStart(2, '0')}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-800">{step.title}</p>
+                          <p className="text-sm text-slate-500">{step.description}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 shrink-0"
+                          onClick={() => handleRemoveStep(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* 添加新步骤 */}
+                <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      value={newStepTitle}
+                      onChange={(e) => setNewStepTitle(e.target.value)}
+                      placeholder="步骤标题"
+                    />
+                    <Input
+                      value={newStepDesc}
+                      onChange={(e) => setNewStepDesc(e.target.value)}
+                      placeholder="步骤描述"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddStep}
+                    disabled={!newStepTitle.trim()}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    添加步骤
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={guideForm.is_active}
+                  onCheckedChange={(checked) => setGuideForm({ ...guideForm, is_active: checked })}
+                />
+                <Label>启用此引导</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setGuideDialogOpen(false)}>取消</Button>
+              <Button onClick={handleSaveGuide} className="bg-violet-600 hover:bg-violet-700">
+                {editingGuide ? '更新' : '添加'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* 置顶模块编辑弹窗 */}
         <Dialog open={featuredDialogOpen} onOpenChange={setFeaturedDialogOpen}>
