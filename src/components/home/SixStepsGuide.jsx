@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { PlayCircle } from 'lucide-react';
 
@@ -38,6 +40,22 @@ const steps = [
 
 
 export default function SixStepsGuide() {
+  // 获取系统设置中的关联模块
+  const { data: systemSettings = [] } = useQuery({
+    queryKey: ['system-settings-six-steps'],
+    queryFn: () => base44.entities.SystemSettings.filter({ setting_key: 'six_steps_module_id' }),
+  });
+
+  const linkedModuleId = systemSettings[0]?.setting_value || '';
+  
+  // 生成跳转链接
+  const getTargetUrl = () => {
+    if (linkedModuleId) {
+      return createPageUrl('Chat') + `?module_id=${linkedModuleId}&auto_start=true`;
+    }
+    return createPageUrl('Marketplace');
+  };
+
   return (
     <div className="bg-gray-50 text-white mb-10 px-8 py-10 rounded-2xl from-slate-800 to-slate-900">
       {/* Header */}
@@ -80,11 +98,9 @@ export default function SixStepsGuide() {
       
       {/* CTA Button */}
       <div className="text-center">
-        <Link to={createPageUrl('Marketplace')}>
+        <Link to={getTargetUrl()}>
           <Button
-            size="lg" className="bg-indigo-500 text-slate-50 mx-10 px-8 text-sm font-semibold opacity-100 rounded-full inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow hover:bg-slate-100 h-12">
-
-
+            size="lg" className="bg-indigo-500 text-slate-50 mx-10 px-8 text-sm font-semibold opacity-100 rounded-full inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow hover:bg-indigo-600 h-12">
             <PlayCircle className="h-5 w-5 mr-2" />
             开始分析
           </Button>

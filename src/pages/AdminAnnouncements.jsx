@@ -20,6 +20,8 @@ const defaultSettings = {
   // 聊天页面
   chat_billing_hint: { value: '⚡ 按实际Token消耗计费：输入 {input}积分/1K tokens，输出 {output}积分/1K tokens', type: 'string', label: '计费提示文案', description: '聊天页面底部显示的计费说明，{input}和{output}会替换为实际值' },
   chat_show_model_selector: { value: 'true', type: 'boolean', label: '显示模型选择器', description: '是否在聊天页面顶部显示模型切换按钮' },
+  // 首页6步引导
+  six_steps_module_id: { value: '', type: 'string', label: '6步引导关联模块', description: '首页"开始分析"按钮点击后跳转的功能模块' },
 };
 
 const initialFeaturedForm = {
@@ -341,6 +343,37 @@ function AdminAnnouncementsContent() {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* 首页6步引导设置 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Star className="h-5 w-5 text-blue-500" />
+                首页6步引导
+              </CardTitle>
+              <CardDescription>配置首页"开始分析"按钮关联的功能模块</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label>{settings.six_steps_module_id?.label}</Label>
+                <Select
+                  value={settings.six_steps_module_id?.value || ''}
+                  onValueChange={(v) => updateSetting('six_steps_module_id', v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择关联模块" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>默认跳转功能广场</SelectItem>
+                    {promptModules.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-slate-500">{settings.six_steps_module_id?.description}</p>
+              </div>
             </CardContent>
           </Card>
 
