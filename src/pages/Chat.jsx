@@ -201,15 +201,21 @@ export default function Chat() {
     mutationFn: (data) => base44.entities.CreditTransaction.create(data),
   });
 
+  // 用于跟踪是否已处理过URL参数
+  const processedModuleRef = useRef(null);
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const moduleId = params.get('module_id');
     const autoStart = params.get('auto_start') === 'true';
     
-    if (moduleId && promptModules.length > 0 && models.length > 0 && user) {
+    // 防止重复处理同一个模块
+    if (moduleId && moduleId !== processedModuleRef.current && promptModules.length > 0 && models.length > 0 && user) {
       const module = promptModules.find(m => m.id === moduleId);
       if (module) {
+        processedModuleRef.current = moduleId;
         handleStartNewChat(module);
+        // 清除URL参数
         window.history.replaceState({}, '', createPageUrl('Chat'));
         
         if (autoStart && module.user_prompt_template) {
@@ -217,15 +223,15 @@ export default function Chat() {
             setInputMessage(module.user_prompt_template);
             setTimeout(() => {
               document.querySelector('[data-send-button]')?.click();
-            }, 100);
-          }, 100);
+            }, 200);
+          }, 200);
         } else if (autoStart) {
           setTimeout(() => {
             setInputMessage('请开始');
             setTimeout(() => {
               document.querySelector('[data-send-button]')?.click();
-            }, 100);
-          }, 100);
+            }, 200);
+          }, 200);
         }
       }
     }
