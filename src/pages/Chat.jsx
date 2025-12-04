@@ -899,6 +899,23 @@ function ChatMessageItem({ message, isStreaming, user }) {
     );
   }
 
+  // 如果没有内容，显示提示
+  if (!displayContent) {
+    return (
+      <div className="flex gap-4 py-4">
+        <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+          <Bot className="h-5 w-5 text-blue-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-slate-400 italic">AI 响应内容为空</div>
+          <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
+            <span>{time}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex gap-4 py-4">
       <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
