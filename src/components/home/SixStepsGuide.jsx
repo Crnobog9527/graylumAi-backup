@@ -52,12 +52,12 @@ export default function SixStepsGuide() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         {steps.map((step, index) =>
         <div
-          key={index}
-          className={`rounded-xl p-5 ${
-          index === 1 || index === 4 ?
-          'bg-blue-600' :
-          'bg-white/10 backdrop-blur-sm'}`
-          }>
+          key={index} className="bg-slate-100 p-5 rounded-xl backdrop-blur-sm">
+
+
+
+
+
 
             <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold mb-3 ${
           index === 1 || index === 4 ?
@@ -67,11 +67,11 @@ export default function SixStepsGuide() {
               {step.num}
             </div>
             <h3 className="text-slate-900 mb-2 font-bold">{step.title}</h3>
-            <p className={`text-sm leading-relaxed ${
-          index === 1 || index === 4 ?
-          'text-blue-100' :
-          'text-slate-400'}`
-          }>
+            <p className="text-slate-500 text-sm leading-relaxed">
+
+
+
+
               {step.desc}
             </p>
           </div>
