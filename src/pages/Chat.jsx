@@ -381,7 +381,8 @@ ${selectedModule.system_prompt}
           }
         });
       } else {
-        const newConv = await createConversationMutation.mutateAsync({
+        // 创建新对话，onSuccess 回调会自动设置 currentConversation
+        await createConversationMutation.mutateAsync({
           title,
           model_id: selectedModel.id,
           prompt_module_id: selectedModule?.id,
@@ -389,7 +390,6 @@ ${selectedModule.system_prompt}
           messages: updatedMessages,
           total_credits_used: creditsUsed,
         });
-        setCurrentConversation(newConv);
       }
     } catch (error) {
       console.error('Error sending message:', error);
