@@ -42,7 +42,7 @@ export default function SixStepsGuide() {
     <div className="bg-gray-50 text-white mb-10 px-8 py-10 rounded-2xl from-slate-800 to-slate-900">
       {/* Header */}
       <div className="text-center mb-8">
-        <h2 className="text-[#ff8214] mb-3 text-2xl font-bold">从零到百万粉丝：6步打造爆款账号</h2>
+        <h2 className="text-[#ff8214] mb-3 text-2xl font-bold">🔥从零到百万粉丝：6步打造爆款账号</h2>
         <p className="text-slate-500 mx-auto max-w-3xl">深度学习全网超过1000万粉丝不同赛道账号的商业策略，只需 10 分钟，立即适配最佳赛道以及差异化内容！
 
         </p>
@@ -59,11 +59,11 @@ export default function SixStepsGuide() {
 
 
 
-            <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold mb-3 ${
-          index === 1 || index === 4 ?
-          'bg-white/20 text-white' :
-          'bg-blue-600 text-white'}`
-          }>
+            <div className="bg-indigo-500 text-white mb-3 text-sm font-bold rounded-full inline-flex items-center justify-center w-10 h-10">
+
+
+
+
               {step.num}
             </div>
             <h3 className="text-slate-900 mb-2 font-bold">{step.title}</h3>
@@ -82,8 +82,8 @@ export default function SixStepsGuide() {
       <div className="text-center">
         <Link to={createPageUrl('Marketplace')}>
           <Button
-            size="lg"
-            className="bg-white text-slate-900 hover:bg-slate-100 rounded-full px-8 h-12 font-semibold">
+            size="lg" className="bg-indigo-500 text-slate-50 mx-10 px-8 text-sm font-semibold opacity-100 rounded-full inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow hover:bg-slate-100 h-12">
+
 
             <PlayCircle className="h-5 w-5 mr-2" />
             开始分析
