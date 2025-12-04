@@ -912,14 +912,16 @@ function ChatMessageItem({ message, isStreaming, user }) {
               ol: ({ children }) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
               li: ({ children }) => <li className="leading-relaxed text-slate-700">{children}</li>,
               strong: ({ children }) => <strong className="font-semibold text-slate-800">{children}</strong>,
-              code: ({ inline, children }) =>
-                inline ? (
-                  <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-blue-600">{children}</code>
-                ) : (
-                  <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto my-3">
+              code: ({ inline, className, children, ...props }) => {
+                const isCodeBlock = !inline && (className || String(children).includes('\n'));
+                return isCodeBlock ? (
+                  <pre className="bg-slate-100 text-slate-800 p-4 rounded-lg overflow-x-auto my-3 border border-slate-200">
                     <code className="text-sm font-mono">{children}</code>
                   </pre>
-                ),
+                ) : (
+                  <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-blue-600">{children}</code>
+                );
+              },
               h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0 text-slate-800">{children}</h1>,
               h2: ({ children }) => <h2 className="text-lg font-semibold mb-2 mt-3 first:mt-0 text-slate-800">{children}</h2>,
               h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-3 first:mt-0 text-slate-800">{children}</h3>,
