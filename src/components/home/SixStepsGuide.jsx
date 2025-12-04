@@ -43,7 +43,7 @@ export default function SixStepsGuide() {
       {/* Header */}
       <div className="text-center mb-8">
         <h2 className="text-[#ff8214] mb-3 text-2xl font-bold">🔥从零到百万粉丝：6步打造爆款账号</h2>
-        <p className="text-slate-500 mx-auto max-w-3xl">深度学习全网超过1000万粉丝不同赛道账号的商业策略，只需 10 分钟，立即适配最佳赛道以及差异化内容！
+        <p className="text-slate-500 mx-auto max-w-3xl">深度学习全网超过 1000 万粉丝不同赛道账号的商业策略，只需 10 分钟，立即适配最佳赛道以及差异化内容！
 
         </p>
       </div>
