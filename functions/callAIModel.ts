@@ -14,6 +14,89 @@ Deno.serve(async (req) => {
     // Token 估算函数 (字符数 / 4)
     const estimateTokens = (text) => Math.ceil((text || '').length / 4);
 
+    // ========== Prompt Caching 相关函数 ==========
+    
+    // 缓存阈值常量
+    const CACHE_MIN_TOKENS = 1024;
+    const MAX_CACHE_BREAKPOINTS = 4;
+
+    // 判断内容是否适合缓存
+    const shouldEnableCache = (content, tokenCount) => {
+      if (tokenCount < CACHE_MIN_TOKENS) return false;
+      
+      // 检测是否包含大文档/RAG/结构化数据的特征
+      const hasLargeContent = tokenCount >= CACHE_MIN_TOKENS;
+      const hasStructuredData = /\|.*\|.*\|/m.test(content) || // CSV/表格
+                                /```[\s\S]{500,}```/.test(content) || // 大代码块
+                                /<document>|<context>|<reference>/i.test(content); // RAG标记
+      const hasRoleCard = /<character>|<persona>|<system_config>/i.test(content);
+      
+      return hasLargeContent || hasStructuredData || hasRoleCard;
+    };
+
+    // 将消息转换为带缓存标记的格式
+    const convertToCacheFormat = (content, addCache = false) => {
+      if (!addCache) {
+        return content;
+      }
+      // 返回数组格式，支持 cache_control
+      return [
+        {
+          type: "text",
+          text: content,
+          cache_control: { type: "ephemeral" }
+        }
+      ];
+    };
+
+    // 智能构建带缓存的消息数组
+    const buildCachedMessages = (msgs, sysPrompt) => {
+      const result = [];
+      const cacheableBlocks = [];
+      
+      // 计算系统提示词tokens
+      const sysTokens = estimateTokens(sysPrompt);
+      if (sysPrompt && shouldEnableCache(sysPrompt, sysTokens)) {
+        cacheableBlocks.push({ type: 'system', content: sysPrompt, tokens: sysTokens });
+      }
+      
+      // 分析消息中可缓存的内容
+      msgs.forEach((m, idx) => {
+        const tokens = estimateTokens(m.content);
+        if (shouldEnableCache(m.content, tokens)) {
+          cacheableBlocks.push({ type: 'message', index: idx, content: m.content, tokens, role: m.role });
+        }
+      });
+      
+      // 按token数排序，选择最大的几个进行缓存
+      cacheableBlocks.sort((a, b) => b.tokens - a.tokens);
+      const blocksToCache = cacheableBlocks.slice(0, MAX_CACHE_BREAKPOINTS);
+      const cacheIndices = new Set(blocksToCache.filter(b => b.type === 'message').map(b => b.index));
+      const cacheSystem = blocksToCache.some(b => b.type === 'system');
+      
+      // 构建系统消息
+      if (sysPrompt) {
+        result.push({
+          role: 'system',
+          content: cacheSystem ? convertToCacheFormat(sysPrompt, true) : sysPrompt
+        });
+      }
+      
+      // 构建对话消息
+      msgs.forEach((m, idx) => {
+        result.push({
+          role: m.role,
+          content: cacheIndices.has(idx) ? convertToCacheFormat(m.content, true) : m.content
+        });
+      });
+      
+      return {
+        messages: result,
+        cacheEnabled: blocksToCache.length > 0,
+        cachedBlocksCount: blocksToCache.length
+      };
+    };
+
     // 计算消息列表的总 token 数
     const calculateTotalTokens = (msgs, sysPrompt) => {
       let total = estimateTokens(sysPrompt);
