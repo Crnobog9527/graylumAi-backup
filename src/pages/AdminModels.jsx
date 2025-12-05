@@ -439,7 +439,11 @@ function AdminModelsContent() {
               <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
                 <div>
                   <Label className="text-blue-900">{t('enableWebSearch')}</Label>
-                  <p className="text-xs text-blue-600 mt-0.5">{t('webSearchNote')}</p>
+                  <p className="text-xs text-blue-600 mt-0.5">
+                    {formData.provider === 'builtin' 
+                      ? '内置集成：使用平台内置LLM的联网能力' 
+                      : '外部API：通过OpenRouter plugins实现联网搜索（需使用OpenRouter端点）'}
+                  </p>
                 </div>
                 <Switch
                   checked={formData.enable_web_search}
