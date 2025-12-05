@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Search, TrendingUp, TrendingDown, Coins, Filter } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, Coins, Filter, User, X } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -38,6 +39,7 @@ function AdminTransactionsContent() {
   const [user, setUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [selectedUserEmail, setSelectedUserEmail] = useState(null);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -57,23 +59,30 @@ function AdminTransactionsContent() {
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['admin-transactions'],
-    queryFn: () => base44.entities.CreditTransaction.list('-created_date', 100),
+    queryFn: () => base44.entities.CreditTransaction.list('-created_date', 500),
     enabled: !!user,
   });
+
+  // 获取所有用户列表（从交易记录中提取）
+  const allUsers = [...new Set(transactions.map(tx => tx.user_email).filter(Boolean))].sort();
 
   const filteredTransactions = transactions.filter(tx => {
     const matchesSearch = 
       tx.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tx.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = typeFilter === 'all' || tx.type === typeFilter;
-    return matchesSearch && matchesType;
+    const matchesUser = !selectedUserEmail || tx.user_email === selectedUserEmail;
+    return matchesSearch && matchesType && matchesUser;
   });
 
-  const totalPurchased = transactions
+  // 统计数据基于筛选后的结果
+  const statsTransactions = selectedUserEmail ? filteredTransactions : transactions;
+
+  const totalPurchased = statsTransactions
     .filter(t => t.type === 'purchase')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const totalUsed = transactions
+  const totalUsed = statsTransactions
     .filter(t => t.type === 'usage')
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
@@ -132,6 +141,23 @@ function AdminTransactionsContent() {
           </Card>
         </div>
 
+        {/* User Filter Banner */}
+        {selectedUserEmail && (
+          <div className="flex items-center gap-3 mb-4 p-3 bg-violet-50 rounded-lg border border-violet-200">
+            <User className="h-5 w-5 text-violet-600" />
+            <span className="text-violet-800 font-medium">查看用户: {selectedUserEmail}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedUserEmail(null)}
+              className="ml-auto text-violet-600 hover:text-violet-800 hover:bg-violet-100"
+            >
+              <X className="h-4 w-4 mr-1" />
+              清除筛选
+            </Button>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="flex gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
@@ -143,6 +169,18 @@ function AdminTransactionsContent() {
               className="pl-10"
             />
           </div>
+          <Select value={selectedUserEmail || 'all'} onValueChange={(v) => setSelectedUserEmail(v === 'all' ? null : v)}>
+            <SelectTrigger className="w-64">
+              <User className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="全部用户" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部用户</SelectItem>
+              {allUsers.map(email => (
+                <SelectItem key={email} value={email}>{email}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-48">
               <Filter className="h-4 w-4 mr-2" />
@@ -175,7 +213,14 @@ function AdminTransactionsContent() {
               <TableBody>
                 {filteredTransactions.map((tx) => (
                   <TableRow key={tx.id}>
-                    <TableCell className="font-medium">{tx.user_email}</TableCell>
+                    <TableCell>
+                      <button
+                        onClick={() => setSelectedUserEmail(tx.user_email)}
+                        className="font-medium text-left hover:text-violet-600 hover:underline transition-colors"
+                      >
+                        {tx.user_email}
+                      </button>
+                    </TableCell>
                     <TableCell>
                       <Badge className={typeColors[tx.type] || 'bg-slate-100 text-slate-700'}>
                         {tx.type?.replace('_', ' ')}
