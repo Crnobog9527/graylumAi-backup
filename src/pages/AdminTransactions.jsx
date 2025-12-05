@@ -226,8 +226,8 @@ function AdminTransactionsContent() {
                         {tx.type?.replace('_', ' ')}
                       </Badge>
                     </TableCell>
-                    <TableCell className="max-w-xs truncate text-slate-600">
-                      {tx.description}
+                    <TableCell className="max-w-md text-slate-600" title={tx.description}>
+                      <span className="block truncate">{tx.description}</span>
                     </TableCell>
                     <TableCell>
                       <span className={tx.amount >= 0 ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold'}>
