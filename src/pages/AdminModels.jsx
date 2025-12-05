@@ -68,6 +68,7 @@ const initialFormData = {
   output_token_cost: 0,
   input_token_cost_above_200k: 0,
   output_token_cost_above_200k: 0,
+  web_search_cost: 0,
 };
 
 function AdminModelsContent() {
@@ -155,6 +156,7 @@ function AdminModelsContent() {
       output_token_cost: model.output_token_cost || 0,
       input_token_cost_above_200k: model.input_token_cost_above_200k || 0,
       output_token_cost_above_200k: model.output_token_cost_above_200k || 0,
+      web_search_cost: model.web_search_cost || 0,
     });
     setDialogOpen(true);
   };
@@ -513,6 +515,34 @@ function AdminModelsContent() {
                         className="h-9"
                       />
                       <p className="text-xs text-amber-600">$/1M tokens</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Web Search 成本 */}
+                <div className="space-y-2 pt-2 border-t border-amber-200">
+                  <p className="text-xs text-amber-800 font-medium">Web Search 成本</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-amber-700">搜索成本</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.web_search_cost}
+                        onChange={(e) => setFormData({ ...formData, web_search_cost: parseFloat(e.target.value) || 0 })}
+                        placeholder="0.00"
+                        className="h-9"
+                      />
+                      <p className="text-xs text-amber-600">$/1K searches</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-amber-700">每次成本</Label>
+                      <div className="h-9 px-3 flex items-center bg-amber-100 rounded-md border border-amber-200">
+                        <span className="text-amber-800 font-medium">
+                          ${((formData.web_search_cost || 0) / 1000).toFixed(4)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-amber-600">$/次</p>
                     </div>
                   </div>
                 </div>
