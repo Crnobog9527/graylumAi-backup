@@ -382,13 +382,14 @@ ${selectedModule.system_prompt}
         type: 'usage',
         amount: -creditsUsed,
         balance_after: newBalance,
-        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)`,
+        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${result.web_search_enabled ? ' [联网]' : ''}`,
         model_used: selectedModel.name,
         prompt_module_used: selectedModule?.title,
         input_tokens: inputTokens,
         output_tokens: outputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
+        web_search_used: result.web_search_enabled || false,
       });
 
       const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
