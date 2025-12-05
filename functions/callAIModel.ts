@@ -48,16 +48,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Model not found' }, { status: 404 });
     }
 
-    // 获取积分换算设置（默认值：Input 1积分/1K, Output 5积分/1K）
+    // 获取积分换算设置（默认值：Input 1积分/1K, Output 5积分/1K, Web Search 5积分/次）
     let inputCreditsPerK = 1;
     let outputCreditsPerK = 5;
-    
+    let webSearchCredits = 5;
+
     try {
       const settings = await base44.asServiceRole.entities.SystemSettings.filter({});
       const inputSetting = settings.find(s => s.setting_key === 'input_credits_per_1k');
       const outputSetting = settings.find(s => s.setting_key === 'output_credits_per_1k');
+      const webSearchSetting = settings.find(s => s.setting_key === 'web_search_credits');
       if (inputSetting) inputCreditsPerK = parseFloat(inputSetting.setting_value) || 1;
       if (outputSetting) outputCreditsPerK = parseFloat(outputSetting.setting_value) || 5;
+      if (webSearchSetting) webSearchCredits = parseFloat(webSearchSetting.setting_value) || 5;
     } catch (e) {
       // 使用默认值
     }
@@ -94,7 +97,8 @@ Deno.serve(async (req) => {
       // 计算积分消耗
       const inputCredits = Math.ceil(estimatedInputTokens / 1000) * inputCreditsPerK;
       const outputCredits = Math.ceil(estimatedOutputTokens / 1000) * outputCreditsPerK;
-      const totalCredits = inputCredits + outputCredits;
+      const searchCredits = (model.enable_web_search) ? webSearchCredits : 0;
+      const totalCredits = inputCredits + outputCredits + searchCredits;
 
       return Response.json({
         response: result,
@@ -103,6 +107,7 @@ Deno.serve(async (req) => {
         output_tokens: estimatedOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
+        web_search_credits: searchCredits,
         web_search_enabled: model.enable_web_search || false
       });
     }
@@ -177,7 +182,8 @@ Deno.serve(async (req) => {
       // 计算积分
       const inputCredits = Math.ceil(actualInputTokens / 1000) * inputCreditsPerK;
       const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
-      const totalCredits = inputCredits + outputCredits;
+      const searchCredits = (isOpenRouter && model.enable_web_search) ? webSearchCredits : 0;
+      const totalCredits = inputCredits + outputCredits + searchCredits;
 
       return Response.json({
         response: responseText,
@@ -186,6 +192,7 @@ Deno.serve(async (req) => {
         output_tokens: actualOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
+        web_search_credits: searchCredits,
         model: data.model || null,
         usage: data.usage || null,
         web_search_enabled: isOpenRouter && model.enable_web_search
@@ -246,7 +253,8 @@ Deno.serve(async (req) => {
 
         const inputCredits = Math.ceil(actualInputTokens / 1000) * inputCreditsPerK;
         const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
-        const totalCredits = inputCredits + outputCredits;
+        const searchCredits = webSearchCredits;
+        const totalCredits = inputCredits + outputCredits + searchCredits;
 
         return Response.json({
           response: responseText,
@@ -255,6 +263,7 @@ Deno.serve(async (req) => {
           output_tokens: actualOutputTokens,
           input_credits: inputCredits,
           output_credits: outputCredits,
+          web_search_credits: searchCredits,
           usage: data.usage || null,
           web_search_enabled: true
         });
@@ -299,10 +308,12 @@ Deno.serve(async (req) => {
         output_tokens: actualOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
-        usage: data.usage || null
+        web_search_credits: 0,
+        usage: data.usage || null,
+        web_search_enabled: false
       });
 
-    } else if (provider === 'google') {
+      } else if (provider === 'google') {
       const endpoint = model.api_endpoint || `https://generativelanguage.googleapis.com/v1beta/models/${model.model_id}:generateContent?key=${model.api_key}`;
 
       const geminiContents = formattedMessages
@@ -359,11 +370,13 @@ Deno.serve(async (req) => {
         output_tokens: actualOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
+        web_search_credits: 0,
         modelVersion: data.modelVersion || null,
-        usageMetadata: data.usageMetadata || null
+        usageMetadata: data.usageMetadata || null,
+        web_search_enabled: false
       });
 
-    } else {
+      } else {
       return Response.json({ error: `Unsupported provider: ${provider}` }, { status: 400 });
     }
 

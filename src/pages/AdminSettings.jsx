@@ -23,6 +23,7 @@ const defaultSettings = {
   new_user_credits: { value: '100', type: 'number', label: '新用户赠送积分', description: '新用户注册时赠送的积分数量' },
   input_credits_per_1k: { value: '1', type: 'number', label: '输入Token积分单价', description: '每1000个输入Token消耗的积分数' },
   output_credits_per_1k: { value: '5', type: 'number', label: '输出Token积分单价', description: '每1000个输出Token消耗的积分数' },
+  web_search_credits: { value: '5', type: 'number', label: '联网搜索积分', description: '每次启用联网搜索额外消耗的积分数' },
   
   // Features
   max_messages_per_conversation: { value: '100', type: 'number', label: '单对话最大消息数', description: '每个对话允许的最大消息数' },
@@ -237,7 +238,7 @@ function AdminSettingsContent() {
                     示例：输入2000 tokens → 2积分，输出1000 tokens → 5积分，总计7积分
                   </p>
                 </div>
-                {['new_user_credits', 'input_credits_per_1k', 'output_credits_per_1k', 'first_purchase_bonus_percent'].map(key => {
+                {['new_user_credits', 'input_credits_per_1k', 'output_credits_per_1k', 'web_search_credits', 'first_purchase_bonus_percent'].map(key => {
                   const data = settings[key];
                   if (!data) return null;
                   return (
