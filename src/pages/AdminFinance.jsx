@@ -77,7 +77,8 @@ function AdminFinanceContent() {
         inputCredits: 0,
         outputCredits: 0,
         totalCredits: 0,
-        requests: 0
+        requests: 0,
+        webSearchCount: 0
       };
     }
     modelUsageMap[modelName].inputTokens += tx.input_tokens || 0;
@@ -86,6 +87,10 @@ function AdminFinanceContent() {
     modelUsageMap[modelName].outputCredits += tx.output_credits || 0;
     modelUsageMap[modelName].totalCredits += Math.abs(tx.amount || 0);
     modelUsageMap[modelName].requests += 1;
+    // 统计联网搜索次数
+    if (tx.web_search_used) {
+      modelUsageMap[modelName].webSearchCount += 1;
+    }
   });
 
   // 计算真实收入：只统计purchase（购买）类型的交易，排除admin_adjustment（管理员调整）
@@ -102,11 +107,14 @@ function AdminFinanceContent() {
     const totalOutputTokens = txStats.outputTokens || stats.reduce((sum, s) => sum + (s.output_tokens || 0), 0);
     const totalRequests = txStats.requests || stats.reduce((sum, s) => sum + (s.total_requests || 0), 0);
     const creditsEarned = txStats.totalCredits || stats.reduce((sum, s) => sum + (s.credits_earned || 0), 0);
+    const webSearchCount = txStats.webSearchCount || 0;
 
     // 计算成本 (每百万tokens的价格)
     const inputCost = (totalInputTokens / 1000000) * (model.input_token_cost || 0);
     const outputCost = (totalOutputTokens / 1000000) * (model.output_token_cost || 0);
-    const totalCost = inputCost + outputCost;
+    // Web Search成本 (每1000次搜索的价格)
+    const webSearchCost = (webSearchCount / 1000) * (model.web_search_cost || 0);
+    const totalCost = inputCost + outputCost + webSearchCost;
 
     // 积分价值（1积分 ≈ $0.007-0.008）
     const creditsToUSD = 0.0075;
@@ -119,8 +127,10 @@ function AdminFinanceContent() {
       totalOutputTokens,
       totalRequests,
       creditsEarned,
+      webSearchCount,
       inputCost,
       outputCost,
+      webSearchCost,
       totalCost,
       revenue,
       profit
@@ -136,6 +146,9 @@ function AdminFinanceContent() {
     outputTokens: modelStats.reduce((sum, m) => sum + m.totalOutputTokens, 0),
     totalRequests: modelStats.reduce((sum, m) => sum + m.totalRequests, 0),
     totalCost: modelStats.reduce((sum, m) => sum + m.totalCost, 0),
+    // Web Search 统计
+    webSearchCount: modelStats.reduce((sum, m) => sum + m.webSearchCount, 0),
+    webSearchCost: modelStats.reduce((sum, m) => sum + m.webSearchCost, 0),
     // 收入基于真实购买的积分
     totalRevenue: totalPurchasedCredits * creditsToUSD,
     totalProfit: (totalPurchasedCredits * creditsToUSD) - modelStats.reduce((sum, m) => sum + m.totalCost, 0),
@@ -203,7 +216,7 @@ function AdminFinanceContent() {
         </div>
 
         {/* Token 消耗统计 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -226,6 +239,18 @@ function AdminFinanceContent() {
             <CardContent>
               <p className="text-3xl font-bold text-slate-900">{formatNumber(totalStats.outputTokens)}</p>
               <p className="text-sm text-slate-500 mt-1">{t('outputTokensCost')}: {formatUSD(modelStats.reduce((sum, m) => sum + m.outputCost, 0))}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Coins className="h-5 w-5 text-emerald-500" />
+                Web Search 次数
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-slate-900">{totalStats.webSearchCount.toLocaleString()}</p>
+              <p className="text-sm text-slate-500 mt-1">搜索成本: {formatUSD(totalStats.webSearchCost)}</p>
             </CardContent>
           </Card>
         </div>
@@ -265,6 +290,7 @@ function AdminFinanceContent() {
                             <p className="font-medium">{model.name}</p>
                             <p className="text-xs text-slate-500">
                               入: ${model.input_token_cost || 0}/M | 出: ${model.output_token_cost || 0}/M
+                              {model.web_search_cost > 0 && ` | 搜: $${model.web_search_cost}/K`}
                             </p>
                           </div>
                         </div>
