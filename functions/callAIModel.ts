@@ -130,6 +130,24 @@ Deno.serve(async (req) => {
 
     if (useOpenAIFormat || provider === 'openai' || provider === 'custom') {
       const endpoint = model.api_endpoint || 'https://api.openai.com/v1/chat/completions';
+      const isOpenRouter = model.api_endpoint && model.api_endpoint.includes('openrouter.ai');
+
+      // 构建请求体
+      const requestBody = {
+        model: model.model_id,
+        messages: formattedMessages,
+        max_tokens: model.max_tokens || 4096
+      };
+
+      // 如果是OpenRouter且启用了联网搜索，添加plugins参数
+      if (isOpenRouter && model.enable_web_search) {
+        requestBody.plugins = [
+          {
+            id: 'web',
+            max_results: 5
+          }
+        ];
+      }
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -137,11 +155,7 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${model.api_key}`
         },
-        body: JSON.stringify({
-          model: model.model_id,
-          messages: formattedMessages,
-          max_tokens: model.max_tokens || 4096
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!res.ok) {
@@ -173,12 +187,14 @@ Deno.serve(async (req) => {
         input_credits: inputCredits,
         output_credits: outputCredits,
         model: data.model || null,
-        usage: data.usage || null
+        usage: data.usage || null,
+        web_search_enabled: isOpenRouter && model.enable_web_search
       });
 
     } else if (provider === 'anthropic') {
       const endpoint = model.api_endpoint || 'https://api.anthropic.com/v1/messages';
       const isOfficialApi = !model.api_endpoint || model.api_endpoint.includes('anthropic.com');
+      const isOpenRouter = model.api_endpoint && model.api_endpoint.includes('openrouter.ai');
 
       const anthropicMessages = formattedMessages.filter(m => m.role !== 'system');
 
@@ -191,6 +207,57 @@ Deno.serve(async (req) => {
         headers['anthropic-version'] = '2023-06-01';
       } else {
         headers['Authorization'] = `Bearer ${model.api_key}`;
+      }
+
+      // 如果是OpenRouter且启用联网搜索，使用OpenAI格式
+      if (isOpenRouter && model.enable_web_search) {
+        const requestBody = {
+          model: model.model_id,
+          messages: formattedMessages,
+          max_tokens: model.max_tokens || 4096,
+          plugins: [
+            {
+              id: 'web',
+              max_results: 5
+            }
+          ]
+        };
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!res.ok) {
+          const error = await res.text();
+          return Response.json({ error: `API error: ${error}` }, { status: res.status });
+        }
+
+        const data = await res.json();
+        responseText = data.choices?.[0]?.message?.content || data.content?.[0]?.text;
+
+        if (data.usage) {
+          actualInputTokens = data.usage.prompt_tokens || data.usage.input_tokens || estimatedInputTokens;
+          actualOutputTokens = data.usage.completion_tokens || data.usage.output_tokens || estimateTokens(responseText);
+        } else {
+          actualOutputTokens = estimateTokens(responseText);
+        }
+
+        const inputCredits = Math.ceil(actualInputTokens / 1000) * inputCreditsPerK;
+        const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
+        const totalCredits = inputCredits + outputCredits;
+
+        return Response.json({
+          response: responseText,
+          credits_used: totalCredits,
+          input_tokens: actualInputTokens,
+          output_tokens: actualOutputTokens,
+          input_credits: inputCredits,
+          output_credits: outputCredits,
+          usage: data.usage || null,
+          web_search_enabled: true
+        });
       }
 
       const res = await fetch(endpoint, {
