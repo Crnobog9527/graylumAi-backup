@@ -219,13 +219,35 @@ Deno.serve(async (req) => {
     if (useOpenAIFormat || provider === 'openai' || provider === 'custom') {
       const endpoint = model.api_endpoint || 'https://api.openai.com/v1/chat/completions';
       const isOpenRouter = model.api_endpoint && model.api_endpoint.includes('openrouter.ai');
+      const isClaudeModel = model.model_id && model.model_id.includes('claude');
+
+      // 判断是否启用 Prompt Caching（仅 OpenRouter + Claude 模型）
+      let cachedMessages = formattedMessages;
+      let cacheEnabled = false;
+      let cachedBlocksCount = 0;
+
+      if (isOpenRouter && isClaudeModel) {
+        // 计算总tokens，判断是否值得缓存
+        const totalInputTokens = estimatedInputTokens;
+        if (totalInputTokens >= CACHE_MIN_TOKENS) {
+          const cacheResult = buildCachedMessages(processedMessages, system_prompt);
+          cachedMessages = cacheResult.messages;
+          cacheEnabled = cacheResult.cacheEnabled;
+          cachedBlocksCount = cacheResult.cachedBlocksCount;
+        }
+      }
 
       // 构建请求体
       const requestBody = {
         model: model.model_id,
-        messages: formattedMessages,
+        messages: cacheEnabled ? cachedMessages : formattedMessages,
         max_tokens: model.max_tokens || 4096
       };
+
+      // 如果启用了缓存，添加 usage 请求以获取缓存统计
+      if (cacheEnabled) {
+        requestBody.usage = { include: true };
+      }
 
       // 如果是OpenRouter且启用了联网搜索，添加plugins参数
       if (isOpenRouter && model.enable_web_search) {
@@ -255,18 +277,29 @@ Deno.serve(async (req) => {
       responseText = data.choices[0].message.content;
       
       // 使用API返回的真实token数
+      let cachedTokens = 0;
+      let cacheDiscount = 0;
       if (data.usage) {
         actualInputTokens = data.usage.prompt_tokens || estimatedInputTokens;
         actualOutputTokens = data.usage.completion_tokens || estimateTokens(responseText);
+        // 解析缓存统计
+        cachedTokens = data.usage.prompt_tokens_details?.cached_tokens || data.usage.cached_tokens || 0;
+        cacheDiscount = data.usage.cache_discount || 0;
       } else {
         actualOutputTokens = estimateTokens(responseText);
       }
 
-      // 计算积分
-      const inputCredits = Math.ceil(actualInputTokens / 1000) * inputCreditsPerK;
+      // 计算积分（缓存命中的tokens按90%折扣计算）
+      const nonCachedInputTokens = actualInputTokens - cachedTokens;
+      const cachedInputCredits = Math.ceil(cachedTokens / 1000) * inputCreditsPerK * 0.1; // 缓存命中90%折扣
+      const nonCachedInputCredits = Math.ceil(nonCachedInputTokens / 1000) * inputCreditsPerK;
+      const inputCredits = Math.ceil(cachedInputCredits + nonCachedInputCredits);
       const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
       const searchCredits = (isOpenRouter && model.enable_web_search) ? webSearchCredits : 0;
       const totalCredits = inputCredits + outputCredits + searchCredits;
+
+      // 计算缓存节省的积分
+      const creditsSavedByCache = cachedTokens > 0 ? Math.ceil(cachedTokens / 1000) * inputCreditsPerK * 0.9 : 0;
 
       return Response.json({
         response: responseText,
@@ -278,7 +311,12 @@ Deno.serve(async (req) => {
         web_search_credits: searchCredits,
         model: data.model || null,
         usage: data.usage || null,
-        web_search_enabled: isOpenRouter && model.enable_web_search
+        web_search_enabled: isOpenRouter && model.enable_web_search,
+        // 缓存统计
+        cache_enabled: cacheEnabled,
+        cached_tokens: cachedTokens,
+        cache_hit_rate: actualInputTokens > 0 ? (cachedTokens / actualInputTokens * 100).toFixed(1) : 0,
+        credits_saved_by_cache: creditsSavedByCache
       });
 
     } else if (provider === 'anthropic') {
