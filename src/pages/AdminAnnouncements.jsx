@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Save, Megaphone, RefreshCw, Plus, Pencil, Trash2, Star, GripVertical, Upload, X, Loader2 } from 'lucide-react';
+import { Save, Megaphone, RefreshCw, Plus, Pencil, Trash2, Star, GripVertical, Upload, X, Loader2, Bell, Sparkles, Volume2, Wrench, Gift, AlertTriangle, Info } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -40,6 +40,38 @@ const initialFeaturedForm = {
   sort_order: 0,
 };
 
+const initialAnnouncementForm = {
+  title: '',
+  description: '',
+  icon: 'Megaphone',
+  icon_color: 'text-blue-500',
+  tag: '',
+  tag_color: 'blue',
+  publish_date: '',
+  expire_date: '',
+  is_active: true,
+  sort_order: 0,
+};
+
+const announcementIcons = [
+  { value: 'Megaphone', label: '公告', icon: Megaphone },
+  { value: 'Sparkles', label: '新功能', icon: Sparkles },
+  { value: 'Wrench', label: '维护', icon: Wrench },
+  { value: 'Gift', label: '优惠', icon: Gift },
+  { value: 'Bell', label: '通知', icon: Bell },
+  { value: 'AlertTriangle', label: '警告', icon: AlertTriangle },
+  { value: 'Info', label: '信息', icon: Info },
+  { value: 'Star', label: '推荐', icon: Star },
+];
+
+const tagColors = [
+  { value: 'blue', label: '蓝色', class: 'bg-blue-100 text-blue-700' },
+  { value: 'orange', label: '橙色', class: 'bg-amber-100 text-amber-700' },
+  { value: 'green', label: '绿色', class: 'bg-green-100 text-green-700' },
+  { value: 'red', label: '红色', class: 'bg-red-100 text-red-700' },
+  { value: 'purple', label: '紫色', class: 'bg-purple-100 text-purple-700' },
+];
+
 function AdminAnnouncementsContent() {
   const { t } = useLanguage();
   const [user, setUser] = useState(null);
@@ -49,6 +81,9 @@ function AdminAnnouncementsContent() {
   const [editingFeatured, setEditingFeatured] = useState(null);
   const [featuredForm, setFeaturedForm] = useState(initialFeaturedForm);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [announcementDialogOpen, setAnnouncementDialogOpen] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState(null);
+  const [announcementForm, setAnnouncementForm] = useState(initialAnnouncementForm);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -85,6 +120,12 @@ function AdminAnnouncementsContent() {
     enabled: !!user,
   });
 
+  const { data: announcements = [] } = useQuery({
+    queryKey: ['announcements-admin'],
+    queryFn: () => base44.entities.Announcement.filter({}, 'sort_order'),
+    enabled: !!user,
+  });
+
   const createFeaturedMutation = useMutation({
     mutationFn: (data) => base44.entities.FeaturedModule.create(data),
     onSuccess: () => {
@@ -106,6 +147,34 @@ function AdminAnnouncementsContent() {
     onSuccess: () => {
       queryClient.invalidateQueries(['featured-modules']);
       toast.success('置顶模块已删除');
+    },
+  });
+
+  // 公告管理 mutations
+  const createAnnouncementMutation = useMutation({
+    mutationFn: (data) => base44.entities.Announcement.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['announcements-admin']);
+      queryClient.invalidateQueries(['announcements']);
+      toast.success('公告已添加');
+    },
+  });
+
+  const updateAnnouncementMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Announcement.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['announcements-admin']);
+      queryClient.invalidateQueries(['announcements']);
+      toast.success('公告已更新');
+    },
+  });
+
+  const deleteAnnouncementMutation = useMutation({
+    mutationFn: (id) => base44.entities.Announcement.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['announcements-admin']);
+      queryClient.invalidateQueries(['announcements']);
+      toast.success('公告已删除');
     },
   });
 
@@ -219,6 +288,46 @@ function AdminAnnouncementsContent() {
     }
   };
 
+  // 公告管理
+  const handleOpenAnnouncementDialog = (announcement = null) => {
+    if (announcement) {
+      setEditingAnnouncement(announcement);
+      setAnnouncementForm({
+        title: announcement.title || '',
+        description: announcement.description || '',
+        icon: announcement.icon || 'Megaphone',
+        icon_color: announcement.icon_color || 'text-blue-500',
+        tag: announcement.tag || '',
+        tag_color: announcement.tag_color || 'blue',
+        publish_date: announcement.publish_date || '',
+        expire_date: announcement.expire_date || '',
+        is_active: announcement.is_active !== false,
+        sort_order: announcement.sort_order || 0,
+      });
+    } else {
+      setEditingAnnouncement(null);
+      setAnnouncementForm(initialAnnouncementForm);
+    }
+    setAnnouncementDialogOpen(true);
+  };
+
+  const handleSaveAnnouncement = async () => {
+    if (!announcementForm.title.trim()) {
+      toast.error('请输入标题');
+      return;
+    }
+    try {
+      if (editingAnnouncement) {
+        await updateAnnouncementMutation.mutateAsync({ id: editingAnnouncement.id, data: announcementForm });
+      } else {
+        await createAnnouncementMutation.mutateAsync(announcementForm);
+      }
+      setAnnouncementDialogOpen(false);
+    } catch (error) {
+      toast.error('保存失败');
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
@@ -252,6 +361,101 @@ function AdminAnnouncementsContent() {
         </div>
 
         <div className="space-y-6">
+          {/* 首页平台公告 */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bell className="h-5 w-5 text-blue-500" />
+                    首页平台公告
+                  </CardTitle>
+                  <CardDescription>管理首页显示的平台公告（最多显示3条）</CardDescription>
+                </div>
+                <Button onClick={() => handleOpenAnnouncementDialog()} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  添加公告
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {announcements.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  暂无公告，点击上方按钮添加
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {announcements.map((announcement) => {
+                    const IconComp = announcementIcons.find(i => i.value === announcement.icon)?.icon || Megaphone;
+                    const colorInfo = tagColors.find(c => c.value === announcement.tag_color) || tagColors[0];
+                    
+                    return (
+                      <div
+                        key={announcement.id}
+                        className="flex items-center gap-4 p-4 rounded-lg border bg-white border-slate-200"
+                      >
+                        <div className={`p-2 rounded-lg ${colorInfo.class.replace('text-', 'bg-').split(' ')[0].replace('bg-', 'bg-').replace('100', '50')} ${colorInfo.class.split(' ')[1]?.replace('700', '600')}`}>
+                          <IconComp className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-slate-900">{announcement.title}</span>
+                            {announcement.tag && (
+                              <span className={`text-xs px-2 py-0.5 rounded ${colorInfo.class}`}>
+                                {announcement.tag}
+                              </span>
+                            )}
+                            {!announcement.is_active && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-500">已禁用</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-500 truncate">{announcement.description}</p>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-slate-400">
+                            {announcement.publish_date && <span>发布: {announcement.publish_date}</span>}
+                            {announcement.expire_date && <span>截止: {announcement.expire_date}</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenAnnouncementDialog(announcement)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>确认删除</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  确定要删除公告"{announcement.title}"吗？此操作无法撤销。
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>取消</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteAnnouncementMutation.mutate(announcement.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  删除
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* 功能广场置顶模块 */}
           <Card>
             <CardHeader>
@@ -423,6 +627,137 @@ function AdminAnnouncementsContent() {
             </CardContent>
           </Card>
         </div>
+
+        {/* 公告编辑弹窗 */}
+        <Dialog open={announcementDialogOpen} onOpenChange={setAnnouncementDialogOpen}>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>{editingAnnouncement ? '编辑公告' : '添加公告'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>标题 *</Label>
+                <Input
+                  value={announcementForm.title}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })}
+                  placeholder="如：系统维护通知"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>描述内容 *</Label>
+                <Textarea
+                  value={announcementForm.description}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, description: e.target.value })}
+                  placeholder="公告详细内容..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>图标</Label>
+                  <Select
+                    value={announcementForm.icon}
+                    onValueChange={(v) => setAnnouncementForm({ ...announcementForm, icon: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {announcementIcons.map((item) => {
+                        const IconComp = item.icon;
+                        return (
+                          <SelectItem key={item.value} value={item.value}>
+                            <div className="flex items-center gap-2">
+                              <IconComp className="h-4 w-4" />
+                              {item.label}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>标签颜色</Label>
+                  <Select
+                    value={announcementForm.tag_color}
+                    onValueChange={(v) => setAnnouncementForm({ ...announcementForm, tag_color: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tagColors.map((color) => (
+                        <SelectItem key={color.value} value={color.value}>
+                          <div className="flex items-center gap-2">
+                            <span className={`w-3 h-3 rounded-full ${color.class.split(' ')[0]}`} />
+                            {color.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>标签文字</Label>
+                <Input
+                  value={announcementForm.tag}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, tag: e.target.value })}
+                  placeholder="如：新功能、系统公告、限时优惠"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>发布日期</Label>
+                  <Input
+                    type="date"
+                    value={announcementForm.publish_date}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, publish_date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>过期日期（可选）</Label>
+                  <Input
+                    type="date"
+                    value={announcementForm.expire_date}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, expire_date: e.target.value })}
+                  />
+                  <p className="text-xs text-slate-500">设置后公告将在此日期后自动隐藏</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>排序</Label>
+                  <Input
+                    type="number"
+                    value={announcementForm.sort_order}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, sort_order: parseInt(e.target.value) || 0 })}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-6">
+                  <Switch
+                    checked={announcementForm.is_active}
+                    onCheckedChange={(checked) => setAnnouncementForm({ ...announcementForm, is_active: checked })}
+                  />
+                  <Label>启用此公告</Label>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAnnouncementDialogOpen(false)}>取消</Button>
+              <Button onClick={handleSaveAnnouncement} className="bg-violet-600 hover:bg-violet-700">
+                {editingAnnouncement ? '更新' : '添加'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* 置顶模块编辑弹窗 */}
         <Dialog open={featuredDialogOpen} onOpenChange={setFeaturedDialogOpen}>
