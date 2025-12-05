@@ -71,8 +71,8 @@ Deno.serve(async (req) => {
     // 估算输入tokens
     const estimatedInputTokens = calculateTotalTokens(processedMessages, system_prompt);
 
-    // 如果使用内置集成（支持联网）
-    if (model.provider === 'builtin' || model.enable_web_search) {
+    // 只有当provider是builtin时才使用内置集成
+    if (model.provider === 'builtin') {
       const fullPrompt = processedMessages.map(m => {
         if (m.role === 'user') return `用户: ${m.content}`;
         if (m.role === 'assistant') return `助手: ${m.content}`;
