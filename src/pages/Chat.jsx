@@ -377,12 +377,15 @@ ${selectedModule.system_prompt}
         total_credits_used: (user.total_credits_used || 0) + creditsUsed,
       });
 
+      const webSearchInfo = result.web_search_enabled 
+        ? ` [联网搜索: ${result.web_search_credits || 0}积分]` 
+        : '';
       await createTransactionMutation.mutateAsync({
         user_email: user.email,
         type: 'usage',
         amount: -creditsUsed,
         balance_after: newBalance,
-        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${result.web_search_enabled ? ' [联网]' : ''}`,
+        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${webSearchInfo}`,
         model_used: selectedModel.name,
         prompt_module_used: selectedModule?.title,
         input_tokens: inputTokens,

@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Search, TrendingUp, TrendingDown, Coins, Filter, User, X } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, Coins, Filter, User, X, Globe } from 'lucide-react';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -226,8 +231,25 @@ function AdminTransactionsContent() {
                         {tx.type?.replace('_', ' ')}
                       </Badge>
                     </TableCell>
-                    <TableCell className="max-w-md text-slate-600" title={tx.description}>
-                      <span className="block truncate">{tx.description}</span>
+                    <TableCell className="max-w-md text-slate-600">
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <span className="block truncate cursor-pointer hover:text-slate-900">
+                            {tx.description}
+                          </span>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-96 max-h-48 overflow-y-auto" side="top">
+                          <div className="space-y-2">
+                            <p className="text-sm text-slate-700 whitespace-pre-wrap break-words">{tx.description}</p>
+                            {tx.web_search_used && (
+                              <div className="flex items-center gap-1 text-xs text-blue-600 pt-2 border-t">
+                                <Globe className="h-3 w-3" />
+                                已启用联网搜索
+                              </div>
+                            )}
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
                     </TableCell>
                     <TableCell>
                       <span className={tx.amount >= 0 ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold'}>
