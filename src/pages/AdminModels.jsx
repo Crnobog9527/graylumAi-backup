@@ -59,6 +59,7 @@ const initialFormData = {
   provider: 'anthropic',
   api_key: '',
   api_endpoint: '',
+  system_prompt: '',
   is_active: true,
   is_default: false,
   description: '',
@@ -156,6 +157,7 @@ function AdminModelsContent() {
       provider: model.provider || 'anthropic',
       api_key: model.api_key || '',
       api_endpoint: model.api_endpoint || '',
+      system_prompt: model.system_prompt || '',
       is_active: model.is_active !== false,
       is_default: model.is_default || false,
       description: model.description || '',
@@ -453,6 +455,17 @@ function AdminModelsContent() {
                   placeholder="Brief description of the model..."
                   rows={2}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label>默认系统提示词（可选）</Label>
+                <Textarea
+                  value={formData.system_prompt}
+                  onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
+                  placeholder="在普通对话中使用的默认系统提示词..."
+                  rows={3}
+                />
+                <p className="text-xs text-slate-500">用户自主新建对话时（未选择功能模块）将使用此提示词</p>
               </div>
 
               <div className="flex items-center justify-between">

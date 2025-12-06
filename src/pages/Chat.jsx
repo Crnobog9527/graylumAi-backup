@@ -297,6 +297,7 @@ export default function Chat() {
     // 构建系统提示词以计算准确的token数
     let systemPrompt = '';
     if (selectedModule) {
+      // 使用功能模块的系统提示词
       systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
 ${selectedModule.system_prompt}
 
@@ -304,6 +305,9 @@ ${selectedModule.system_prompt}
 1. 你必须严格遵循上述角色定位和功能约束
 2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
 3. 保持专业、专注，不要偏离主题`;
+    } else if (selectedModel?.system_prompt) {
+      // 普通对话：使用模型配置的默认系统提示词
+      systemPrompt = selectedModel.system_prompt;
     }
 
     // 长文本预警检查（包含系统提示词）
@@ -338,11 +342,10 @@ ${selectedModule.system_prompt}
 
     try {
       // 使用智能搜索判断系统（会自动判断是否需要搜索并禁用模型默认搜索）
-      // 注意：只在使用功能模块时传递 system_prompt，新对话不传递
       const { data: result } = await base44.functions.invoke('smartChatWithSearch', {
         conversation_id: currentConversation?.id,
         message: inputMessage,
-        system_prompt: selectedModule ? systemPrompt : undefined
+        system_prompt: systemPrompt || undefined
       });
 
       if (result.error) {
