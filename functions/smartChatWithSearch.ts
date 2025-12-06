@@ -272,7 +272,6 @@ Deno.serve(async (req) => {
       const newConv = await base44.asServiceRole.entities.Conversation.create({
         title: message.slice(0, 50),
         model_id: selectedModel.id,
-        system_prompt: system_prompt,
         messages: newMessages,
         total_credits_used: totalCredits
       });
