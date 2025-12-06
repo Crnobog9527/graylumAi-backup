@@ -155,10 +155,12 @@ Deno.serve(async (req) => {
     }
     
     // 步骤4：调用智能对话（使用现有的 smartChat）
+    // 注意：使用智能搜索判断系统时，禁用模型默认的联网搜索功能，避免重复搜索
     const chatRes = await base44.functions.invoke('smartChat', {
       conversation_id,
       message: enhancedMessage,
-      system_prompt
+      system_prompt,
+      disable_model_web_search: true  // 关键：禁用模型默认搜索
     });
     
     const chatData = chatRes.data;

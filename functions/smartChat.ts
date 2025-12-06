@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const { conversation_id, message, system_prompt, force_model } = await req.json();
+    const { conversation_id, message, system_prompt, force_model, disable_model_web_search } = await req.json();
     
     if (!message) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
