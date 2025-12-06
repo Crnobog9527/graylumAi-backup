@@ -111,9 +111,7 @@ export default function Chat() {
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
-      // 优先选择默认模型，如果没有默认模型则选择第一个
-      const defaultModel = models.find(m => m.is_default);
-      setSelectedModel(defaultModel || models[0]);
+      setSelectedModel(models[0]);
     }
   }, [models]);
 
@@ -339,7 +337,7 @@ ${selectedModule.system_prompt}
       const { data: result } = await base44.functions.invoke('callAIModel', {
         model_id: selectedModel.id,
         messages: [...newMessages],
-        ...(systemPrompt ? { system_prompt: systemPrompt } : {})
+        system_prompt: systemPrompt || undefined
       });
 
       if (result.error) {
@@ -379,15 +377,12 @@ ${selectedModule.system_prompt}
         total_credits_used: (user.total_credits_used || 0) + creditsUsed,
       });
 
-      const webSearchInfo = result.web_search_enabled 
-        ? ` [联网搜索: ${result.web_search_credits || 0}积分]` 
-        : '';
       await createTransactionMutation.mutateAsync({
         user_email: user.email,
         type: 'usage',
         amount: -creditsUsed,
         balance_after: newBalance,
-        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${webSearchInfo}`,
+        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${result.web_search_enabled ? ' [联网]' : ''}`,
         model_used: selectedModel.name,
         prompt_module_used: selectedModule?.title,
         input_tokens: inputTokens,
@@ -413,7 +408,7 @@ ${selectedModule.system_prompt}
           title,
           model_id: selectedModel.id,
           prompt_module_id: selectedModule?.id,
-          ...(selectedModule ? { system_prompt: systemPrompt } : {}),
+          system_prompt: systemPrompt,
           messages: updatedMessages,
           total_credits_used: creditsUsed,
         });
