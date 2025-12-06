@@ -199,27 +199,31 @@ Deno.serve(async (req) => {
     }
     
     // 步骤6：更新每日统计
-    const today = new Date().toISOString().split('T')[0];
-    const stats = await base44.asServiceRole.entities.SearchStatistics.filter({ date: today });
-    
-    if (stats.length > 0) {
-      const stat = stats[0];
-      const updates = {
-        search_triggered: (stat.search_triggered || 0) + (decision.need_search ? 1 : 0),
-        cache_hits: (stat.cache_hits || 0) + (cacheHit ? 1 : 0),
-        total_search_cost: (stat.total_search_cost || 0) + searchCost,
-        total_cost_saved: (stat.total_cost_saved || 0) + (cacheHit ? WEB_SEARCH_COST : 0)
-      };
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const stats = await base44.asServiceRole.entities.SearchStatistics.filter({ date: today });
       
-      // 计算触发率和命中率
-      const totalReq = stat.total_requests || 1;
-      const searchTrig = updates.search_triggered;
-      const cacheH = updates.cache_hits;
-      
-      updates.search_trigger_rate = (searchTrig / totalReq) * 100;
-      updates.cache_hit_rate = searchTrig > 0 ? (cacheH / searchTrig) * 100 : 0;
-      
-      await base44.asServiceRole.entities.SearchStatistics.update(stat.id, updates);
+      if (stats.length > 0) {
+        const stat = stats[0];
+        const updates = {
+          search_triggered: (stat.search_triggered || 0) + (decision.need_search ? 1 : 0),
+          cache_hits: (stat.cache_hits || 0) + (cacheHit ? 1 : 0),
+          total_search_cost: (stat.total_search_cost || 0) + searchCost,
+          total_cost_saved: (stat.total_cost_saved || 0) + (cacheHit ? WEB_SEARCH_COST : 0)
+        };
+        
+        // 计算触发率和命中率
+        const totalReq = stat.total_requests || 1;
+        const searchTrig = updates.search_triggered;
+        const cacheH = updates.cache_hits;
+        
+        updates.search_trigger_rate = (searchTrig / totalReq) * 100;
+        updates.cache_hit_rate = searchTrig > 0 ? (cacheH / searchTrig) * 100 : 0;
+        
+        await base44.asServiceRole.entities.SearchStatistics.update(stat.id, updates);
+      }
+    } catch (error) {
+      console.log('Failed to update search statistics:', error.message);
     }
     
     return Response.json({
