@@ -436,16 +436,29 @@ Deno.serve(async (req) => {
 
       // ========== 官方 Anthropic API ==========
       const anthropicMessages = formattedMessages.filter(m => m.role !== 'system');
-      
+
+      const requestBody = {
+        model: model.model_id,
+        max_tokens: model.max_tokens || 4096,
+        system: system_prompt || '',
+        messages: anthropicMessages
+      };
+
+      // 打印完整请求体
+      console.log('[callAIModel] ========== ANTHROPIC API REQUEST (Official) ==========');
+      console.log('[callAIModel] Endpoint:', endpoint);
+      console.log('[callAIModel] --- Full Request Body ---');
+      console.log(JSON.stringify(requestBody, null, 2));
+      console.log('[callAIModel] --- Request Stats ---');
+      console.log('[callAIModel] Total JSON size:', JSON.stringify(requestBody).length, 'chars');
+      console.log('[callAIModel] System prompt length:', requestBody.system.length, 'chars');
+      console.log('[callAIModel] Messages count:', requestBody.messages.length);
+      console.log('[callAIModel] =========================================');
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          model: model.model_id,
-          max_tokens: model.max_tokens || 4096,
-          system: system_prompt || '',
-          messages: anthropicMessages
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!res.ok) {
