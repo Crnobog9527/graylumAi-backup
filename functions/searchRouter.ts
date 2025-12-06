@@ -67,22 +67,6 @@ Deno.serve(async (req) => {
     const decision = classifierResult.data;
     const queryHash = decision.query_hash;
 
-    // Step 2: 检查配额（仅当需要搜索时）
-    let quotaCheck = { allowed: true, message: 'Search not needed' };
-    if (decision.need_search) {
-      quotaCheck = (await base44.functions.invoke('quotaManager', {
-        action: 'check',
-        consume: false
-      })).data;
-
-      if (!quotaCheck.allowed) {
-        // 配额不足，降级到不搜索
-        decision.need_search = false;
-        decision.reason = `Quota exceeded. ${quotaCheck.message}`;
-        decision.quota_exceeded = true;
-      }
-    }
-
     let searchResults = null;
     let fromCache = false;
     let actualSearched = false;
@@ -138,12 +122,6 @@ Deno.serve(async (req) => {
 
       // 如果没有缓存，执行实际搜索
       if (!fromCache) {
-        // 消耗配额
-        await base44.functions.invoke('quotaManager', {
-          action: 'check',
-          consume: true
-        });
-
         // 执行搜索（使用 Core.InvokeLLM 的联网功能）
         const searchPrompt = `请搜索以下问题的最新信息：${user_message}`;
         searchResults = await base44.integrations.Core.InvokeLLM({
@@ -208,8 +186,7 @@ Deno.serve(async (req) => {
         search_type: decision.search_type,
         decision_layer: decision.decision_layer,
         from_cache: fromCache,
-        actual_searched: actualSearched,
-        quota_remaining: quotaCheck.remaining_hourly
+        actual_searched: actualSearched
       },
       response_time: Date.now() - startTime
     });
