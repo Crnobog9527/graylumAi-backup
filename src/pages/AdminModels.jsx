@@ -155,7 +155,6 @@ function AdminModelsContent() {
       provider: model.provider || 'anthropic',
       api_key: model.api_key || '',
       api_endpoint: model.api_endpoint || '',
-      credits_per_message: model.credits_per_message || 1,
       is_active: model.is_active !== false,
       description: model.description || '',
       max_tokens: model.max_tokens || 4096,
