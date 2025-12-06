@@ -515,6 +515,19 @@ Deno.serve(async (req) => {
         requestBody.systemInstruction = { parts: [{ text: system_prompt }] };
       }
 
+      // 打印完整请求体
+      console.log('[callAIModel] ========== GOOGLE GEMINI API REQUEST ==========');
+      console.log('[callAIModel] Endpoint:', endpoint.slice(0, 100) + '...');
+      console.log('[callAIModel] --- Full Request Body ---');
+      console.log(JSON.stringify(requestBody, null, 2));
+      console.log('[callAIModel] --- Request Stats ---');
+      console.log('[callAIModel] Total JSON size:', JSON.stringify(requestBody).length, 'chars');
+      console.log('[callAIModel] Contents count:', requestBody.contents.length);
+      if (requestBody.systemInstruction) {
+        console.log('[callAIModel] System instruction length:', JSON.stringify(requestBody.systemInstruction).length, 'chars');
+      }
+      console.log('[callAIModel] =========================================');
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
