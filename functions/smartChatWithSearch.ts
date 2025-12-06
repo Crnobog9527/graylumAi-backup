@@ -89,15 +89,20 @@ const executeSearch = async (query, searchType) => {
 };
 
 Deno.serve(async (req) => {
+  const startTime = Date.now();
+  console.log('[smartChatWithSearch] Request started');
+  
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     
     if (!user) {
+      console.log('[smartChatWithSearch] Unauthorized');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     const { conversation_id, message, system_prompt } = await req.json();
+    console.log('[smartChatWithSearch] User:', user.email, 'Message:', message?.slice(0, 50));
     
     if (!message) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
@@ -265,7 +270,12 @@ Deno.serve(async (req) => {
     });
     
   } catch (error) {
-    console.error('Smart chat with search error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('[smartChatWithSearch] Error:', error);
+    console.error('[smartChatWithSearch] Stack:', error.stack);
+    return Response.json({ 
+      error: error.message,
+      stack: error.stack,
+      time_ms: Date.now() - startTime
+    }, { status: 500 });
   }
 });
