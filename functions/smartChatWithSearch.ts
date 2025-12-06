@@ -180,16 +180,22 @@ Deno.serve(async (req) => {
     const totalCredits = inputCredits + outputCredits + searchCredits;
     
     // 步骤5：更新搜索决策记录
-    const decisions = await base44.asServiceRole.entities.SearchDecision.filter({
-      id: decision.decision_id
-    });
-    
-    if (decisions.length > 0) {
-      await base44.asServiceRole.entities.SearchDecision.update(decisions[0].id, {
-        search_executed: !!searchResults,
-        cache_hit: cacheHit,
-        search_cost: searchCost
-      });
+    if (decision.decision_id) {
+      try {
+        const decisions = await base44.asServiceRole.entities.SearchDecision.filter({
+          id: decision.decision_id
+        });
+        
+        if (decisions.length > 0) {
+          await base44.asServiceRole.entities.SearchDecision.update(decisions[0].id, {
+            search_executed: !!searchResults,
+            cache_hit: cacheHit,
+            search_cost: searchCost
+          });
+        }
+      } catch (error) {
+        console.log('Failed to update search decision:', error.message);
+      }
     }
     
     // 步骤6：更新每日统计
