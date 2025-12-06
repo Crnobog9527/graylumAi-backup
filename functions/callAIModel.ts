@@ -251,14 +251,14 @@ Deno.serve(async (req) => {
       }
 
       // 打印完整请求体
-      console.log('[callAIModel] ========== OPENAI/OPENROUTER API REQUEST ==========');
+      console.log('[callAIModel] ========== OPENAI/CUSTOM API REQUEST ==========');
       console.log('[callAIModel] Endpoint:', endpoint);
       console.log('[callAIModel] Provider:', provider);
       console.log('[callAIModel] IsOpenRouter:', isOpenRouter);
-      console.log('[callAIModel] --- Complete API Request Body ---');
+      console.log('[callAIModel] --- Full Request Body ---');
       console.log(JSON.stringify(requestBody, null, 2));
-      console.log('[callAIModel] --- Request Body Length ===');
-      console.log('[callAIModel] Total characters:', JSON.stringify(requestBody).length);
+      console.log('[callAIModel] --- Request Stats ---');
+      console.log('[callAIModel] Total JSON size:', JSON.stringify(requestBody).length, 'chars');
       console.log('[callAIModel] Messages count:', requestBody.messages.length);
       console.log('[callAIModel] Estimated total tokens:', Math.ceil(JSON.stringify(requestBody).length / 4));
       requestBody.messages.forEach((msg, i) => {
@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
       if (requestBody.plugins) {
         console.log('[callAIModel] Plugins:', JSON.stringify(requestBody.plugins));
       }
-      console.log('[callAIModel] ===================================================');
+      console.log('[callAIModel] =========================================');
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -364,6 +364,11 @@ Deno.serve(async (req) => {
         requestBody.messages.forEach((msg, i) => {
           const contentStr = JSON.stringify(msg.content);
           console.log(`[callAIModel]   Message[${i}] ${msg.role}: ${contentStr.length} chars, ~${Math.ceil(contentStr.length / 4)} tokens`);
+          if (msg.role === 'system') {
+            console.log(`[callAIModel]     System content preview:`, contentStr.slice(0, 500));
+          } else if (msg.role === 'user') {
+            console.log(`[callAIModel]     User content preview:`, contentStr.slice(0, 200));
+          }
         });
         console.log('[callAIModel] ====================================================');
 
