@@ -337,11 +337,12 @@ ${selectedModule.system_prompt}
     setIsStreaming(true);
 
     try {
-      // 使用智能联网搜索判断系统
+      // 使用智能搜索判断系统（会自动判断是否需要搜索并禁用模型默认搜索）
+      // 注意：只在使用功能模块时传递 system_prompt，新对话不传递
       const { data: result } = await base44.functions.invoke('smartChatWithSearch', {
         conversation_id: currentConversation?.id,
         message: inputMessage,
-        system_prompt: systemPrompt || undefined
+        system_prompt: selectedModule ? systemPrompt : undefined
       });
 
       if (result.error) {
@@ -381,22 +382,25 @@ ${selectedModule.system_prompt}
         total_credits_used: (user.total_credits_used || 0) + creditsUsed,
       });
 
-      const webSearchInfo = result.web_search_enabled 
-        ? ` [联网搜索: ${result.web_search_credits || 0}积分]` 
+      // 搜索信息（来自智能搜索判断系统）
+      const searchInfo = result.search_info?.executed 
+        ? ` [智能搜索: ${result.search_info.cost?.toFixed(4) || 0}$]` 
         : '';
+      const webSearchUsed = result.search_info?.executed || false;
+      
       await createTransactionMutation.mutateAsync({
         user_email: user.email,
         type: 'usage',
         amount: -creditsUsed,
         balance_after: newBalance,
-        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${webSearchInfo}`,
+        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${searchInfo}`,
         model_used: selectedModel.name,
         prompt_module_used: selectedModule?.title,
         input_tokens: inputTokens,
         output_tokens: outputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
-        web_search_used: result.web_search_enabled || false,
+        web_search_used: webSearchUsed,
       });
 
       const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
