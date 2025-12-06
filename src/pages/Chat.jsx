@@ -356,11 +356,20 @@ export default function Chat() {
     setIsStreaming(true);
 
     try {
+      // 最终检查要传递的 system_prompt
+      const finalSystemPrompt = systemPrompt || undefined;
+      console.log('[Chat] === CALLING smartChatWithSearch ===');
+      console.log('[Chat] conversation_id:', currentConversation?.id || 'null (new conversation)');
+      console.log('[Chat] message length:', inputMessage.length, 'chars');
+      console.log('[Chat] systemPrompt value:', systemPrompt === '' ? '(empty string)' : systemPrompt ? `"${systemPrompt.slice(0, 100)}..."` : 'null/undefined');
+      console.log('[Chat] finalSystemPrompt:', finalSystemPrompt === undefined ? 'undefined' : `"${finalSystemPrompt.slice(0, 100)}..."`);
+      console.log('[Chat] =====================================');
+
       // 使用智能搜索判断系统（会自动判断是否需要搜索并禁用模型默认搜索）
       const { data: result } = await base44.functions.invoke('smartChatWithSearch', {
         conversation_id: currentConversation?.id,
         message: inputMessage,
-        system_prompt: systemPrompt || undefined
+        system_prompt: finalSystemPrompt
       });
 
       if (result.error) {
