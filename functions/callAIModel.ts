@@ -14,6 +14,45 @@ Deno.serve(async (req) => {
     // Token 估算函数 (字符数 / 4)
     const estimateTokens = (text) => Math.ceil((text || '').length / 4);
 
+    // 判断是否需要联网搜索
+    const shouldUseWebSearch = (userMessage, conversationMessages) => {
+      const message = userMessage.toLowerCase();
+      
+      // 强制触发关键词
+      const forceSearchKeywords = [
+        '今天', '昨天', '最新', '现在', '当前', '近期', '2024年', '2025年',
+        '天气', '股价', '汇率', '新闻', '比赛', '帮我查', '搜索', '联网', '找一下'
+      ];
+      
+      if (forceSearchKeywords.some(keyword => message.includes(keyword))) {
+        return true;
+      }
+      
+      // 不需要联网的场景
+      const noSearchPatterns = [
+        /如何|怎么|怎样|为什么/,
+        /是什么|什么是|解释|定义/,
+        /帮我写|生成|创作|翻译|改写/,
+        /^.{0,50}$/  // 短对话 <50字
+      ];
+      
+      for (const pattern of noSearchPatterns) {
+        if (pattern.test(message)) {
+          return false;
+        }
+      }
+      
+      // 智能评分模型
+      let score = 0;
+      
+      if (/\d{4}年|\d+月\d+日|今年|去年/.test(message)) score += 0.4;
+      if (/价格|股票|政策|选举|公司|CEO/.test(message)) score += 0.3;
+      if (/真的吗|确定吗|是真的|可靠吗/.test(message)) score += 0.2;
+      
+      // 评分 >= 0.6 触发联网
+      return score >= 0.6;
+    };
+
     // ========== Prompt Caching 相关常量和函数 ==========
     const CACHE_MIN_TOKENS = 1024;  // 最小缓存阈值
     const MAX_CACHE_BREAKPOINTS = 4; // Claude 最多支持4个缓存断点
@@ -159,9 +198,13 @@ Deno.serve(async (req) => {
         ? `${system_prompt}\n\n${fullPrompt}\n\n请根据上述对话历史，回复用户最后的消息。`
         : fullPrompt;
 
+      // 智能判断是否需要联网
+      const userLastMessage = processedMessages[processedMessages.length - 1]?.content || '';
+      const needWebSearch = model.enable_web_search && shouldUseWebSearch(userLastMessage, processedMessages);
+
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: finalPrompt,
-        add_context_from_internet: model.enable_web_search || false
+        add_context_from_internet: needWebSearch
       });
       
       // 执行截断
@@ -176,7 +219,7 @@ Deno.serve(async (req) => {
       // 计算积分消耗
       const inputCredits = Math.ceil(estimatedInputTokens / 1000) * inputCreditsPerK;
       const outputCredits = Math.ceil(estimatedOutputTokens / 1000) * outputCreditsPerK;
-      const searchCredits = (model.enable_web_search) ? webSearchCredits : 0;
+      const searchCredits = needWebSearch ? webSearchCredits : 0;
       const totalCredits = inputCredits + outputCredits + searchCredits;
 
       return Response.json({
@@ -187,7 +230,7 @@ Deno.serve(async (req) => {
         input_credits: inputCredits,
         output_credits: outputCredits,
         web_search_credits: searchCredits,
-        web_search_enabled: model.enable_web_search || false
+        web_search_enabled: needWebSearch
       });
     }
 
@@ -216,6 +259,10 @@ Deno.serve(async (req) => {
       const endpoint = model.api_endpoint || 'https://api.openai.com/v1/chat/completions';
       const isOpenRouter = model.api_endpoint && model.api_endpoint.includes('openrouter.ai');
 
+      // 智能判断是否需要联网
+      const userLastMessage = processedMessages[processedMessages.length - 1]?.content || '';
+      const needWebSearch = model.enable_web_search && shouldUseWebSearch(userLastMessage, processedMessages);
+
       // 构建请求体
       const requestBody = {
         model: model.model_id,
@@ -223,8 +270,8 @@ Deno.serve(async (req) => {
         max_tokens: model.max_tokens || 4096
       };
 
-      // 如果是OpenRouter且启用了联网搜索，添加plugins参数
-      if (isOpenRouter && model.enable_web_search) {
+      // 如果是OpenRouter且需要联网搜索，添加plugins参数
+      if (isOpenRouter && needWebSearch) {
         requestBody.plugins = [
           {
             id: 'web',
@@ -261,7 +308,7 @@ Deno.serve(async (req) => {
       // 计算积分
       const inputCredits = Math.ceil(actualInputTokens / 1000) * inputCreditsPerK;
       const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
-      const searchCredits = (isOpenRouter && model.enable_web_search) ? webSearchCredits : 0;
+      const searchCredits = (isOpenRouter && needWebSearch) ? webSearchCredits : 0;
       const totalCredits = inputCredits + outputCredits + searchCredits;
 
       return Response.json({
@@ -274,7 +321,7 @@ Deno.serve(async (req) => {
         web_search_credits: searchCredits,
         model: data.model || null,
         usage: data.usage || null,
-        web_search_enabled: isOpenRouter && model.enable_web_search
+        web_search_enabled: isOpenRouter && needWebSearch
       });
 
     } else if (provider === 'anthropic') {
@@ -295,6 +342,10 @@ Deno.serve(async (req) => {
 
       // ========== OpenRouter Anthropic 模型调用（支持 Prompt Caching）==========
       if (isOpenRouter) {
+        // 智能判断是否需要联网
+        const userLastMessage = processedMessages[processedMessages.length - 1]?.content || '';
+        const needWebSearch = model.enable_web_search && shouldUseWebSearch(userLastMessage, processedMessages);
+
         // 构建带缓存标记的消息
         const { messages: cachedMessages, cacheEnabled, cachedBlocksCount } = 
           buildCachedMessagesForOpenRouter(processedMessages, system_prompt);
@@ -305,8 +356,8 @@ Deno.serve(async (req) => {
           max_tokens: model.max_tokens || 4096
         };
 
-        // 如果启用了联网搜索，添加plugins参数
-        if (model.enable_web_search) {
+        // 如果需要联网搜索，添加plugins参数
+        if (needWebSearch) {
           requestBody.plugins = [{ id: 'web', max_results: 5 }];
         }
 
@@ -346,7 +397,7 @@ Deno.serve(async (req) => {
         const uncachedInputCredits = Math.ceil(uncachedInputTokens / 1000) * inputCreditsPerK;
         const inputCredits = Math.ceil(cachedInputCredits + uncachedInputCredits);
         const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
-        const searchCredits = model.enable_web_search ? webSearchCredits : 0;
+        const searchCredits = needWebSearch ? webSearchCredits : 0;
         const totalCredits = inputCredits + outputCredits + searchCredits;
 
         // 计算缓存节省的积分
@@ -362,7 +413,7 @@ Deno.serve(async (req) => {
           output_credits: outputCredits,
           web_search_credits: searchCredits,
           usage: data.usage || null,
-          web_search_enabled: model.enable_web_search || false,
+          web_search_enabled: needWebSearch,
           // 缓存统计信息
           cache_enabled: cacheEnabled,
           cached_blocks_count: cachedBlocksCount,
