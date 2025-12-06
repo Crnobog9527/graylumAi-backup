@@ -163,6 +163,12 @@ Deno.serve(async (req) => {
         prompt: finalPrompt,
         add_context_from_internet: model.enable_web_search || false
       });
+      
+      // 执行截断
+    const { truncatedMsgs, totalTokens } = truncateMessages(messages, system_prompt, inputLimit);
+    
+    // 【新增修复】过滤掉 messages 中的 system 角色，防止后续重复添加
+    const processedMessages = truncatedMsgs.filter(m => m.role !== 'system');
 
       // 估算输出tokens
       const estimatedOutputTokens = estimateTokens(result);
