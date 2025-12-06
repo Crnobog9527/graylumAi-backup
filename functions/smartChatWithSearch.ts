@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
     
     console.log('[smartChatWithSearch] Using model:', selectedModel.name, 'Web search enabled:', selectedModel.enable_web_search);
     
-    // 步骤2：简化的搜索判断（关键词匹配）- 无论模型是否启用联网，都进行判断
+    // 步骤2：简化的搜索判断（关键词匹配或URL检测）- 无论模型是否启用联网，都进行判断
     const lowerMessage = message.toLowerCase();
     const searchKeywords = [
       "天气", "股价", "汇率", "比赛", "新闻", "最新", "今天", "昨天", "现在", "当前",
@@ -137,26 +137,29 @@ Deno.serve(async (req) => {
       "search", "查询", "查一下"
     ];
     
+    // URL 检测正则
+    const hasUrl = /(https?:\/\/[^\s]+)/.test(message);
     const hasSearchKeyword = searchKeywords.some(kw => lowerMessage.includes(kw));
+    const shouldSearch = hasSearchKeyword || hasUrl;
     
     let decision;
-    if (hasSearchKeyword && selectedModel.enable_web_search) {
+    if (shouldSearch && selectedModel.enable_web_search) {
       decision = {
         need_search: true,
         search_type: 'general',
         confidence: 0.9,
-        reason: '检测到搜索关键词',
+        reason: hasUrl ? '检测到URL链接' : '检测到搜索关键词',
         decision_level: 'keyword',
         decision_time_ms: 0,
         will_use_web_search: true
       };
-      console.log('[smartChatWithSearch] ✓ Search enabled by keyword match');
+      console.log('[smartChatWithSearch] ✓ Search enabled by', hasUrl ? 'URL detection' : 'keyword match');
     } else {
       decision = {
         need_search: false,
         search_type: 'none',
         confidence: 0.9,
-        reason: hasSearchKeyword ? 'Web search disabled in model settings' : '未检测到搜索关键词',
+        reason: shouldSearch ? 'Web search disabled in model settings' : '未检测到搜索关键词或URL',
         decision_level: 'keyword',
         decision_time_ms: 0,
         will_use_web_search: false
