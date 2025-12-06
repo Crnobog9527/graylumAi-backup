@@ -352,9 +352,12 @@ ${selectedModule.system_prompt}
         requestBody.system_prompt = systemPrompt;
       }
 
+      console.log('发送请求到 smartChatWithSearch:', requestBody);
       const { data: result } = await base44.functions.invoke('smartChatWithSearch', requestBody);
+      console.log('收到响应:', result);
 
       if (result.error) {
+        console.error('API返回错误:', result.error);
         throw new Error(result.error);
       }
       const response = result.response;
