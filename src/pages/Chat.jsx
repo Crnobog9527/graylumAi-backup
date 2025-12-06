@@ -437,7 +437,10 @@ ${selectedModule.system_prompt}
         });
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('发送消息失败:', error);
+      alert(`发送失败: ${error.message || '未知错误'}`);
+      // 恢复消息列表
+      setMessages(messages);
     } finally {
       setIsStreaming(false);
     }
