@@ -110,19 +110,46 @@ Deno.serve(async (req) => {
     
     const startTime = Date.now();
     
-    // 步骤1：调用搜索分类器
-    let decision = { need_search: false, search_type: 'none', confidence: 0, reason: 'Classifier disabled', decision_level: 'none', decision_time_ms: 0, decision_id: null };
-    
-    try {
-      const classifierRes = await base44.functions.invoke('searchClassifier', {
-        message,
-        conversation_id,
-        context: null
-      });
-      decision = classifierRes.data;
-    } catch (error) {
-      console.log('Search classifier not available, continuing without search:', error.message);
+    // 步骤1：获取模型配置，检查是否启用智能搜索
+    console.log('[smartChatWithSearch] Getting AI models...');
+    const models = await base44.asServiceRole.entities.AIModel.filter({ is_active: true });
+    if (models.length === 0) {
+      throw new Error('No active AI models found');
     }
+    
+    // 优先使用默认模型或对话指定的模型
+    let selectedModel = models.find(m => m.is_default) || models[0];
+    
+    if (conversation_id) {
+      const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
+      if (convs.length > 0 && convs[0].model_id) {
+        const convModel = models.find(m => m.id === convs[0].model_id);
+        if (convModel) selectedModel = convModel;
+      }
+    }
+    
+    console.log('[smartChatWithSearch] Using model:', selectedModel.name, 'Web search enabled:', selectedModel.enable_web_search);
+    
+    // 步骤2：只有当模型启用了联网搜索时，才调用智能搜索判断系统
+    let decision = { need_search: false, search_type: 'none', confidence: 0, reason: 'Web search disabled in model settings', decision_level: 'none', decision_time_ms: 0, decision_id: null };
+    
+    if (selectedModel.enable_web_search) {
+      try {
+        console.log('[smartChatWithSearch] Calling search classifier...');
+        const classifierRes = await base44.functions.invoke('searchClassifier', {
+          message,
+          conversation_id,
+          context: null
+        });
+        decision = classifierRes.data;
+        console.log('[smartChatWithSearch] Search decision:', decision.need_search, decision.search_type);
+      } catch (error) {
+        console.log('[smartChatWithSearch] Search classifier not available:', error.message);
+      }
+    } else {
+      console.log('[smartChatWithSearch] Web search disabled, skipping search classifier');
+    }
+    
     let searchResults = null;
     let cacheHit = false;
     let searchCost = 0;
@@ -164,18 +191,7 @@ Deno.serve(async (req) => {
       enhancedMessage = searchContext;
     }
     
-    // 步骤4：获取用户选择的模型或默认模型
-    console.log('[smartChatWithSearch] Getting AI models...');
-    const models = await base44.asServiceRole.entities.AIModel.filter({ is_active: true });
-    if (models.length === 0) {
-      throw new Error('No active AI models found');
-    }
-    
-    // 优先使用默认模型
-    let selectedModel = models.find(m => m.is_default) || models[0];
-    console.log('[smartChatWithSearch] Using model:', selectedModel.name);
-    
-    // 获取对话历史
+    // 步骤4：获取对话历史
     let conversation;
     let conversationMessages = [];
     
@@ -185,14 +201,6 @@ Deno.serve(async (req) => {
       if (convs.length > 0) {
         conversation = convs[0];
         conversationMessages = conversation.messages || [];
-        
-        // 如果对话有指定模型，使用对话的模型
-        if (conversation.model_id) {
-          const convModel = models.find(m => m.id === conversation.model_id);
-          if (convModel) {
-            selectedModel = convModel;
-          }
-        }
       }
     }
     
