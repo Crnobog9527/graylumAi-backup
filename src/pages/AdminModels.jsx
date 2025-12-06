@@ -409,6 +409,19 @@ function AdminModelsContent() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label>{t('creditsPerMessage')} *</Label>
+                <Input
+                  type="number"
+                  value={formData.credits_per_message}
+                  onChange={(e) => setFormData({ ...formData, credits_per_message: parseFloat(e.target.value) || 1 })}
+                  placeholder="1"
+                  min={0}
+                  step={0.1}
+                />
+                <p className="text-xs text-slate-500">每条消息消耗的积分（已弃用，建议使用Token成本计算）</p>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t('maxTokens')}</Label>
