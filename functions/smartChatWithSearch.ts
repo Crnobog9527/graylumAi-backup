@@ -164,28 +164,101 @@ Deno.serve(async (req) => {
       enhancedMessage = searchContext;
     }
     
-    // 步骤4：调用智能对话（使用现有的 smartChat）
-    // 注意：smartChat 不支持 disable_model_web_search 参数，它使用 OpenRouter 的预设模型
-    const chatRes = await base44.functions.invoke('smartChat', {
-      conversation_id,
-      message: enhancedMessage,
-      system_prompt
-    });
-    
-    if (!chatRes.data) {
-      throw new Error('Smart chat returned no data');
+    // 步骤4：获取用户选择的模型或默认模型
+    console.log('[smartChatWithSearch] Getting AI models...');
+    const models = await base44.asServiceRole.entities.AIModel.filter({ is_active: true });
+    if (models.length === 0) {
+      throw new Error('No active AI models found');
     }
     
-    const chatData = chatRes.data;
+    // 优先使用默认模型
+    let selectedModel = models.find(m => m.is_default) || models[0];
+    console.log('[smartChatWithSearch] Using model:', selectedModel.name);
+    
+    // 获取对话历史
+    let conversation;
+    let conversationMessages = [];
+    
+    if (conversation_id) {
+      console.log('[smartChatWithSearch] Loading conversation:', conversation_id);
+      const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
+      if (convs.length > 0) {
+        conversation = convs[0];
+        conversationMessages = conversation.messages || [];
+        
+        // 如果对话有指定模型，使用对话的模型
+        if (conversation.model_id) {
+          const convModel = models.find(m => m.id === conversation.model_id);
+          if (convModel) {
+            selectedModel = convModel;
+          }
+        }
+      }
+    }
+    
+    // 构建消息列表
+    const apiMessages = conversationMessages.map(m => ({
+      role: m.role,
+      content: m.content
+    }));
+    
+    // 添加当前增强消息
+    apiMessages.push({ role: 'user', content: enhancedMessage });
+    
+    console.log('[smartChatWithSearch] Calling AI model with', apiMessages.length, 'messages');
+    
+    // 调用 AI 模型
+    const modelRes = await base44.functions.invoke('callAIModel', {
+      model_id: selectedModel.id,
+      messages: apiMessages,
+      system_prompt: system_prompt
+    });
+    
+    if (!modelRes.data || modelRes.data.error) {
+      throw new Error(modelRes.data?.error || 'AI model call failed');
+    }
+    
+    const modelData = modelRes.data;
+    console.log('[smartChatWithSearch] AI response received');
     
     // 计算积分消耗（整合搜索成本）
-    const inputCreditsPerK = 1;  // 从系统设置获取
+    const inputCreditsPerK = 1;
     const outputCreditsPerK = 5;
     
-    const inputCredits = Math.ceil((chatData.stats.input_tokens || 0) / 1000) * inputCreditsPerK;
-    const outputCredits = Math.ceil((chatData.stats.output_tokens || 0) / 1000) * outputCreditsPerK;
-    const searchCredits = searchCost > 0 ? 5 : 0;  // 搜索固定5积分
+    const inputTokens = modelData.input_tokens || 0;
+    const outputTokens = modelData.output_tokens || 0;
+    const inputCredits = Math.ceil(inputTokens / 1000) * inputCreditsPerK;
+    const outputCredits = Math.ceil(outputTokens / 1000) * outputCreditsPerK;
+    const searchCredits = searchCost > 0 ? 5 : 0;
     const totalCredits = inputCredits + outputCredits + searchCredits;
+    
+    // 更新或创建对话
+    const newMessages = [
+      ...conversationMessages,
+      { role: 'user', content: message, timestamp: new Date().toISOString() },
+      { role: 'assistant', content: modelData.response, timestamp: new Date().toISOString() }
+    ];
+    
+    let finalConversationId = conversation_id;
+    
+    if (conversation) {
+      console.log('[smartChatWithSearch] Updating conversation');
+      await base44.asServiceRole.entities.Conversation.update(conversation.id, {
+        messages: newMessages,
+        total_credits_used: (conversation.total_credits_used || 0) + totalCredits,
+        updated_date: new Date().toISOString()
+      });
+    } else {
+      console.log('[smartChatWithSearch] Creating new conversation');
+      const newConv = await base44.asServiceRole.entities.Conversation.create({
+        title: message.slice(0, 50),
+        model_id: selectedModel.id,
+        system_prompt: system_prompt,
+        messages: newMessages,
+        total_credits_used: totalCredits
+      });
+      finalConversationId = newConv.id;
+    }
     
     // 步骤5：更新搜索决策记录
     if (decision.decision_id) {
@@ -234,13 +307,15 @@ Deno.serve(async (req) => {
       console.log('Failed to update search statistics:', error.message);
     }
     
+    console.log('[smartChatWithSearch] Request completed successfully');
+    
     return Response.json({
-      conversation_id: chatData.conversation_id,
-      response: chatData.response,
-      model_used: chatData.model_used,
+      conversation_id: finalConversationId,
+      response: modelData.response,
+      model_used: selectedModel.name,
       credits_used: totalCredits,
-      input_tokens: chatData.stats.input_tokens || 0,
-      output_tokens: chatData.stats.output_tokens || 0,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
       input_credits: inputCredits,
       output_credits: outputCredits,
       search_decision: {
@@ -260,12 +335,6 @@ Deno.serve(async (req) => {
         executed: false,
         cache_hit: false,
         cost: 0
-      },
-      stats: {
-        ...chatData.stats,
-        total_time_ms: Date.now() - startTime,
-        search_cost: searchCost,
-        total_cost_with_search: (parseFloat(chatData.stats.total_cost) + searchCost).toFixed(6)
       }
     });
     
