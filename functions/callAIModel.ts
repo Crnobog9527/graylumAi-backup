@@ -182,8 +182,9 @@ Deno.serve(async (req) => {
     // 使用模型配置的 input_limit，默认 180000
     const inputLimit = model.input_limit || 180000;
     
-    // 执行截断
-    const { truncatedMsgs: processedMessages, totalTokens } = truncateMessages(messages, system_prompt, inputLimit);
+    // 执行截断并过滤掉 system 角色
+    const { truncatedMsgs, totalTokens } = truncateMessages(messages, system_prompt, inputLimit);
+    const processedMessages = truncatedMsgs.filter(m => m.role !== 'system');
 
     // 估算输入tokens
     const estimatedInputTokens = calculateTotalTokens(processedMessages, system_prompt);
@@ -208,12 +209,6 @@ Deno.serve(async (req) => {
         prompt: finalPrompt,
         add_context_from_internet: needWebSearch
       });
-      
-      // 执行截断
-    const { truncatedMsgs, totalTokens } = truncateMessages(messages, system_prompt, inputLimit);
-    
-    // 【新增修复】过滤掉 messages 中的 system 角色，防止后续重复添加
-    const processedMessages = truncatedMsgs.filter(m => m.role !== 'system');
 
       // 估算输出tokens
       const estimatedOutputTokens = estimateTokens(result);
