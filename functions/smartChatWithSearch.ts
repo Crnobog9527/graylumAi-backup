@@ -232,14 +232,19 @@ Deno.serve(async (req) => {
       console.log(`  [${i}] role=${m.role}, tokens=${tokens}, preview=${m.content.slice(0, 50)}...`);
     });
     
-    // 系统提示词只在新对话的第一轮使用，已有对话不再使用
-    const shouldUseSystemPrompt = !conversation && system_prompt;
-    console.log('[smartChatWithSearch] shouldUseSystemPrompt:', shouldUseSystemPrompt, '(conversation:', !!conversation, 'system_prompt:', !!system_prompt, ')');
+    // 系统提示词只在新对话的第一轮时使用（消息列表为空）
+    // 如果有历史消息，说明不是第一轮，绝对不能使用 system_prompt
+    const isFirstTurn = conversationMessages.length === 0;
+    const shouldUseSystemPrompt = isFirstTurn && !conversation && system_prompt;
+    console.log('[smartChatWithSearch] shouldUseSystemPrompt:', shouldUseSystemPrompt, '(isFirstTurn:', isFirstTurn, 'conversation:', !!conversation, 'system_prompt:', !!system_prompt, ')');
     if (shouldUseSystemPrompt) {
       console.log('[smartChatWithSearch] System prompt tokens:', estimateTokens(system_prompt));
     }
+    if (!shouldUseSystemPrompt && system_prompt) {
+      console.log('[smartChatWithSearch] System prompt SKIPPED - not first turn or has conversation history');
+    }
     
-    // 调用 AI 模型
+    // 调用 AI 模型 - 只在真正需要时传入 system_prompt
     const modelRes = await base44.functions.invoke('callAIModel', {
       model_id: selectedModel.id,
       messages: apiMessages,
