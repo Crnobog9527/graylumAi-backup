@@ -547,9 +547,9 @@ function AdminModelsContent() {
                   </div>
                 </div>
               </div>
-              </div>
+            </div>
 
-              <DialogFooter>
+            <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 {t('cancel')}
               </Button>
@@ -560,9 +560,9 @@ function AdminModelsContent() {
               >
                 {selectedModel ? t('update') : t('create')}
               </Button>
-              </DialogFooter>
-              </DialogContent>
-              </Dialog>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
               {/* Test Dialog */}
               <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
