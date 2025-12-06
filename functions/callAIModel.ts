@@ -254,8 +254,8 @@ Deno.serve(async (req) => {
         max_tokens: model.max_tokens || 4096
       };
 
-      // 如果是OpenRouter且启用了联网搜索，添加plugins参数
-      if (isOpenRouter && model.enable_web_search) {
+      // 如果是OpenRouter且明确要求启用联网搜索，添加plugins参数
+      if (isOpenRouter && force_web_search === true) {
         requestBody.plugins = [
           {
             id: 'web',
@@ -356,8 +356,8 @@ Deno.serve(async (req) => {
           max_tokens: model.max_tokens || 4096
         };
 
-        // 如果启用了联网搜索，添加plugins参数
-        if (model.enable_web_search) {
+        // 如果明确要求启用联网搜索，添加plugins参数
+        if (force_web_search === true) {
           requestBody.plugins = [{ id: 'web', max_results: 5 }];
         }
 
