@@ -242,6 +242,19 @@ Deno.serve(async (req) => {
         ];
       }
 
+      // 详细记录实际发送的请求
+      console.log('[callAIModel] === ACTUAL API REQUEST ===');
+      console.log('[callAIModel] Endpoint:', endpoint);
+      console.log('[callAIModel] Model:', model.model_id);
+      console.log('[callAIModel] formattedMessages.length:', formattedMessages.length);
+      formattedMessages.forEach((msg, idx) => {
+        const tokens = Math.ceil((msg.content || '').length / 4);
+        console.log(`[callAIModel]   Message[${idx}] role=${msg.role}, content_length=${(msg.content || '').length} chars, ~${tokens} tokens`);
+        console.log(`[callAIModel]   Message[${idx}] preview: ${(msg.content || '').slice(0, 200)}...`);
+      });
+      console.log('[callAIModel] Total estimated tokens in request:', formattedMessages.reduce((sum, m) => sum + Math.ceil((m.content || '').length / 4), 0));
+      console.log('[callAIModel] === END REQUEST ===');
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
