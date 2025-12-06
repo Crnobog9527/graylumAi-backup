@@ -10,14 +10,17 @@ Deno.serve(async (req) => {
     }
 
     const { model_id, messages, system_prompt } = await req.json();
-    
-    console.log('[callAIModel] Received request:');
+
+    console.log('[callAIModel] ===== RECEIVED REQUEST =====');
     console.log('[callAIModel] - model_id:', model_id);
     console.log('[callAIModel] - messages count:', messages?.length);
+    console.log('[callAIModel] - system_prompt:', system_prompt === undefined ? 'undefined' : system_prompt === null ? 'null' : `"${system_prompt.slice(0, 100)}..."`);
+    console.log('[callAIModel] - system_prompt type:', typeof system_prompt);
     console.log('[callAIModel] - system_prompt provided:', !!system_prompt);
     if (system_prompt) {
-      console.log('[callAIModel] - system_prompt length:', system_prompt.length, 'chars');
+      console.log('[callAIModel] - system_prompt length:', system_prompt.length, 'chars, ~', Math.ceil(system_prompt.length / 4), 'tokens');
     }
+    console.log('[callAIModel] ==============================');
 
     // Token 估算函数 (字符数 / 4)
     const estimateTokens = (text) => Math.ceil((text || '').length / 4);
@@ -217,8 +220,15 @@ Deno.serve(async (req) => {
 
     const useOpenAIFormat = model.api_endpoint && model.api_endpoint.includes('/chat/completions');
 
-    if (system_prompt) {
+    // CRITICAL: 只有当 system_prompt 有实际内容时才添加
+    const hasValidSystemPrompt = system_prompt && system_prompt.trim().length > 0;
+    console.log('[callAIModel] hasValidSystemPrompt:', hasValidSystemPrompt);
+
+    if (hasValidSystemPrompt) {
+      console.log('[callAIModel] ✓ Adding system prompt to messages, length:', system_prompt.length);
       formattedMessages.unshift({ role: 'system', content: system_prompt });
+    } else {
+      console.log('[callAIModel] ✗ NOT adding system prompt (empty or null)');
     }
     
     // 记录最终发送到API的消息
