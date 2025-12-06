@@ -246,6 +246,16 @@ Deno.serve(async (req) => {
     }
     
     // 调用 AI 模型 - 只在真正需要时传入 system_prompt
+    console.log('[smartChatWithSearch] === ABOUT TO CALL callAIModel ===');
+    console.log('[smartChatWithSearch] Parameters:');
+    console.log('[smartChatWithSearch]   - model_id:', selectedModel.id);
+    console.log('[smartChatWithSearch]   - messages count:', apiMessages.length);
+    console.log('[smartChatWithSearch]   - system_prompt:', shouldUseSystemPrompt ? `YES (${system_prompt.length} chars, ~${Math.ceil(system_prompt.length / 4)} tokens)` : 'NO');
+    if (shouldUseSystemPrompt && system_prompt) {
+      console.log('[smartChatWithSearch]   - system_prompt preview:', system_prompt.slice(0, 200) + '...');
+    }
+    console.log('[smartChatWithSearch] === END PARAMETERS ===');
+    
     const modelRes = await base44.functions.invoke('callAIModel', {
       model_id: selectedModel.id,
       messages: apiMessages,
