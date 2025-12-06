@@ -59,7 +59,6 @@ const initialFormData = {
   provider: 'anthropic',
   api_key: '',
   api_endpoint: '',
-  credits_per_message: 1,
   is_active: true,
   description: '',
   max_tokens: 4096,
