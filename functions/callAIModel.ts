@@ -11,6 +11,17 @@ Deno.serve(async (req) => {
 
     const { model_id, messages, system_prompt } = await req.json();
 
+    console.log('[callAIModel] ===== RECEIVED REQUEST =====');
+    console.log('[callAIModel] - model_id:', model_id);
+    console.log('[callAIModel] - messages count:', messages?.length);
+    console.log('[callAIModel] - system_prompt:', system_prompt === undefined ? 'undefined' : system_prompt === null ? 'null' : `"${system_prompt.slice(0, 100)}..."`);
+    console.log('[callAIModel] - system_prompt type:', typeof system_prompt);
+    console.log('[callAIModel] - system_prompt provided:', !!system_prompt);
+    if (system_prompt) {
+      console.log('[callAIModel] - system_prompt length:', system_prompt.length, 'chars, ~', Math.ceil(system_prompt.length / 4), 'tokens');
+    }
+    console.log('[callAIModel] ==============================');
+
     // Token 估算函数 (字符数 / 4)
     const estimateTokens = (text) => Math.ceil((text || '').length / 4);
 
@@ -146,6 +157,13 @@ Deno.serve(async (req) => {
 
     // 估算输入tokens
     const estimatedInputTokens = calculateTotalTokens(processedMessages, system_prompt);
+    
+    console.log('[callAIModel] After truncation:');
+    console.log('[callAIModel] - processedMessages count:', processedMessages.length);
+    console.log('[callAIModel] - estimatedInputTokens:', estimatedInputTokens);
+    processedMessages.forEach((m, i) => {
+      console.log(`[callAIModel]   [${i}] ${m.role}: ${m.content.slice(0, 100)}... (${Math.ceil(m.content.length / 4)} tokens)`);
+    });
 
     // 只有当provider是builtin时才使用内置集成
     if (model.provider === 'builtin') {
@@ -163,12 +181,6 @@ Deno.serve(async (req) => {
         prompt: finalPrompt,
         add_context_from_internet: model.enable_web_search || false
       });
-      
-      // 执行截断
-    const { truncatedMsgs, totalTokens } = truncateMessages(messages, system_prompt, inputLimit);
-    
-    // 【新增修复】过滤掉 messages 中的 system 角色，防止后续重复添加
-    const processedMessages = truncatedMsgs.filter(m => m.role !== 'system');
 
       // 估算输出tokens
       const estimatedOutputTokens = estimateTokens(result);
@@ -208,9 +220,24 @@ Deno.serve(async (req) => {
 
     const useOpenAIFormat = model.api_endpoint && model.api_endpoint.includes('/chat/completions');
 
-    if (system_prompt) {
+    // CRITICAL: 只有当 system_prompt 有实际内容时才添加
+    const hasValidSystemPrompt = system_prompt && system_prompt.trim().length > 0;
+    console.log('[callAIModel] hasValidSystemPrompt:', hasValidSystemPrompt);
+
+    if (hasValidSystemPrompt) {
+      console.log('[callAIModel] ✓ Adding system prompt to messages, length:', system_prompt.length);
       formattedMessages.unshift({ role: 'system', content: system_prompt });
+    } else {
+      console.log('[callAIModel] ✗ NOT adding system prompt (empty or null)');
     }
+    
+    // 记录最终发送到API的消息
+    console.log('[callAIModel] Final messages to API:');
+    console.log('[callAIModel] - Total messages:', formattedMessages.length);
+    formattedMessages.forEach((m, i) => {
+      const tokens = estimateTokens(m.content);
+      console.log(`[callAIModel]   [${i}] ${m.role}: ${tokens} tokens, preview: ${m.content.slice(0, 100)}...`);
+    });
 
     if (useOpenAIFormat || provider === 'openai' || provider === 'custom') {
       const endpoint = model.api_endpoint || 'https://api.openai.com/v1/chat/completions';
@@ -232,6 +259,26 @@ Deno.serve(async (req) => {
           }
         ];
       }
+
+      // 打印完整请求体
+      console.log('[callAIModel] ========== OPENAI/CUSTOM API REQUEST ==========');
+      console.log('[callAIModel] Endpoint:', endpoint);
+      console.log('[callAIModel] Provider:', provider);
+      console.log('[callAIModel] IsOpenRouter:', isOpenRouter);
+      console.log('[callAIModel] --- Full Request Body ---');
+      console.log(JSON.stringify(requestBody, null, 2));
+      console.log('[callAIModel] --- Request Stats ---');
+      console.log('[callAIModel] Total JSON size:', JSON.stringify(requestBody).length, 'chars');
+      console.log('[callAIModel] Messages count:', requestBody.messages.length);
+      console.log('[callAIModel] Estimated total tokens:', Math.ceil(JSON.stringify(requestBody).length / 4));
+      requestBody.messages.forEach((msg, i) => {
+        const msgStr = JSON.stringify(msg.content);
+        console.log(`[callAIModel]   Message[${i}] ${msg.role}: ${msgStr.length} chars, ~${Math.ceil(msgStr.length / 4)} tokens`);
+      });
+      if (requestBody.plugins) {
+        console.log('[callAIModel] Plugins:', JSON.stringify(requestBody.plugins));
+      }
+      console.log('[callAIModel] =========================================');
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -285,7 +332,7 @@ Deno.serve(async (req) => {
       const headers = {
         'Content-Type': 'application/json'
       };
-      
+
       if (isOfficialApi) {
         headers['x-api-key'] = model.api_key;
         headers['anthropic-version'] = '2023-06-01';
@@ -298,7 +345,7 @@ Deno.serve(async (req) => {
         // 构建带缓存标记的消息
         const { messages: cachedMessages, cacheEnabled, cachedBlocksCount } = 
           buildCachedMessagesForOpenRouter(processedMessages, system_prompt);
-        
+
         const requestBody = {
           model: model.model_id,
           messages: cachedMessages,
@@ -309,6 +356,31 @@ Deno.serve(async (req) => {
         if (model.enable_web_search) {
           requestBody.plugins = [{ id: 'web', max_results: 5 }];
         }
+
+        // 打印完整请求体
+        console.log('[callAIModel] ========== ANTHROPIC API REQUEST (OpenRouter) ==========');
+        console.log('[callAIModel] Endpoint:', endpoint);
+        console.log('[callAIModel] Model:', requestBody.model);
+        console.log('[callAIModel] Max Tokens:', requestBody.max_tokens);
+        console.log('[callAIModel] Messages Count:', requestBody.messages.length);
+        console.log('[callAIModel] Cache Enabled:', cacheEnabled);
+        console.log('[callAIModel] Cached Blocks:', cachedBlocksCount);
+        console.log('[callAIModel] Plugins:', requestBody.plugins || 'none');
+        console.log('[callAIModel] --- Full Request Body ---');
+        console.log(JSON.stringify(requestBody, null, 2));
+        console.log('[callAIModel] --- Request Body Stats ---');
+        console.log('[callAIModel] Total JSON length:', JSON.stringify(requestBody).length, 'chars');
+        console.log('[callAIModel] Estimated tokens:', Math.ceil(JSON.stringify(requestBody).length / 4));
+        requestBody.messages.forEach((msg, i) => {
+          const contentStr = JSON.stringify(msg.content);
+          console.log(`[callAIModel]   Message[${i}] ${msg.role}: ${contentStr.length} chars, ~${Math.ceil(contentStr.length / 4)} tokens`);
+          if (msg.role === 'system') {
+            console.log(`[callAIModel]     System content preview:`, contentStr.slice(0, 500));
+          } else if (msg.role === 'user') {
+            console.log(`[callAIModel]     User content preview:`, contentStr.slice(0, 200));
+          }
+        });
+        console.log('[callAIModel] ====================================================');
 
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -374,16 +446,29 @@ Deno.serve(async (req) => {
 
       // ========== 官方 Anthropic API ==========
       const anthropicMessages = formattedMessages.filter(m => m.role !== 'system');
-      
+
+      const requestBody = {
+        model: model.model_id,
+        max_tokens: model.max_tokens || 4096,
+        system: system_prompt || '',
+        messages: anthropicMessages
+      };
+
+      // 打印完整请求体
+      console.log('[callAIModel] ========== ANTHROPIC API REQUEST (Official) ==========');
+      console.log('[callAIModel] Endpoint:', endpoint);
+      console.log('[callAIModel] --- Full Request Body ---');
+      console.log(JSON.stringify(requestBody, null, 2));
+      console.log('[callAIModel] --- Request Stats ---');
+      console.log('[callAIModel] Total JSON size:', JSON.stringify(requestBody).length, 'chars');
+      console.log('[callAIModel] System prompt length:', requestBody.system.length, 'chars');
+      console.log('[callAIModel] Messages count:', requestBody.messages.length);
+      console.log('[callAIModel] =========================================');
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          model: model.model_id,
-          max_tokens: model.max_tokens || 4096,
-          system: system_prompt || '',
-          messages: anthropicMessages
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!res.ok) {
@@ -439,6 +524,19 @@ Deno.serve(async (req) => {
       if (system_prompt) {
         requestBody.systemInstruction = { parts: [{ text: system_prompt }] };
       }
+
+      // 打印完整请求体
+      console.log('[callAIModel] ========== GOOGLE GEMINI API REQUEST ==========');
+      console.log('[callAIModel] Endpoint:', endpoint.slice(0, 100) + '...');
+      console.log('[callAIModel] --- Full Request Body ---');
+      console.log(JSON.stringify(requestBody, null, 2));
+      console.log('[callAIModel] --- Request Stats ---');
+      console.log('[callAIModel] Total JSON size:', JSON.stringify(requestBody).length, 'chars');
+      console.log('[callAIModel] Contents count:', requestBody.contents.length);
+      if (requestBody.systemInstruction) {
+        console.log('[callAIModel] System instruction length:', JSON.stringify(requestBody.systemInstruction).length, 'chars');
+      }
+      console.log('[callAIModel] =========================================');
 
       const res = await fetch(endpoint, {
         method: 'POST',

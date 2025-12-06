@@ -256,7 +256,8 @@ export default function Chat() {
   const handleStartNewChat = (module = null) => {
     setCurrentConversation(null);
     setMessages([]);
-    setSelectedModule(module);
+    // 显式设置 selectedModule：只有传入 module 参数时才设置，否则必须为 null
+    setSelectedModule(module ? module : null);
     setIsEditingTitle(false);
     
     if (module?.model_id && models.length > 0) {
@@ -273,6 +274,8 @@ export default function Chat() {
       const freshConv = await base44.entities.Conversation.get(conv.id);
       setCurrentConversation(freshConv);
       setMessages(freshConv.messages || []);
+      // 切换对话时清空 selectedModule，确保不会意外加载系统提示词
+      setSelectedModule(null);
       if (freshConv.model_id) {
         const model = models.find(m => m.id === freshConv.model_id);
         if (model) setSelectedModel(model);
@@ -294,8 +297,36 @@ export default function Chat() {
       return;
     }
 
-    // 长文本预警检查
-    const allContent = messages.map(m => m.content).join('') + inputMessage;
+    // 构建系统提示词：只在使用提示词模块且是新对话的第一轮时使用
+    // 严格检查：selectedModule 必须存在、是第一轮、且没有 currentConversation
+    let systemPrompt = '';
+    const isFirstTurn = messages.length === 0;
+    const hasModule = selectedModule !== null && selectedModule !== undefined;
+    const isNewConversation = !currentConversation;
+
+    console.log('[Chat] ===== SYSTEM PROMPT DECISION =====');
+    console.log('[Chat] isFirstTurn:', isFirstTurn, '(messages.length:', messages.length, ')');
+    console.log('[Chat] hasModule:', hasModule, 'selectedModule:', selectedModule?.title || null);
+    console.log('[Chat] isNewConversation:', isNewConversation, 'currentConversation:', currentConversation?.id || null);
+    console.log('[Chat] Will use system prompt:', hasModule && isFirstTurn && isNewConversation);
+
+    if (hasModule && isFirstTurn && isNewConversation) {
+      systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
+    ${selectedModule.system_prompt}
+
+    【行为规范】
+    1. 你必须严格遵循上述角色定位和功能约束
+    2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
+    3. 保持专业、专注，不要偏离主题`;
+      console.log('[Chat] System prompt created, length:', systemPrompt.length, 'chars, ~', Math.ceil(systemPrompt.length / 4), 'tokens');
+      console.log('[Chat] System prompt preview:', systemPrompt.slice(0, 200) + '...');
+    } else {
+      console.log('[Chat] No system prompt will be sent');
+    }
+    console.log('[Chat] ===================================');
+
+    // 长文本预警检查（包含系统提示词）
+    const allContent = systemPrompt + messages.map(m => m.content).join('') + inputMessage;
     const estimatedInputTokens = estimateTokens(allContent);
     
     if (!skipWarning && longTextWarningEnabled && estimatedInputTokens > longTextThreshold) {
@@ -325,21 +356,11 @@ export default function Chat() {
     setIsStreaming(true);
 
     try {
-      let systemPrompt = '';
-      if (selectedModule) {
-        systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
-${selectedModule.system_prompt}
-
-【行为规范】
-1. 你必须严格遵循上述角色定位和功能约束
-2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
-3. 保持专业、专注，不要偏离主题`;
-      }
-
-      const { data: result } = await base44.functions.invoke('callAIModel', {
-        model_id: selectedModel.id,
-        messages: [...newMessages],
-        ...(systemPrompt ? { system_prompt: systemPrompt } : {})
+      // 使用智能搜索判断系统（会自动判断是否需要搜索并禁用模型默认搜索）
+      const { data: result } = await base44.functions.invoke('smartChatWithSearch', {
+        conversation_id: currentConversation?.id,
+        message: inputMessage,
+        system_prompt: systemPrompt || undefined
       });
 
       if (result.error) {
@@ -379,22 +400,25 @@ ${selectedModule.system_prompt}
         total_credits_used: (user.total_credits_used || 0) + creditsUsed,
       });
 
-      const webSearchInfo = result.web_search_enabled 
-        ? ` [联网搜索: ${result.web_search_credits || 0}积分]` 
+      // 搜索信息（来自智能搜索判断系统）
+      const searchInfo = result.search_info?.executed 
+        ? ` [智能搜索: ${result.search_info.cost?.toFixed(4) || 0}$]` 
         : '';
+      const webSearchUsed = result.search_info?.executed || false;
+      
       await createTransactionMutation.mutateAsync({
         user_email: user.email,
         type: 'usage',
         amount: -creditsUsed,
         balance_after: newBalance,
-        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${webSearchInfo}`,
+        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${searchInfo}`,
         model_used: selectedModel.name,
         prompt_module_used: selectedModule?.title,
         input_tokens: inputTokens,
         output_tokens: outputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
-        web_search_used: result.web_search_enabled || false,
+        web_search_used: webSearchUsed,
       });
 
       const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
@@ -409,11 +433,11 @@ ${selectedModule.system_prompt}
         });
       } else {
         // 创建新对话，onSuccess 回调会自动设置 currentConversation
+        // 注意：不保存 system_prompt 到对话记录中，避免后续对话加载
         await createConversationMutation.mutateAsync({
           title,
           model_id: selectedModel.id,
           prompt_module_id: selectedModule?.id,
-          ...(selectedModule ? { system_prompt: systemPrompt } : {}),
           messages: updatedMessages,
           total_credits_used: creditsUsed,
         });
