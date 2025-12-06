@@ -294,8 +294,20 @@ export default function Chat() {
       return;
     }
 
-    // 长文本预警检查
-    const allContent = messages.map(m => m.content).join('') + inputMessage;
+    // 构建系统提示词以计算准确的token数
+    let systemPrompt = '';
+    if (selectedModule) {
+      systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
+${selectedModule.system_prompt}
+
+【行为规范】
+1. 你必须严格遵循上述角色定位和功能约束
+2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
+3. 保持专业、专注，不要偏离主题`;
+    }
+
+    // 长文本预警检查（包含系统提示词）
+    const allContent = systemPrompt + messages.map(m => m.content).join('') + inputMessage;
     const estimatedInputTokens = estimateTokens(allContent);
     
     if (!skipWarning && longTextWarningEnabled && estimatedInputTokens > longTextThreshold) {
@@ -325,17 +337,6 @@ export default function Chat() {
     setIsStreaming(true);
 
     try {
-      let systemPrompt = '';
-      if (selectedModule) {
-        systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
-${selectedModule.system_prompt}
-
-【行为规范】
-1. 你必须严格遵循上述角色定位和功能约束
-2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
-3. 保持专业、专注，不要偏离主题`;
-      }
-
       const { data: result } = await base44.functions.invoke('callAIModel', {
         model_id: selectedModel.id,
         messages: [...newMessages],
