@@ -563,10 +563,17 @@ function AdminModelsContent() {
               </Button>
               <Button 
                 onClick={handleSubmit}
-                disabled={!formData.name || !formData.model_id}
+                disabled={!formData.name || !formData.model_id || createMutation.isPending || updateMutation.isPending}
                 className="bg-violet-600 hover:bg-violet-700"
               >
-                {selectedModel ? t('update') : t('create')}
+                {(createMutation.isPending || updateMutation.isPending) ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    {t('saving')}
+                  </>
+                ) : (
+                  selectedModel ? t('update') : t('create')
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
