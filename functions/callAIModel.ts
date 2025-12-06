@@ -10,6 +10,14 @@ Deno.serve(async (req) => {
     }
 
     const { model_id, messages, system_prompt } = await req.json();
+    
+    console.log('[callAIModel] Received request:');
+    console.log('[callAIModel] - model_id:', model_id);
+    console.log('[callAIModel] - messages count:', messages?.length);
+    console.log('[callAIModel] - system_prompt provided:', !!system_prompt);
+    if (system_prompt) {
+      console.log('[callAIModel] - system_prompt length:', system_prompt.length, 'chars');
+    }
 
     // Token 估算函数 (字符数 / 4)
     const estimateTokens = (text) => Math.ceil((text || '').length / 4);
