@@ -327,7 +327,13 @@ export default function Chat() {
     try {
       let systemPrompt = '';
       if (selectedModule) {
-        systemPrompt = selectedModule.system_prompt;
+        systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
+${selectedModule.system_prompt}
+
+【行为规范】
+1. 你必须严格遵循上述角色定位和功能约束
+2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
+3. 保持专业、专注，不要偏离主题`;
       }
 
       const { data: result } = await base44.functions.invoke('callAIModel', {
