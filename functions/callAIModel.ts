@@ -302,7 +302,7 @@ Deno.serve(async (req) => {
       const headers = {
         'Content-Type': 'application/json'
       };
-      
+
       if (isOfficialApi) {
         headers['x-api-key'] = model.api_key;
         headers['anthropic-version'] = '2023-06-01';
@@ -315,7 +315,7 @@ Deno.serve(async (req) => {
         // 构建带缓存标记的消息
         const { messages: cachedMessages, cacheEnabled, cachedBlocksCount } = 
           buildCachedMessagesForOpenRouter(processedMessages, system_prompt);
-        
+
         const requestBody = {
           model: model.model_id,
           messages: cachedMessages,
@@ -326,6 +326,26 @@ Deno.serve(async (req) => {
         if (model.enable_web_search) {
           requestBody.plugins = [{ id: 'web', max_results: 5 }];
         }
+
+        // 打印完整请求体
+        console.log('[callAIModel] ========== ANTHROPIC API REQUEST (OpenRouter) ==========');
+        console.log('[callAIModel] Endpoint:', endpoint);
+        console.log('[callAIModel] Model:', requestBody.model);
+        console.log('[callAIModel] Max Tokens:', requestBody.max_tokens);
+        console.log('[callAIModel] Messages Count:', requestBody.messages.length);
+        console.log('[callAIModel] Cache Enabled:', cacheEnabled);
+        console.log('[callAIModel] Cached Blocks:', cachedBlocksCount);
+        console.log('[callAIModel] Plugins:', requestBody.plugins || 'none');
+        console.log('[callAIModel] --- Full Request Body ---');
+        console.log(JSON.stringify(requestBody, null, 2));
+        console.log('[callAIModel] --- Request Body Stats ---');
+        console.log('[callAIModel] Total JSON length:', JSON.stringify(requestBody).length, 'chars');
+        console.log('[callAIModel] Estimated tokens:', Math.ceil(JSON.stringify(requestBody).length / 4));
+        requestBody.messages.forEach((msg, i) => {
+          const contentStr = JSON.stringify(msg.content);
+          console.log(`[callAIModel]   Message[${i}] ${msg.role}: ${contentStr.length} chars, ~${Math.ceil(contentStr.length / 4)} tokens`);
+        });
+        console.log('[callAIModel] ====================================================');
 
         const res = await fetch(endpoint, {
           method: 'POST',
