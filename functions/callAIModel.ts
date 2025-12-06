@@ -250,6 +250,26 @@ Deno.serve(async (req) => {
         ];
       }
 
+      // 打印完整请求体
+      console.log('[callAIModel] ========== OPENAI/CUSTOM API REQUEST ==========');
+      console.log('[callAIModel] Endpoint:', endpoint);
+      console.log('[callAIModel] Provider:', provider);
+      console.log('[callAIModel] IsOpenRouter:', isOpenRouter);
+      console.log('[callAIModel] --- Full Request Body ---');
+      console.log(JSON.stringify(requestBody, null, 2));
+      console.log('[callAIModel] --- Request Stats ---');
+      console.log('[callAIModel] Total JSON size:', JSON.stringify(requestBody).length, 'chars');
+      console.log('[callAIModel] Messages count:', requestBody.messages.length);
+      console.log('[callAIModel] Estimated total tokens:', Math.ceil(JSON.stringify(requestBody).length / 4));
+      requestBody.messages.forEach((msg, i) => {
+        const msgStr = JSON.stringify(msg.content);
+        console.log(`[callAIModel]   Message[${i}] ${msg.role}: ${msgStr.length} chars, ~${Math.ceil(msgStr.length / 4)} tokens`);
+      });
+      if (requestBody.plugins) {
+        console.log('[callAIModel] Plugins:', JSON.stringify(requestBody.plugins));
+      }
+      console.log('[callAIModel] =========================================');
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
