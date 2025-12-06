@@ -201,10 +201,13 @@ Deno.serve(async (req) => {
       if (convs.length > 0) {
         conversation = convs[0];
         conversationMessages = conversation.messages || [];
+        console.log('[smartChatWithSearch] Loaded', conversationMessages.length, 'messages from conversation');
       }
+    } else {
+      console.log('[smartChatWithSearch] New conversation, no history');
     }
     
-    // 构建消息列表
+    // 构建消息列表 - 只包含当前对话的历史消息
     const apiMessages = conversationMessages.map(m => ({
       role: m.role,
       content: m.content
@@ -213,7 +216,12 @@ Deno.serve(async (req) => {
     // 添加当前增强消息
     apiMessages.push({ role: 'user', content: enhancedMessage });
     
-    console.log('[smartChatWithSearch] Calling AI model with', apiMessages.length, 'messages');
+    // 计算token估算
+    const estimateTokens = (text) => Math.ceil((text || '').length / 4);
+    const totalTokens = apiMessages.reduce((sum, m) => sum + estimateTokens(m.content), 0) + 
+                        (system_prompt ? estimateTokens(system_prompt) : 0);
+    
+    console.log('[smartChatWithSearch] Calling AI model with', apiMessages.length, 'messages, estimated', totalTokens, 'tokens');
     
     // 系统提示词只在新对话的第一轮使用，已有对话不再使用
     const shouldUseSystemPrompt = !conversation && system_prompt;
