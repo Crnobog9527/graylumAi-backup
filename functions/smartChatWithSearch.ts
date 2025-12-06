@@ -215,11 +215,14 @@ Deno.serve(async (req) => {
     
     console.log('[smartChatWithSearch] Calling AI model with', apiMessages.length, 'messages');
     
+    // 系统提示词只在新对话的第一轮使用，已有对话不再使用
+    const shouldUseSystemPrompt = !conversation && system_prompt;
+    
     // 调用 AI 模型
     const modelRes = await base44.functions.invoke('callAIModel', {
       model_id: selectedModel.id,
       messages: apiMessages,
-      system_prompt: system_prompt
+      system_prompt: shouldUseSystemPrompt ? system_prompt : undefined
     });
     
     if (!modelRes.data || modelRes.data.error) {
