@@ -106,13 +106,18 @@ Deno.serve(async (req) => {
     const startTime = Date.now();
     
     // 步骤1：调用搜索分类器
-    const classifierRes = await base44.functions.invoke('searchClassifier', {
-      message,
-      conversation_id,
-      context: null
-    });
+    let decision = { need_search: false, search_type: 'none', confidence: 0, reason: 'Classifier disabled', decision_level: 'none', decision_time_ms: 0, decision_id: null };
     
-    const decision = classifierRes.data;
+    try {
+      const classifierRes = await base44.functions.invoke('searchClassifier', {
+        message,
+        conversation_id,
+        context: null
+      });
+      decision = classifierRes.data;
+    } catch (error) {
+      console.log('Search classifier not available, continuing without search:', error.message);
+    }
     let searchResults = null;
     let cacheHit = false;
     let searchCost = 0;
