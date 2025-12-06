@@ -177,8 +177,9 @@ Deno.serve(async (req) => {
         ? `${system_prompt}\n\n${fullPrompt}\n\n请根据上述对话历史，回复用户最后的消息。`
         : fullPrompt;
 
-      const shouldUseWebSearch = force_web_search || model.enable_web_search || false;
-      console.log('[callAIModel] Using web search:', shouldUseWebSearch, '(force:', force_web_search, 'model:', model.enable_web_search, ')');
+      // 只在明确要求时才联网，不自动使用模型配置
+      const shouldUseWebSearch = force_web_search === true;
+      console.log('[callAIModel] Using web search:', shouldUseWebSearch, '(force_web_search:', force_web_search, ')');
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: finalPrompt,
@@ -188,10 +189,10 @@ Deno.serve(async (req) => {
       // 估算输出tokens
       const estimatedOutputTokens = estimateTokens(result);
       
-      // 计算积分消耗
+      // 计算积分消耗（只有实际使用搜索时才计费）
       const inputCredits = Math.ceil(estimatedInputTokens / 1000) * inputCreditsPerK;
       const outputCredits = Math.ceil(estimatedOutputTokens / 1000) * outputCreditsPerK;
-      const searchCredits = (model.enable_web_search) ? webSearchCredits : 0;
+      const searchCredits = (force_web_search === true) ? webSearchCredits : 0;
       const totalCredits = inputCredits + outputCredits + searchCredits;
 
       return Response.json({
@@ -202,7 +203,7 @@ Deno.serve(async (req) => {
         input_credits: inputCredits,
         output_credits: outputCredits,
         web_search_credits: searchCredits,
-        web_search_enabled: model.enable_web_search || false
+        web_search_enabled: force_web_search === true
       });
     }
 
@@ -308,10 +309,10 @@ Deno.serve(async (req) => {
         actualOutputTokens = estimateTokens(responseText);
       }
 
-      // 计算积分
+      // 计算积分（只有实际使用搜索时才计费）
       const inputCredits = Math.ceil(actualInputTokens / 1000) * inputCreditsPerK;
       const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
-      const searchCredits = (isOpenRouter && model.enable_web_search) ? webSearchCredits : 0;
+      const searchCredits = (force_web_search === true) ? webSearchCredits : 0;
       const totalCredits = inputCredits + outputCredits + searchCredits;
 
       return Response.json({
@@ -324,7 +325,7 @@ Deno.serve(async (req) => {
         web_search_credits: searchCredits,
         model: data.model || null,
         usage: data.usage || null,
-        web_search_enabled: isOpenRouter && model.enable_web_search
+        web_search_enabled: force_web_search === true
       });
 
     } else if (provider === 'anthropic') {

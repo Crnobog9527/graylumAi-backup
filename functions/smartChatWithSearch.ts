@@ -128,47 +128,47 @@ Deno.serve(async (req) => {
     
     console.log('[smartChatWithSearch] Using model:', selectedModel.name, 'Web search enabled:', selectedModel.enable_web_search);
     
-    // 步骤2：简化的搜索判断（关键词匹配）
-    let decision = { need_search: false, search_type: 'none', confidence: 0, reason: 'Web search disabled in model settings', decision_level: 'keyword', decision_time_ms: 0 };
+    // 步骤2：简化的搜索判断（关键词匹配）- 无论模型是否启用联网，都进行判断
+    const lowerMessage = message.toLowerCase();
+    const searchKeywords = [
+      "天气", "股价", "汇率", "比赛", "新闻", "最新", "今天", "昨天", "现在", "当前",
+      "近期", "帮我查", "搜索", "找一下", "谁是", "CEO", "总统", "总理", "价格",
+      "多少钱", "排名", "评分", "weather", "stock", "price", "news", "latest", "today", "current",
+      "search", "查询", "查一下"
+    ];
     
-    if (selectedModel.enable_web_search) {
-      const lowerMessage = message.toLowerCase();
-      const searchKeywords = [
-        "天气", "股价", "汇率", "比赛", "新闻", "最新", "今天", "昨天", "现在", "当前",
-        "近期", "帮我查", "搜索", "找一下", "谁是", "CEO", "总统", "总理", "价格",
-        "多少钱", "排名", "评分", "weather", "stock", "price", "news", "latest", "today", "current"
-      ];
-      
-      const hasSearchKeyword = searchKeywords.some(kw => lowerMessage.includes(kw));
-      
-      if (hasSearchKeyword) {
-        decision = {
-          need_search: true,
-          search_type: 'general',
-          confidence: 0.9,
-          reason: '检测到搜索关键词',
-          decision_level: 'keyword',
-          decision_time_ms: 0
-        };
-        console.log('[smartChatWithSearch] Search enabled by keyword match');
-      } else {
-        decision.reason = '未检测到搜索关键词';
-        console.log('[smartChatWithSearch] No search keywords detected');
-      }
+    const hasSearchKeyword = searchKeywords.some(kw => lowerMessage.includes(kw));
+    
+    let decision;
+    if (hasSearchKeyword && selectedModel.enable_web_search) {
+      decision = {
+        need_search: true,
+        search_type: 'general',
+        confidence: 0.9,
+        reason: '检测到搜索关键词',
+        decision_level: 'keyword',
+        decision_time_ms: 0,
+        will_use_web_search: true
+      };
+      console.log('[smartChatWithSearch] ✓ Search enabled by keyword match');
     } else {
-      console.log('[smartChatWithSearch] Web search disabled in model settings');
+      decision = {
+        need_search: false,
+        search_type: 'none',
+        confidence: 0.9,
+        reason: hasSearchKeyword ? 'Web search disabled in model settings' : '未检测到搜索关键词',
+        decision_level: 'keyword',
+        decision_time_ms: 0,
+        will_use_web_search: false
+      };
+      console.log('[smartChatWithSearch] ✗ Search disabled -', decision.reason);
     }
     
     let searchResults = null;
     let cacheHit = false;
     let searchCost = 0;
     
-    // 步骤3：如果需要搜索，使用InvokeLLM的联网能力
-    if (decision.need_search && decision.search_type !== 'none') {
-      console.log('[smartChatWithSearch] Executing web search via InvokeLLM...');
-      // 注意：这里不直接调用搜索，而是在后续的AI调用中启用联网
-      decision.will_use_web_search = true;
-    }
+    // will_use_web_search 已在上面设置，这里不需要额外处理
     
     // 步骤3：构建消息（不需要额外处理，联网在callAIModel中启用）
     const enhancedMessage = message;
