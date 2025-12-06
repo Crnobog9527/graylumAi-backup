@@ -273,6 +273,8 @@ export default function Chat() {
       const freshConv = await base44.entities.Conversation.get(conv.id);
       setCurrentConversation(freshConv);
       setMessages(freshConv.messages || []);
+      // 切换对话时清空 selectedModule，确保不会意外加载系统提示词
+      setSelectedModule(null);
       if (freshConv.model_id) {
         const model = models.find(m => m.id === freshConv.model_id);
         if (model) setSelectedModel(model);
@@ -294,9 +296,10 @@ export default function Chat() {
       return;
     }
 
-    // 构建系统提示词以计算准确的token数
+    // 构建系统提示词：只在使用提示词模块且是新对话的第一轮时使用
     let systemPrompt = '';
-    if (selectedModule) {
+    const isFirstTurn = messages.length === 0;
+    if (selectedModule && isFirstTurn && !currentConversation) {
       systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
 ${selectedModule.system_prompt}
 
@@ -337,16 +340,11 @@ ${selectedModule.system_prompt}
     setIsStreaming(true);
 
     try {
-      // 判断是否需要传递系统提示词：
-      // 1. 只有在新对话（没有 conversation_id）且使用了模块（selectedModule）时才传递
-      // 2. 已有对话不再传递系统提示词
-      const shouldUseSystemPrompt = !currentConversation && selectedModule;
-
       // 使用智能搜索判断系统（会自动判断是否需要搜索并禁用模型默认搜索）
       const { data: result } = await base44.functions.invoke('smartChatWithSearch', {
         conversation_id: currentConversation?.id,
         message: inputMessage,
-        system_prompt: shouldUseSystemPrompt ? systemPrompt : undefined
+        system_prompt: systemPrompt || undefined
       });
 
       if (result.error) {
@@ -418,12 +416,12 @@ ${selectedModule.system_prompt}
           }
         });
       } else {
-        // 创建新对话，只有使用模块时才保存系统提示词
+        // 创建新对话，onSuccess 回调会自动设置 currentConversation
+        // 注意：不保存 system_prompt 到对话记录中，避免后续对话加载
         await createConversationMutation.mutateAsync({
           title,
           model_id: selectedModel.id,
           prompt_module_id: selectedModule?.id,
-          system_prompt: selectedModule ? systemPrompt : undefined,
           messages: updatedMessages,
           total_credits_used: creditsUsed,
         });
