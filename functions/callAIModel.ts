@@ -438,7 +438,7 @@ Deno.serve(async (req) => {
           output_credits: outputCredits,
           web_search_credits: searchCredits,
           usage: data.usage || null,
-          web_search_enabled: model.enable_web_search || false,
+          web_search_enabled: force_web_search === true,
           // 缓存统计信息
           cache_enabled: cacheEnabled,
           cached_blocks_count: cachedBlocksCount,
