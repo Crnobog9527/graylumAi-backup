@@ -356,13 +356,11 @@ export default function Chat() {
     setIsStreaming(true);
 
     try {
-      // 使用智能搜索路由系统
-      const { data: result } = await base44.functions.invoke('searchRouter', {
-        user_message: inputMessage,
-        model_id: selectedModel.id,
-        messages: newMessages,
-        system_prompt: systemPrompt || undefined,
-        conversation_history: messages
+      // 使用智能搜索系统
+      const { data: result } = await base44.functions.invoke('smartChatWithSearch', {
+        conversation_id: currentConversation?.id,
+        message: inputMessage,
+        system_prompt: systemPrompt || undefined
       });
 
       if (result.error) {
@@ -402,12 +400,11 @@ export default function Chat() {
         total_credits_used: (user.total_credits_used || 0) + creditsUsed,
       });
 
-      // 搜索信息（来自智能搜索路由系统）
-      const searchDecision = result.search_decision || {};
-      const searchInfo = searchDecision.actual_searched 
-        ? ` [智能搜索${searchDecision.from_cache ? '(缓存)' : ''}]` 
+      // 搜索信息（来自智能搜索系统）
+      const searchInfo = result.search_info?.executed 
+        ? ` [智能搜索${result.search_info.cache_hit ? '(缓存)' : ''}]` 
         : '';
-      const webSearchUsed = searchDecision.actual_searched || false;
+      const webSearchUsed = result.search_info?.executed || false;
       
       await createTransactionMutation.mutateAsync({
         user_email: user.email,
