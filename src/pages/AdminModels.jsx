@@ -563,7 +563,7 @@ function AdminModelsContent() {
               </Button>
               <Button 
                 onClick={handleSubmit}
-                disabled={!formData.name || !formData.model_id || !formData.credits_per_message || createMutation.isPending || updateMutation.isPending}
+                disabled={!formData.name || !formData.model_id || createMutation.isPending || updateMutation.isPending}
                 className="bg-violet-600 hover:bg-violet-700"
               >
                 {(createMutation.isPending || updateMutation.isPending) ? (
