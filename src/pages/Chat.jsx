@@ -256,7 +256,8 @@ export default function Chat() {
   const handleStartNewChat = (module = null) => {
     setCurrentConversation(null);
     setMessages([]);
-    setSelectedModule(module);
+    // 清空 selectedModule，确保新对话不会意外加载系统提示词
+    setSelectedModule(module || null);
     setIsEditingTitle(false);
     
     if (module?.model_id && models.length > 0) {
