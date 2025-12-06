@@ -114,6 +114,10 @@ function AdminModelsContent() {
       setDialogOpen(false);
       resetForm();
     },
+    onError: (error) => {
+      console.error('Create model error:', error);
+      alert('创建失败: ' + error.message);
+    },
   });
 
   const updateMutation = useMutation({
