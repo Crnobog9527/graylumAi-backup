@@ -127,6 +127,10 @@ function AdminModelsContent() {
       setDialogOpen(false);
       resetForm();
     },
+    onError: (error) => {
+      console.error('Update model error:', error);
+      alert('更新失败: ' + error.message);
+    },
   });
 
   const deleteMutation = useMutation({
