@@ -256,8 +256,8 @@ export default function Chat() {
   const handleStartNewChat = (module = null) => {
     setCurrentConversation(null);
     setMessages([]);
-    // 清空 selectedModule，确保新对话不会意外加载系统提示词
-    setSelectedModule(module || null);
+    // 显式设置 selectedModule：只有传入 module 参数时才设置，否则必须为 null
+    setSelectedModule(module ? module : null);
     setIsEditingTitle(false);
     
     if (module?.model_id && models.length > 0) {
@@ -298,9 +298,13 @@ export default function Chat() {
     }
 
     // 构建系统提示词：只在使用提示词模块且是新对话的第一轮时使用
+    // 严格检查：selectedModule 必须存在、是第一轮、且没有 currentConversation
     let systemPrompt = '';
     const isFirstTurn = messages.length === 0;
-    if (selectedModule && isFirstTurn && !currentConversation) {
+    const hasModule = selectedModule !== null && selectedModule !== undefined;
+    const isNewConversation = !currentConversation;
+    
+    if (hasModule && isFirstTurn && isNewConversation) {
       systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
 ${selectedModule.system_prompt}
 
@@ -308,6 +312,9 @@ ${selectedModule.system_prompt}
 1. 你必须严格遵循上述角色定位和功能约束
 2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
 3. 保持专业、专注，不要偏离主题`;
+      console.log('[Chat] Using system prompt for module:', selectedModule.title);
+    } else {
+      console.log('[Chat] No system prompt - hasModule:', hasModule, 'isFirstTurn:', isFirstTurn, 'isNewConversation:', isNewConversation);
     }
 
     // 长文本预警检查（包含系统提示词）
