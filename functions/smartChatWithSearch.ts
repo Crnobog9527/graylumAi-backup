@@ -202,6 +202,10 @@ Deno.serve(async (req) => {
         conversation = convs[0];
         conversationMessages = conversation.messages || [];
         console.log('[smartChatWithSearch] Loaded', conversationMessages.length, 'messages from conversation');
+        console.log('[smartChatWithSearch] Conversation has system_prompt:', !!conversation.system_prompt);
+        if (conversation.system_prompt) {
+          console.log('[smartChatWithSearch] WARNING: Conversation has saved system_prompt, tokens:', estimateTokens(conversation.system_prompt));
+        }
       }
     } else {
       console.log('[smartChatWithSearch] New conversation, no history');
@@ -222,9 +226,18 @@ Deno.serve(async (req) => {
                         (system_prompt ? estimateTokens(system_prompt) : 0);
     
     console.log('[smartChatWithSearch] Calling AI model with', apiMessages.length, 'messages, estimated', totalTokens, 'tokens');
+    console.log('[smartChatWithSearch] Message details:');
+    apiMessages.forEach((m, i) => {
+      const tokens = estimateTokens(m.content);
+      console.log(`  [${i}] role=${m.role}, tokens=${tokens}, preview=${m.content.slice(0, 50)}...`);
+    });
     
     // 系统提示词只在新对话的第一轮使用，已有对话不再使用
     const shouldUseSystemPrompt = !conversation && system_prompt;
+    console.log('[smartChatWithSearch] shouldUseSystemPrompt:', shouldUseSystemPrompt, '(conversation:', !!conversation, 'system_prompt:', !!system_prompt, ')');
+    if (shouldUseSystemPrompt) {
+      console.log('[smartChatWithSearch] System prompt tokens:', estimateTokens(system_prompt));
+    }
     
     // 调用 AI 模型
     const modelRes = await base44.functions.invoke('callAIModel', {
