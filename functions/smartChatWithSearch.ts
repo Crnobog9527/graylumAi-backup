@@ -235,15 +235,27 @@ Deno.serve(async (req) => {
     
     // 系统提示词只在新对话的第一轮时使用（消息列表为空）
     // 如果有历史消息，说明不是第一轮，绝对不能使用 system_prompt
+    // CRITICAL: 只有当 system_prompt 有实际内容时才使用
     const isFirstTurn = conversationMessages.length === 0;
-    const shouldUseSystemPrompt = isFirstTurn && !conversation && system_prompt;
-    console.log('[smartChatWithSearch] shouldUseSystemPrompt:', shouldUseSystemPrompt, '(isFirstTurn:', isFirstTurn, 'conversation:', !!conversation, 'system_prompt:', !!system_prompt, ')');
+    const hasValidSystemPrompt = system_prompt && system_prompt.trim().length > 0;
+    const shouldUseSystemPrompt = isFirstTurn && !conversation && hasValidSystemPrompt;
+    
+    console.log('[smartChatWithSearch] ===== SYSTEM PROMPT DECISION =====');
+    console.log('[smartChatWithSearch] isFirstTurn:', isFirstTurn, '(conversationMessages.length:', conversationMessages.length, ')');
+    console.log('[smartChatWithSearch] conversation exists:', !!conversation);
+    console.log('[smartChatWithSearch] system_prompt:', system_prompt ? `"${system_prompt.slice(0, 100)}..."` : 'null/undefined');
+    console.log('[smartChatWithSearch] hasValidSystemPrompt:', hasValidSystemPrompt);
+    console.log('[smartChatWithSearch] shouldUseSystemPrompt:', shouldUseSystemPrompt);
+    
     if (shouldUseSystemPrompt) {
-      console.log('[smartChatWithSearch] System prompt tokens:', estimateTokens(system_prompt));
+      console.log('[smartChatWithSearch] ✓ WILL USE system prompt, tokens:', estimateTokens(system_prompt));
+    } else {
+      console.log('[smartChatWithSearch] ✗ WILL NOT USE system prompt');
+      if (system_prompt) {
+        console.log('[smartChatWithSearch]   Reason: isFirstTurn=', isFirstTurn, 'conversation=', !!conversation);
+      }
     }
-    if (!shouldUseSystemPrompt && system_prompt) {
-      console.log('[smartChatWithSearch] System prompt SKIPPED - not first turn or has conversation history');
-    }
+    console.log('[smartChatWithSearch] ========================================');
     
     // 调用 AI 模型 - 只在真正需要时传入 system_prompt
     console.log('[smartChatWithSearch] === ABOUT TO CALL callAIModel ===');
