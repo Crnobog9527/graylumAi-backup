@@ -128,67 +128,50 @@ Deno.serve(async (req) => {
     
     console.log('[smartChatWithSearch] Using model:', selectedModel.name, 'Web search enabled:', selectedModel.enable_web_search);
     
-    // 步骤2：只有当模型启用了联网搜索时，才调用智能搜索判断系统
-    let decision = { need_search: false, search_type: 'none', confidence: 0, reason: 'Web search disabled in model settings', decision_level: 'none', decision_time_ms: 0, decision_id: null };
+    // 步骤2：简化的搜索判断（关键词匹配）
+    let decision = { need_search: false, search_type: 'none', confidence: 0, reason: 'Web search disabled in model settings', decision_level: 'keyword', decision_time_ms: 0 };
     
     if (selectedModel.enable_web_search) {
-      try {
-        console.log('[smartChatWithSearch] Calling search classifier...');
-        const classifierRes = await base44.functions.invoke('searchClassifier', {
-          message,
-          conversation_id,
-          context: null
-        });
-        decision = classifierRes.data;
-        console.log('[smartChatWithSearch] Search decision:', decision.need_search, decision.search_type);
-      } catch (error) {
-        console.log('[smartChatWithSearch] Search classifier not available:', error.message);
+      const lowerMessage = message.toLowerCase();
+      const searchKeywords = [
+        "天气", "股价", "汇率", "比赛", "新闻", "最新", "今天", "昨天", "现在", "当前",
+        "近期", "帮我查", "搜索", "找一下", "谁是", "CEO", "总统", "总理", "价格",
+        "多少钱", "排名", "评分", "weather", "stock", "price", "news", "latest", "today", "current"
+      ];
+      
+      const hasSearchKeyword = searchKeywords.some(kw => lowerMessage.includes(kw));
+      
+      if (hasSearchKeyword) {
+        decision = {
+          need_search: true,
+          search_type: 'general',
+          confidence: 0.9,
+          reason: '检测到搜索关键词',
+          decision_level: 'keyword',
+          decision_time_ms: 0
+        };
+        console.log('[smartChatWithSearch] Search enabled by keyword match');
+      } else {
+        decision.reason = '未检测到搜索关键词';
+        console.log('[smartChatWithSearch] No search keywords detected');
       }
     } else {
-      console.log('[smartChatWithSearch] Web search disabled, skipping search classifier');
+      console.log('[smartChatWithSearch] Web search disabled in model settings');
     }
     
     let searchResults = null;
     let cacheHit = false;
     let searchCost = 0;
     
-    // 步骤2：如果需要搜索，检查缓存
+    // 步骤3：如果需要搜索，使用InvokeLLM的联网能力
     if (decision.need_search && decision.search_type !== 'none') {
-      searchResults = await checkCache(message, decision.search_type, base44);
-      
-      if (searchResults) {
-        cacheHit = true;
-        console.log('Cache hit for query:', message);
-      } else {
-        // 执行实际搜索
-        try {
-          searchResults = await executeSearch(message, decision.search_type);
-          searchCost = WEB_SEARCH_COST;
-          
-          // 保存到缓存
-          await saveCache(message, decision.search_type, searchResults, base44);
-          
-          console.log('Search executed and cached:', message);
-        } catch (error) {
-          console.error('Search execution failed:', error);
-          // 降级：不使用搜索结果
-          searchResults = null;
-        }
-      }
+      console.log('[smartChatWithSearch] Executing web search via InvokeLLM...');
+      // 注意：这里不直接调用搜索，而是在后续的AI调用中启用联网
+      decision.will_use_web_search = true;
     }
     
-    // 步骤3：构建增强的提示词
-    let enhancedMessage = message;
-    if (searchResults) {
-      const searchContext = `\n\n<search_results>\n搜索结果（${searchResults.timestamp}）：\n${
-        searchResults.results.map((r, i) => 
-          `${i + 1}. ${r.title}\n   ${r.snippet}\n   来源: ${r.url}`
-        ).join('\n\n')
-      }\n</search_results>\n\n基于以上搜索结果，请回答：${message}`;
-      
-      enhancedMessage = searchContext;
-      console.log('[smartChatWithSearch] Search results injected into message, length:', searchContext.length, 'chars, ~', Math.ceil(searchContext.length / 4), 'tokens');
-    }
+    // 步骤3：构建消息（不需要额外处理，联网在callAIModel中启用）
+    const enhancedMessage = message;
     
     // 步骤4：获取对话历史
     let conversation;
@@ -255,12 +238,13 @@ Deno.serve(async (req) => {
     }
     console.log('[smartChatWithSearch] ========================================');
     
-    // 调用 AI 模型 - 只在真正需要时传入 system_prompt
+    // 调用 AI 模型 - 启用联网搜索
     console.log('[smartChatWithSearch] === ABOUT TO CALL callAIModel ===');
     console.log('[smartChatWithSearch] Parameters:');
     console.log('[smartChatWithSearch]   - model_id:', selectedModel.id);
     console.log('[smartChatWithSearch]   - messages count:', apiMessages.length);
     console.log('[smartChatWithSearch]   - system_prompt:', shouldUseSystemPrompt ? `YES (${system_prompt.length} chars, ~${Math.ceil(system_prompt.length / 4)} tokens)` : 'NO');
+    console.log('[smartChatWithSearch]   - force_web_search:', decision.will_use_web_search || false);
     if (shouldUseSystemPrompt && system_prompt) {
       console.log('[smartChatWithSearch]   - system_prompt preview:', system_prompt.slice(0, 200) + '...');
     }
@@ -269,7 +253,8 @@ Deno.serve(async (req) => {
     const modelRes = await base44.functions.invoke('callAIModel', {
       model_id: selectedModel.id,
       messages: apiMessages,
-      system_prompt: shouldUseSystemPrompt ? system_prompt : undefined
+      system_prompt: shouldUseSystemPrompt ? system_prompt : undefined,
+      force_web_search: decision.will_use_web_search || false
     });
     
     if (!modelRes.data || modelRes.data.error) {
@@ -277,18 +262,15 @@ Deno.serve(async (req) => {
     }
     
     const modelData = modelRes.data;
-    console.log('[smartChatWithSearch] AI response received');
+    console.log('[smartChatWithSearch] AI response received, web_search_used:', modelData.web_search_enabled);
     
-    // 计算积分消耗（整合搜索成本）
-    const inputCreditsPerK = 1;
-    const outputCreditsPerK = 5;
-    
+    // 计算积分消耗（使用callAIModel返回的积分）
+    const totalCredits = modelData.credits_used || 1;
     const inputTokens = modelData.input_tokens || 0;
     const outputTokens = modelData.output_tokens || 0;
-    const inputCredits = Math.ceil(inputTokens / 1000) * inputCreditsPerK;
-    const outputCredits = Math.ceil(outputTokens / 1000) * outputCreditsPerK;
-    const searchCredits = searchCost > 0 ? 5 : 0;
-    const totalCredits = inputCredits + outputCredits + searchCredits;
+    const inputCredits = modelData.input_credits || 0;
+    const outputCredits = modelData.output_credits || 0;
+    const webSearchUsed = modelData.web_search_enabled || false;
     
     // 更新或创建对话
     const newMessages = [
@@ -317,53 +299,6 @@ Deno.serve(async (req) => {
       finalConversationId = newConv.id;
     }
     
-    // 步骤5：更新搜索决策记录
-    if (decision.decision_id) {
-      try {
-        const decisions = await base44.asServiceRole.entities.SearchDecision.filter({
-          id: decision.decision_id
-        });
-        
-        if (decisions.length > 0) {
-          await base44.asServiceRole.entities.SearchDecision.update(decisions[0].id, {
-            search_executed: !!searchResults,
-            cache_hit: cacheHit,
-            search_cost: searchCost
-          });
-        }
-      } catch (error) {
-        console.log('Failed to update search decision:', error.message);
-      }
-    }
-    
-    // 步骤6：更新每日统计
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const stats = await base44.asServiceRole.entities.SearchStatistics.filter({ date: today });
-      
-      if (stats.length > 0) {
-        const stat = stats[0];
-        const updates = {
-          search_triggered: (stat.search_triggered || 0) + (decision.need_search ? 1 : 0),
-          cache_hits: (stat.cache_hits || 0) + (cacheHit ? 1 : 0),
-          total_search_cost: (stat.total_search_cost || 0) + searchCost,
-          total_cost_saved: (stat.total_cost_saved || 0) + (cacheHit ? WEB_SEARCH_COST : 0)
-        };
-        
-        // 计算触发率和命中率
-        const totalReq = stat.total_requests || 1;
-        const searchTrig = updates.search_triggered;
-        const cacheH = updates.cache_hits;
-        
-        updates.search_trigger_rate = (searchTrig / totalReq) * 100;
-        updates.cache_hit_rate = searchTrig > 0 ? (cacheH / searchTrig) * 100 : 0;
-        
-        await base44.asServiceRole.entities.SearchStatistics.update(stat.id, updates);
-      }
-    } catch (error) {
-      console.log('Failed to update search statistics:', error.message);
-    }
-    
     console.log('[smartChatWithSearch] Request completed successfully');
     
     return Response.json({
@@ -375,21 +310,8 @@ Deno.serve(async (req) => {
       output_tokens: outputTokens,
       input_credits: inputCredits,
       output_credits: outputCredits,
-      search_decision: {
-        need_search: decision.need_search,
-        confidence: decision.confidence,
-        reason: decision.reason,
-        search_type: decision.search_type,
-        decision_level: decision.decision_level,
-        decision_time_ms: decision.decision_time_ms
-      },
-      search_info: searchResults ? {
-        executed: true,
-        cache_hit: cacheHit,
-        cost: searchCost,
-        results_count: searchResults.results.length
-      } : {
-        executed: false,
+      search_info: {
+        executed: webSearchUsed,
         cache_hit: false,
         cost: 0
       }

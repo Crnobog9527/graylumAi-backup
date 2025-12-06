@@ -6,10 +6,10 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
 
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+          return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
 
-    const { model_id, messages, system_prompt } = await req.json();
+      const { model_id, messages, system_prompt, force_web_search } = await req.json();
 
     console.log('[callAIModel] ===== RECEIVED REQUEST =====');
     console.log('[callAIModel] - model_id:', model_id);
@@ -177,9 +177,12 @@ Deno.serve(async (req) => {
         ? `${system_prompt}\n\n${fullPrompt}\n\n请根据上述对话历史，回复用户最后的消息。`
         : fullPrompt;
 
+      const shouldUseWebSearch = force_web_search || model.enable_web_search || false;
+      console.log('[callAIModel] Using web search:', shouldUseWebSearch, '(force:', force_web_search, 'model:', model.enable_web_search, ')');
+
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: finalPrompt,
-        add_context_from_internet: model.enable_web_search || false
+        add_context_from_internet: shouldUseWebSearch
       });
 
       // 估算输出tokens
