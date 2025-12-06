@@ -339,7 +339,7 @@ ${selectedModule.system_prompt}
       const { data: result } = await base44.functions.invoke('callAIModel', {
         model_id: selectedModel.id,
         messages: [...newMessages],
-        system_prompt: systemPrompt || undefined
+        ...(systemPrompt ? { system_prompt: systemPrompt } : {})
       });
 
       if (result.error) {
@@ -413,7 +413,7 @@ ${selectedModule.system_prompt}
           title,
           model_id: selectedModel.id,
           prompt_module_id: selectedModule?.id,
-          system_prompt: systemPrompt,
+          ...(selectedModule ? { system_prompt: systemPrompt } : {}),
           messages: updatedMessages,
           total_credits_used: creditsUsed,
         });
