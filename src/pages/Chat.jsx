@@ -342,12 +342,17 @@ ${selectedModule.system_prompt}
 
     try {
       // 使用智能搜索判断系统（会自动判断是否需要搜索并禁用模型默认搜索）
-      // 传递空字符串而不是undefined，避免后端尝试读取旧的conversation.system_prompt
-      const { data: result } = await base44.functions.invoke('smartChatWithSearch', {
+      const requestBody = {
         conversation_id: currentConversation?.id,
-        message: inputMessage,
-        system_prompt: systemPrompt
-      });
+        message: inputMessage
+      };
+
+      // 只在有系统提示词时才传递
+      if (systemPrompt) {
+        requestBody.system_prompt = systemPrompt;
+      }
+
+      const { data: result } = await base44.functions.invoke('smartChatWithSearch', requestBody);
 
       if (result.error) {
         throw new Error(result.error);
