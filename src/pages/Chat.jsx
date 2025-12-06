@@ -111,7 +111,7 @@ export default function Chat() {
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
-      // 优先使用默认模型，如果没有则使用第一个
+      // 优先选择默认模型，如果没有默认模型则选择第一个
       const defaultModel = models.find(m => m.is_default);
       setSelectedModel(defaultModel || models[0]);
     }

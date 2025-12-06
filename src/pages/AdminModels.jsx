@@ -172,17 +172,13 @@ function AdminModelsContent() {
   };
 
   const handleSubmit = async () => {
-    // 如果设置为默认模型，先将其他模型的 is_default 设为 false
+    // 如果设置为默认模型，需要先取消其他模型的默认状态
     if (formData.is_default) {
-      try {
-        const allModels = await base44.entities.AIModel.list();
-        for (const model of allModels) {
-          if (model.id !== selectedModel?.id && model.is_default) {
-            await base44.entities.AIModel.update(model.id, { is_default: false });
-          }
+      const allModels = await base44.entities.AIModel.list();
+      for (const model of allModels) {
+        if (model.is_default && model.id !== selectedModel?.id) {
+          await base44.entities.AIModel.update(model.id, { is_default: false });
         }
-      } catch (error) {
-        console.error('Error clearing default flags:', error);
       }
     }
     
@@ -315,9 +311,7 @@ function AdminModelsContent() {
                             {model.is_active ? t('active') : t('inactive')}
                           </Badge>
                           {model.is_default && (
-                            <Badge variant="default" className="bg-violet-600">
-                              默认
-                            </Badge>
+                            <Badge className="bg-violet-500 text-white">默认</Badge>
                           )}
                         </div>
                       </TableCell>
@@ -472,7 +466,9 @@ function AdminModelsContent() {
               <div className="flex items-center justify-between p-3 bg-violet-50 rounded-lg border border-violet-100">
                 <div>
                   <Label className="text-violet-900">设为默认模型</Label>
-                  <p className="text-xs text-violet-600 mt-0.5">用户首次进入对话时自动选择此模型</p>
+                  <p className="text-xs text-violet-600 mt-0.5">
+                    用户首次使用对话功能时将自动选择此模型
+                  </p>
                 </div>
                 <Switch
                   checked={formData.is_default}
