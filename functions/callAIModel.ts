@@ -154,6 +154,13 @@ Deno.serve(async (req) => {
 
     // 估算输入tokens
     const estimatedInputTokens = calculateTotalTokens(processedMessages, system_prompt);
+    
+    console.log('[callAIModel] After truncation:');
+    console.log('[callAIModel] - processedMessages count:', processedMessages.length);
+    console.log('[callAIModel] - estimatedInputTokens:', estimatedInputTokens);
+    processedMessages.forEach((m, i) => {
+      console.log(`[callAIModel]   [${i}] ${m.role}: ${m.content.slice(0, 100)}... (${Math.ceil(m.content.length / 4)} tokens)`);
+    });
 
     // 只有当provider是builtin时才使用内置集成
     if (model.provider === 'builtin') {
