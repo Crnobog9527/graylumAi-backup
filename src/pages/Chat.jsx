@@ -85,6 +85,13 @@ export default function Chat() {
       '-updated_date'
     ),
     enabled: !!user?.email,
+    onSuccess: (data) => {
+      // 如果当前对话不在列表中，说明已被删除
+      if (currentConversation && !data.find(c => c.id === currentConversation.id)) {
+        setCurrentConversation(null);
+        setMessages([]);
+      }
+    }
   });
 
   // 获取系统设置
@@ -276,7 +283,9 @@ export default function Chat() {
         if (model) setSelectedModel(model);
       }
     } catch (e) {
-      // 对话已被删除，刷新列表
+      // 对话已被删除，清空当前对话并刷新列表
+      setCurrentConversation(null);
+      setMessages([]);
       queryClient.invalidateQueries(['conversations']);
     }
   };
@@ -395,13 +404,26 @@ ${selectedModule.system_prompt}
       const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
 
       if (currentConversation) {
-        await updateConversationMutation.mutateAsync({
-          id: currentConversation.id,
-          data: {
+        try {
+          await updateConversationMutation.mutateAsync({
+            id: currentConversation.id,
+            data: {
+              messages: updatedMessages,
+              total_credits_used: (currentConversation.total_credits_used || 0) + creditsUsed,
+            }
+          });
+        } catch (e) {
+          // 对话可能已被删除，创建新对话
+          const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
+          await createConversationMutation.mutateAsync({
+            title,
+            model_id: selectedModel.id,
+            prompt_module_id: selectedModule?.id,
+            system_prompt: systemPrompt,
             messages: updatedMessages,
-            total_credits_used: (currentConversation.total_credits_used || 0) + creditsUsed,
-          }
-        });
+            total_credits_used: creditsUsed,
+          });
+        }
       } else {
         // 创建新对话，onSuccess 回调会自动设置 currentConversation
         await createConversationMutation.mutateAsync({
