@@ -18,24 +18,23 @@ Deno.serve(async (req) => {
     const shouldUseWebSearch = (userMessage, conversationMessages) => {
       const message = userMessage.toLowerCase();
       
-      // 强制触发关键词
+      // 强制触发关键词 - 优先级最高
       const forceSearchKeywords = [
-        '今天', '昨天', '最新', '现在', '当前', '近期', '2024年', '2025年',
-        '天气', '股价', '汇率', '新闻', '比赛', 
-        '帮我查', '搜索', '联网', '找一下', '查询', '查一下', '查找',
-        '给我查', '为我查', '帮我搜', '网上', '上网'
+        '联网', '搜索', '查询', '查一下', '查找', '帮我查', '给我查', '为我查', 
+        '帮我搜', '找一下', '上网', '网上',
+        '今天', '昨天', '最新', '现在', '当前', '近期', '实时',
+        '2024年', '2025年', '今年', '去年',
+        '天气', '股价', '汇率', '新闻', '比赛', '赛事'
       ];
       
+      // 只要包含强制关键词就直接触发联网
       if (forceSearchKeywords.some(keyword => message.includes(keyword))) {
         return true;
       }
       
-      // 不需要联网的场景
+      // 明确不需要联网的场景（优化后仅保留最确定的）
       const noSearchPatterns = [
-        /如何|怎么|怎样|为什么/,
-        /是什么|什么是|解释|定义/,
-        /帮我写|生成|创作|翻译|改写/,
-        /^.{0,50}$/  // 短对话 <50字
+        /^(帮我写|生成|创作|翻译|改写)/,  // 以这些词开头的创作请求
       ];
       
       for (const pattern of noSearchPatterns) {
@@ -44,15 +43,15 @@ Deno.serve(async (req) => {
         }
       }
       
-      // 智能评分模型
+      // 智能评分模型（降低阈值）
       let score = 0;
       
-      if (/\d{4}年|\d+月\d+日|今年|去年/.test(message)) score += 0.4;
-      if (/价格|股票|政策|选举|公司|CEO/.test(message)) score += 0.3;
-      if (/真的吗|确定吗|是真的|可靠吗/.test(message)) score += 0.2;
+      if (/\d{4}年|\d+月\d+日/.test(message)) score += 0.5;
+      if (/价格|股票|政策|选举|公司|CEO|品牌|产品/.test(message)) score += 0.4;
+      if (/真的吗|确定吗|是真的|可靠吗|准确吗/.test(message)) score += 0.3;
       
-      // 评分 >= 0.6 触发联网
-      return score >= 0.6;
+      // 评分 >= 0.5 触发联网（降低阈值）
+      return score >= 0.5;
     };
 
     // ========== Prompt Caching 相关常量和函数 ==========
