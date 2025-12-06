@@ -165,6 +165,15 @@ Deno.serve(async (req) => {
     
     const chatData = chatRes.data;
     
+    // 计算积分消耗（整合搜索成本）
+    const inputCreditsPerK = 1;  // 从系统设置获取
+    const outputCreditsPerK = 5;
+    
+    const inputCredits = Math.ceil((chatData.stats.input_tokens || 0) / 1000) * inputCreditsPerK;
+    const outputCredits = Math.ceil((chatData.stats.output_tokens || 0) / 1000) * outputCreditsPerK;
+    const searchCredits = searchCost > 0 ? 5 : 0;  // 搜索固定5积分
+    const totalCredits = inputCredits + outputCredits + searchCredits;
+    
     // 步骤5：更新搜索决策记录
     const decisions = await base44.asServiceRole.entities.SearchDecision.filter({
       id: decision.decision_id
@@ -206,6 +215,11 @@ Deno.serve(async (req) => {
       conversation_id: chatData.conversation_id,
       response: chatData.response,
       model_used: chatData.model_used,
+      credits_used: totalCredits,
+      input_tokens: chatData.stats.input_tokens || 0,
+      output_tokens: chatData.stats.output_tokens || 0,
+      input_credits: inputCredits,
+      output_credits: outputCredits,
       search_decision: {
         need_search: decision.need_search,
         confidence: decision.confidence,
