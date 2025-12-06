@@ -297,7 +297,6 @@ export default function Chat() {
     // 构建系统提示词以计算准确的token数
     let systemPrompt = '';
     if (selectedModule) {
-      // 使用功能模块的系统提示词
       systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
 ${selectedModule.system_prompt}
 
@@ -305,9 +304,6 @@ ${selectedModule.system_prompt}
 1. 你必须严格遵循上述角色定位和功能约束
 2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
 3. 保持专业、专注，不要偏离主题`;
-    } else if (selectedModel?.system_prompt) {
-      // 普通对话：使用模型配置的默认系统提示词
-      systemPrompt = selectedModel.system_prompt;
     }
 
     // 长文本预警检查（包含系统提示词）
@@ -341,23 +337,14 @@ ${selectedModule.system_prompt}
     setIsStreaming(true);
 
     try {
-      // 使用智能搜索判断系统（会自动判断是否需要搜索并禁用模型默认搜索）
-      const requestBody = {
+      // 使用智能联网搜索判断系统
+      const { data: result } = await base44.functions.invoke('smartChatWithSearch', {
         conversation_id: currentConversation?.id,
-        message: inputMessage
-      };
-
-      // 只在有系统提示词时才传递
-      if (systemPrompt) {
-        requestBody.system_prompt = systemPrompt;
-      }
-
-      console.log('发送请求到 smartChatWithSearch:', requestBody);
-      const { data: result } = await base44.functions.invoke('smartChatWithSearch', requestBody);
-      console.log('收到响应:', result);
+        message: inputMessage,
+        system_prompt: systemPrompt || undefined
+      });
 
       if (result.error) {
-        console.error('API返回错误:', result.error);
         throw new Error(result.error);
       }
       const response = result.response;
@@ -394,25 +381,22 @@ ${selectedModule.system_prompt}
         total_credits_used: (user.total_credits_used || 0) + creditsUsed,
       });
 
-      // 搜索信息（来自智能搜索判断系统）
-      const searchInfo = result.search_info?.executed 
-        ? ` [智能搜索: ${result.search_info.cost?.toFixed(4) || 0}$]` 
+      const webSearchInfo = result.web_search_enabled 
+        ? ` [联网搜索: ${result.web_search_credits || 0}积分]` 
         : '';
-      const webSearchUsed = result.search_info?.executed || false;
-      
       await createTransactionMutation.mutateAsync({
         user_email: user.email,
         type: 'usage',
         amount: -creditsUsed,
         balance_after: newBalance,
-        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${searchInfo}`,
+        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${webSearchInfo}`,
         model_used: selectedModel.name,
         prompt_module_used: selectedModule?.title,
         input_tokens: inputTokens,
         output_tokens: outputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
-        web_search_used: webSearchUsed,
+        web_search_used: result.web_search_enabled || false,
       });
 
       const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
@@ -437,10 +421,7 @@ ${selectedModule.system_prompt}
         });
       }
     } catch (error) {
-      console.error('发送消息失败:', error);
-      alert(`发送失败: ${error.message || '未知错误'}`);
-      // 恢复消息列表
-      setMessages(messages);
+      console.error('Error sending message:', error);
     } finally {
       setIsStreaming(false);
     }

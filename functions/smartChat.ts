@@ -236,9 +236,8 @@ ${conversationText}
     const recentMessages = messages.slice(-(RECENT_MESSAGES_COUNT * 2));
     
     // 构建缓存消息
-    // 注意：只在明确传入 system_prompt 时使用，不使用旧对话的 system_prompt
     const { messages: apiMessages, cacheBreakpoints } = buildCachedMessages(
-      system_prompt,
+      system_prompt || conversation.system_prompt,
       summary,
       recentMessages,
       message,
