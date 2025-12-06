@@ -189,6 +189,7 @@ Deno.serve(async (req) => {
       }\n</search_results>\n\n基于以上搜索结果，请回答：${message}`;
       
       enhancedMessage = searchContext;
+      console.log('[smartChatWithSearch] Search results injected into message, length:', searchContext.length, 'chars, ~', Math.ceil(searchContext.length / 4), 'tokens');
     }
     
     // 步骤4：获取对话历史
