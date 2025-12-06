@@ -108,8 +108,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Message is required' }, { status: 400 });
     }
     
-    const startTime = Date.now();
-    
     // 步骤1：获取模型配置，检查是否启用智能搜索
     console.log('[smartChatWithSearch] Getting AI models...');
     const models = await base44.asServiceRole.entities.AIModel.filter({ is_active: true });
