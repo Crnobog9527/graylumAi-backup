@@ -85,13 +85,6 @@ export default function Chat() {
       '-updated_date'
     ),
     enabled: !!user?.email,
-    onSuccess: (data) => {
-      // 如果当前对话不在列表中，说明已被删除
-      if (currentConversation && !data.find(c => c.id === currentConversation.id)) {
-        setCurrentConversation(null);
-        setMessages([]);
-      }
-    }
   });
 
   // 获取系统设置
@@ -118,7 +111,9 @@ export default function Chat() {
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
-      setSelectedModel(models[0]);
+      // 优先选择默认模型，如果没有默认模型则选择第一个
+      const defaultModel = models.find(m => m.is_default);
+      setSelectedModel(defaultModel || models[0]);
     }
   }, [models]);
 
@@ -283,9 +278,7 @@ export default function Chat() {
         if (model) setSelectedModel(model);
       }
     } catch (e) {
-      // 对话已被删除，清空当前对话并刷新列表
-      setCurrentConversation(null);
-      setMessages([]);
+      // 对话已被删除，刷新列表
       queryClient.invalidateQueries(['conversations']);
     }
   };
@@ -346,7 +339,7 @@ ${selectedModule.system_prompt}
       const { data: result } = await base44.functions.invoke('callAIModel', {
         model_id: selectedModel.id,
         messages: [...newMessages],
-        system_prompt: systemPrompt || undefined
+        ...(systemPrompt ? { system_prompt: systemPrompt } : {})
       });
 
       if (result.error) {
@@ -386,12 +379,15 @@ ${selectedModule.system_prompt}
         total_credits_used: (user.total_credits_used || 0) + creditsUsed,
       });
 
+      const webSearchInfo = result.web_search_enabled 
+        ? ` [联网搜索: ${result.web_search_credits || 0}积分]` 
+        : '';
       await createTransactionMutation.mutateAsync({
         user_email: user.email,
         type: 'usage',
         amount: -creditsUsed,
         balance_after: newBalance,
-        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${result.web_search_enabled ? ' [联网]' : ''}`,
+        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${webSearchInfo}`,
         model_used: selectedModel.name,
         prompt_module_used: selectedModule?.title,
         input_tokens: inputTokens,
@@ -404,33 +400,20 @@ ${selectedModule.system_prompt}
       const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
 
       if (currentConversation) {
-        try {
-          await updateConversationMutation.mutateAsync({
-            id: currentConversation.id,
-            data: {
-              messages: updatedMessages,
-              total_credits_used: (currentConversation.total_credits_used || 0) + creditsUsed,
-            }
-          });
-        } catch (e) {
-          // 对话可能已被删除，创建新对话
-          const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
-          await createConversationMutation.mutateAsync({
-            title,
-            model_id: selectedModel.id,
-            prompt_module_id: selectedModule?.id,
-            system_prompt: systemPrompt,
+        await updateConversationMutation.mutateAsync({
+          id: currentConversation.id,
+          data: {
             messages: updatedMessages,
-            total_credits_used: creditsUsed,
-          });
-        }
+            total_credits_used: (currentConversation.total_credits_used || 0) + creditsUsed,
+          }
+        });
       } else {
         // 创建新对话，onSuccess 回调会自动设置 currentConversation
         await createConversationMutation.mutateAsync({
           title,
           model_id: selectedModel.id,
           prompt_module_id: selectedModule?.id,
-          system_prompt: systemPrompt,
+          ...(selectedModule ? { system_prompt: systemPrompt } : {}),
           messages: updatedMessages,
           total_credits_used: creditsUsed,
         });

@@ -14,6 +14,79 @@ Deno.serve(async (req) => {
     // Token 估算函数 (字符数 / 4)
     const estimateTokens = (text) => Math.ceil((text || '').length / 4);
 
+    // ========== Prompt Caching 相关常量和函数 ==========
+    const CACHE_MIN_TOKENS = 1024;  // 最小缓存阈值
+    const MAX_CACHE_BREAKPOINTS = 4; // Claude 最多支持4个缓存断点
+
+    // 判断内容是否适合缓存
+    const shouldEnableCache = (content, tokenCount) => {
+      if (tokenCount < CACHE_MIN_TOKENS) return false;
+      
+      // 检测是否包含大文档/RAG/结构化数据的特征
+      const hasStructuredData = /\|.*\|.*\|/m.test(content) || // CSV/表格
+                                /```[\s\S]{500,}```/.test(content) || // 大代码块
+                                /<document>|<context>|<reference>/i.test(content); // RAG标记
+      const hasRoleCard = /<character>|<persona>|<system_config>/i.test(content);
+      
+      return tokenCount >= CACHE_MIN_TOKENS || hasStructuredData || hasRoleCard;
+    };
+
+    // 构建带缓存标记的消息（用于 OpenRouter Anthropic）
+    const buildCachedMessagesForOpenRouter = (msgs, sysPrompt) => {
+      const result = [];
+      const cacheableBlocks = [];
+      
+      // 分析系统提示词
+      const sysTokens = estimateTokens(sysPrompt);
+      if (sysPrompt && shouldEnableCache(sysPrompt, sysTokens)) {
+        cacheableBlocks.push({ type: 'system', tokens: sysTokens });
+      }
+      
+      // 分析消息中可缓存的内容（只分析较早的消息，最新的用户消息不缓存）
+      msgs.slice(0, -1).forEach((m, idx) => {
+        const tokens = estimateTokens(m.content);
+        if (shouldEnableCache(m.content, tokens)) {
+          cacheableBlocks.push({ type: 'message', index: idx, tokens, role: m.role });
+        }
+      });
+      
+      // 按token数排序，选择最大的几个进行缓存
+      cacheableBlocks.sort((a, b) => b.tokens - a.tokens);
+      const blocksToCache = cacheableBlocks.slice(0, MAX_CACHE_BREAKPOINTS);
+      const cacheIndices = new Set(blocksToCache.filter(b => b.type === 'message').map(b => b.index));
+      const cacheSystem = blocksToCache.some(b => b.type === 'system');
+      
+      // 构建系统消息
+      if (sysPrompt) {
+        if (cacheSystem) {
+          result.push({
+            role: 'system',
+            content: [{ type: 'text', text: sysPrompt, cache_control: { type: 'ephemeral' } }]
+          });
+        } else {
+          result.push({ role: 'system', content: sysPrompt });
+        }
+      }
+      
+      // 构建对话消息
+      msgs.forEach((m, idx) => {
+        if (cacheIndices.has(idx)) {
+          result.push({
+            role: m.role,
+            content: [{ type: 'text', text: m.content, cache_control: { type: 'ephemeral' } }]
+          });
+        } else {
+          result.push({ role: m.role, content: m.content });
+        }
+      });
+      
+      return {
+        messages: result,
+        cacheEnabled: blocksToCache.length > 0,
+        cachedBlocksCount: blocksToCache.length
+      };
+    };
+
     // 计算消息列表的总 token 数
     const calculateTotalTokens = (msgs, sysPrompt) => {
       let total = estimateTokens(sysPrompt);
@@ -48,16 +121,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Model not found' }, { status: 404 });
     }
 
-    // 获取积分换算设置（默认值：Input 1积分/1K, Output 5积分/1K）
+    // 获取积分换算设置（默认值：Input 1积分/1K, Output 5积分/1K, Web Search 5积分/次）
     let inputCreditsPerK = 1;
     let outputCreditsPerK = 5;
-    
+    let webSearchCredits = 5;
+
     try {
       const settings = await base44.asServiceRole.entities.SystemSettings.filter({});
       const inputSetting = settings.find(s => s.setting_key === 'input_credits_per_1k');
       const outputSetting = settings.find(s => s.setting_key === 'output_credits_per_1k');
+      const webSearchSetting = settings.find(s => s.setting_key === 'web_search_credits');
       if (inputSetting) inputCreditsPerK = parseFloat(inputSetting.setting_value) || 1;
       if (outputSetting) outputCreditsPerK = parseFloat(outputSetting.setting_value) || 5;
+      if (webSearchSetting) webSearchCredits = parseFloat(webSearchSetting.setting_value) || 5;
     } catch (e) {
       // 使用默认值
     }
@@ -94,7 +170,8 @@ Deno.serve(async (req) => {
       // 计算积分消耗
       const inputCredits = Math.ceil(estimatedInputTokens / 1000) * inputCreditsPerK;
       const outputCredits = Math.ceil(estimatedOutputTokens / 1000) * outputCreditsPerK;
-      const totalCredits = inputCredits + outputCredits;
+      const searchCredits = (model.enable_web_search) ? webSearchCredits : 0;
+      const totalCredits = inputCredits + outputCredits + searchCredits;
 
       return Response.json({
         response: result,
@@ -103,6 +180,7 @@ Deno.serve(async (req) => {
         output_tokens: estimatedOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
+        web_search_credits: searchCredits,
         web_search_enabled: model.enable_web_search || false
       });
     }
@@ -177,7 +255,8 @@ Deno.serve(async (req) => {
       // 计算积分
       const inputCredits = Math.ceil(actualInputTokens / 1000) * inputCreditsPerK;
       const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
-      const totalCredits = inputCredits + outputCredits;
+      const searchCredits = (isOpenRouter && model.enable_web_search) ? webSearchCredits : 0;
+      const totalCredits = inputCredits + outputCredits + searchCredits;
 
       return Response.json({
         response: responseText,
@@ -186,6 +265,7 @@ Deno.serve(async (req) => {
         output_tokens: actualOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
+        web_search_credits: searchCredits,
         model: data.model || null,
         usage: data.usage || null,
         web_search_enabled: isOpenRouter && model.enable_web_search
@@ -195,8 +275,6 @@ Deno.serve(async (req) => {
       const endpoint = model.api_endpoint || 'https://api.anthropic.com/v1/messages';
       const isOfficialApi = !model.api_endpoint || model.api_endpoint.includes('anthropic.com');
       const isOpenRouter = model.api_endpoint && model.api_endpoint.includes('openrouter.ai');
-
-      const anthropicMessages = formattedMessages.filter(m => m.role !== 'system');
 
       const headers = {
         'Content-Type': 'application/json'
@@ -209,19 +287,22 @@ Deno.serve(async (req) => {
         headers['Authorization'] = `Bearer ${model.api_key}`;
       }
 
-      // 如果是OpenRouter且启用联网搜索，使用OpenAI格式
-      if (isOpenRouter && model.enable_web_search) {
+      // ========== OpenRouter Anthropic 模型调用（支持 Prompt Caching）==========
+      if (isOpenRouter) {
+        // 构建带缓存标记的消息
+        const { messages: cachedMessages, cacheEnabled, cachedBlocksCount } = 
+          buildCachedMessagesForOpenRouter(processedMessages, system_prompt);
+        
         const requestBody = {
           model: model.model_id,
-          messages: formattedMessages,
-          max_tokens: model.max_tokens || 4096,
-          plugins: [
-            {
-              id: 'web',
-              max_results: 5
-            }
-          ]
+          messages: cachedMessages,
+          max_tokens: model.max_tokens || 4096
         };
+
+        // 如果启用了联网搜索，添加plugins参数
+        if (model.enable_web_search) {
+          requestBody.plugins = [{ id: 'web', max_results: 5 }];
+        }
 
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -237,16 +318,34 @@ Deno.serve(async (req) => {
         const data = await res.json();
         responseText = data.choices?.[0]?.message?.content || data.content?.[0]?.text;
 
+        // 解析 token 使用情况（包括缓存统计）
+        let cachedTokens = 0;
+        let cacheDiscount = 0;
+        
         if (data.usage) {
           actualInputTokens = data.usage.prompt_tokens || data.usage.input_tokens || estimatedInputTokens;
           actualOutputTokens = data.usage.completion_tokens || data.usage.output_tokens || estimateTokens(responseText);
+          
+          // OpenRouter 返回的缓存统计
+          cachedTokens = data.usage.prompt_tokens_details?.cached_tokens || 
+                         data.usage.cache_read_input_tokens || 0;
+          cacheDiscount = data.usage.cache_discount || 0;
         } else {
           actualOutputTokens = estimateTokens(responseText);
         }
 
-        const inputCredits = Math.ceil(actualInputTokens / 1000) * inputCreditsPerK;
+        // 计算积分（缓存命中的 token 按 90% 折扣计算）
+        const uncachedInputTokens = actualInputTokens - cachedTokens;
+        const cachedInputCredits = Math.ceil(cachedTokens / 1000) * inputCreditsPerK * 0.1; // 缓存命中90%折扣
+        const uncachedInputCredits = Math.ceil(uncachedInputTokens / 1000) * inputCreditsPerK;
+        const inputCredits = Math.ceil(cachedInputCredits + uncachedInputCredits);
         const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
-        const totalCredits = inputCredits + outputCredits;
+        const searchCredits = model.enable_web_search ? webSearchCredits : 0;
+        const totalCredits = inputCredits + outputCredits + searchCredits;
+
+        // 计算缓存节省的积分
+        const creditsSaved = cachedTokens > 0 ? 
+          Math.floor((cachedTokens / 1000) * inputCreditsPerK * 0.9) : 0;
 
         return Response.json({
           response: responseText,
@@ -255,11 +354,21 @@ Deno.serve(async (req) => {
           output_tokens: actualOutputTokens,
           input_credits: inputCredits,
           output_credits: outputCredits,
+          web_search_credits: searchCredits,
           usage: data.usage || null,
-          web_search_enabled: true
+          web_search_enabled: model.enable_web_search || false,
+          // 缓存统计信息
+          cache_enabled: cacheEnabled,
+          cached_blocks_count: cachedBlocksCount,
+          cached_tokens: cachedTokens,
+          cache_hit_rate: actualInputTokens > 0 ? (cachedTokens / actualInputTokens * 100).toFixed(1) + '%' : '0%',
+          credits_saved_by_cache: creditsSaved
         });
       }
 
+      // ========== 官方 Anthropic API ==========
+      const anthropicMessages = formattedMessages.filter(m => m.role !== 'system');
+      
       const res = await fetch(endpoint, {
         method: 'POST',
         headers,
@@ -299,7 +408,9 @@ Deno.serve(async (req) => {
         output_tokens: actualOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
-        usage: data.usage || null
+        web_search_credits: 0,
+        usage: data.usage || null,
+        web_search_enabled: false
       });
 
     } else if (provider === 'google') {
@@ -359,11 +470,13 @@ Deno.serve(async (req) => {
         output_tokens: actualOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
+        web_search_credits: 0,
         modelVersion: data.modelVersion || null,
-        usageMetadata: data.usageMetadata || null
+        usageMetadata: data.usageMetadata || null,
+        web_search_enabled: false
       });
 
-    } else {
+      } else {
       return Response.json({ error: `Unsupported provider: ${provider}` }, { status: 400 });
     }
 
