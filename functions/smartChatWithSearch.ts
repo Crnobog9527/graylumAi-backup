@@ -4,9 +4,6 @@ const CACHE_TTL_MINUTES = 15;
 const SIMILARITY_THRESHOLD = 0.85;
 const WEB_SEARCH_COST = 0.005;
 
-// Token 估算函数
-const estimateTokens = (text) => Math.ceil((text || '').length / 4);
-
 // 标准化查询
 const normalizeQuery = (query) => {
   return query.toLowerCase()
@@ -282,7 +279,7 @@ Deno.serve(async (req) => {
       // 计算压缩前的 token 数（完整历史）
       beforeCompressionTokens = conversationMessages
         .slice(0, coveredCount)
-        .reduce((sum, m) => sum + estimateTokens(m.content || ''), 0);
+        .reduce((sum, m) => sum + estimateTokens((m.content || m.text) || ''), 0);
 
       // 添加摘要作为系统消息
       const summaryMessage = `[对话历史摘要 - 前${summaryToUse.covered_messages}轮]\n${summaryToUse.summary_text}`;
@@ -297,7 +294,7 @@ Deno.serve(async (req) => {
       // 添加最近的消息
       apiMessages.push(...recentMessages.map(m => ({
         role: m.role,
-        content: m.content
+        content: (m.content || m.text) || ''
       })));
 
       contextType = '摘要+最近消息';
@@ -314,7 +311,7 @@ Deno.serve(async (req) => {
       // 没有摘要或消息较少，使用完整历史
       apiMessages = conversationMessages.map(m => ({
         role: m.role,
-        content: m.content
+        content: (m.content || m.text) || ''
       }));
       contextType = '完整历史';
     }
@@ -322,7 +319,8 @@ Deno.serve(async (req) => {
     // 添加当前增强消息
     apiMessages.push({ role: 'user', content: enhancedMessage });
     
-    // 计算token总数
+    // 计算token估算
+    const estimateTokens = (text) => Math.ceil((text || '').length / 4);
     const totalTokens = apiMessages.reduce((sum, m) => sum + estimateTokens(m.content), 0) + 
                         (system_prompt ? estimateTokens(system_prompt) : 0);
     
