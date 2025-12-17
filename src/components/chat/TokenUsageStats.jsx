@@ -21,19 +21,15 @@ export default function TokenUsageStats({ messages, currentModel }) {
     .filter(m => m.role === 'assistant')
     .reduce((sum, m) => sum + (m.output_tokens || 0), 0);
 
-  // 计算预估成本（美元）
-  const calculateCost = (inputTokens, outputTokens) => {
-    if (!currentModel) return 0;
-    
-    // 新的积分计算规则
-    const inputCost = inputTokens / 1000;  // 1积分/1000tokens
-    const outputCost = outputTokens / 200;  // 1积分/200tokens
-    
-    return inputCost + outputCost;
+  // 计算积分消耗（新规则）
+  const calculateCredits = (inputTokens, outputTokens) => {
+    const inputCredits = inputTokens / 1000;  // 1积分 = 1000 tokens
+    const outputCredits = outputTokens / 200;  // 1积分 = 200 tokens
+    return inputCredits + outputCredits;
   };
 
-  const lastCost = calculateCost(lastInputTokens, lastOutputTokens);
-  const totalCost = calculateCost(totalInputTokens, totalOutputTokens);
+  const lastCredits = calculateCredits(lastInputTokens, lastOutputTokens);
+  const totalCredits = calculateCredits(totalInputTokens, totalOutputTokens);
 
   if (messages.length === 0) return null;
 
@@ -50,7 +46,9 @@ export default function TokenUsageStats({ messages, currentModel }) {
             <div className="text-lg font-semibold text-slate-800">
               {lastInputTokens.toLocaleString()}
             </div>
-            <div className="text-xs text-slate-400">tokens</div>
+            <div className="text-xs text-slate-400">
+              tokens ≈ {(lastInputTokens / 1000).toFixed(3)}积分
+            </div>
           </div>
 
           {/* 本次输出 */}
@@ -62,7 +60,9 @@ export default function TokenUsageStats({ messages, currentModel }) {
             <div className="text-lg font-semibold text-slate-800">
               {lastOutputTokens.toLocaleString()}
             </div>
-            <div className="text-xs text-slate-400">tokens</div>
+            <div className="text-xs text-slate-400">
+              tokens ≈ {(lastOutputTokens / 200).toFixed(3)}积分
+            </div>
           </div>
 
           {/* 累计使用 */}
@@ -79,17 +79,17 @@ export default function TokenUsageStats({ messages, currentModel }) {
             </div>
           </div>
 
-          {/* 预估积分 */}
+          {/* 积分消耗 */}
           <div className="bg-white rounded-lg p-3 border border-green-200">
             <div className="flex items-center gap-2 text-xs text-green-600 mb-1">
               <DollarSign className="h-3 w-3" />
-              <span>预估积分</span>
+              <span>积分消耗</span>
             </div>
             <div className="text-lg font-semibold text-green-700">
-              {totalCost.toFixed(2)}
+              {totalCredits.toFixed(3)}
             </div>
             <div className="text-xs text-green-500">
-              本次: {lastCost.toFixed(2)}
+              本次: {lastCredits.toFixed(3)}积分
             </div>
           </div>
         </div>
