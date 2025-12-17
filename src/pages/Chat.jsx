@@ -884,9 +884,6 @@ export default function Chat() {
             <div className="flex items-center justify-center gap-2 text-xs text-slate-500 mb-3">
               <span>上一条消息消耗了 {messages[messages.length - 1]?.credits_used || 0} 积分，</span>
               <span>您还剩 <span className="text-blue-600 font-medium">{user.credits?.toLocaleString() || 0}</span> 积分</span>
-              {user.pending_credits > 0 && (
-                <span className="text-amber-600">（待结算 {user.pending_credits.toFixed(3)} 积分）</span>
-              )}
             </div>
 
             {/* Uploaded Files Preview */}
@@ -984,11 +981,6 @@ export default function Chat() {
                 💡 输入 1积分/1K tokens，输出 1积分/200 tokens
                 {selectedModel?.enable_web_search && ' | 联网搜索 5积分/次'}
               </div>
-              {user?.pending_credits > 0 && (
-                <div className="text-xs text-amber-600">
-                  零钱罐余额: {user.pending_credits.toFixed(3)} 积分（满1积分自动扣除）
-                </div>
-              )}
             </div>
           </div>
         </div>
