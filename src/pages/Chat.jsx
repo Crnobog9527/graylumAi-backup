@@ -364,7 +364,8 @@ export default function Chat() {
     // 构建用户消息（前端显示用，分开存储文字和附件）
     const userMessage = {
       role: 'user',
-      text: inputMessage,
+      content: inputMessage,  // 使用 content 字段与数据库保持一致
+      text: inputMessage,      // 保留 text 用于前端显示兼容性
       attachments: attachments,
       timestamp: new Date().toISOString(),
     };
