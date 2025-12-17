@@ -27,6 +27,7 @@ const translations = {
     users: '用户管理',
     transactions: '交易记录',
     settings: '系统设置',
+    tickets: '工单管理',
     backToApp: '返回应用',
     language: '语言',
     
@@ -208,6 +209,7 @@ const translations = {
     users: 'Users',
     transactions: 'Transactions',
     settings: 'Settings',
+    tickets: 'Tickets',
     backToApp: 'Back to App',
     language: 'Language',
     
