@@ -469,23 +469,31 @@ export default function Chat() {
       const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
 
       if (currentConversation) {
-        await updateConversationMutation.mutateAsync({
+        const updated = await updateConversationMutation.mutateAsync({
           id: currentConversation.id,
           data: {
             messages: updatedMessages,
             total_credits_used: (currentConversation.total_credits_used || 0) + creditsUsed,
           }
         });
+        // 手动更新消息列表，确保包含最新的token数据
+        if (updated && updated.messages) {
+          setMessages(updated.messages);
+        }
       } else {
         // 创建新对话，onSuccess 回调会自动设置 currentConversation
         // 注意：不保存 system_prompt 到对话记录中，避免后续对话加载
-        await createConversationMutation.mutateAsync({
+        const newConv = await createConversationMutation.mutateAsync({
           title,
           model_id: selectedModel.id,
           prompt_module_id: selectedModule?.id,
           messages: updatedMessages,
           total_credits_used: creditsUsed,
         });
+        // 手动更新消息列表，确保包含最新的token数据
+        if (newConv && newConv.messages) {
+          setMessages(newConv.messages);
+        }
       }
     } catch (error) {
       console.error('Error sending message:', error);
