@@ -114,9 +114,8 @@ export default function Chat() {
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
-      // 优先选择默认模型，如果没有默认模型则选择第一个
-      const defaultModel = models.find(m => m.is_default);
-      setSelectedModel(defaultModel || models[0]);
+      // 选择第一个激活的模型（智能路由将自动选择合适的模型）
+      setSelectedModel(models[0]);
     }
   }, [models]);
 
