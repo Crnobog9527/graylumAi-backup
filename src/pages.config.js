@@ -15,6 +15,7 @@ import Landing from './pages/Landing';
 import Marketplace from './pages/Marketplace';
 import Profile from './pages/Profile';
 import Templates from './pages/Templates';
+import TokenOptimizationTest from './pages/TokenOptimizationTest';
 import __Layout from './Layout.jsx';
 
 
@@ -36,6 +37,7 @@ export const PAGES = {
     "Marketplace": Marketplace,
     "Profile": Profile,
     "Templates": Templates,
+    "TokenOptimizationTest": TokenOptimizationTest,
 }
 
 export const pagesConfig = {
