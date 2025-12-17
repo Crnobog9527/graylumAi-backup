@@ -812,47 +812,22 @@ export default function Chat() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Debug Panel Toggle (Admin Only) */}
-            {user.role === 'admin' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDebugPanel(!showDebugPanel)}
-                className={cn(
-                  "h-9 px-3 gap-2",
-                  showDebugPanel && "bg-violet-50 border-violet-300 text-violet-700"
-                )}
-              >
-                <Settings2 className="h-4 w-4" />
-                调试
-              </Button>
-            )}
-            
-            {/* Model Selector */}
-            {showModelSelector && (
-              <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2 h-9 px-3 border-slate-200">
-                  <Bot className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm">{selectedModel?.name || '选择模型'}</span>
-                  <ChevronDown className="h-4 w-4 text-slate-400" />
+              {/* Debug Panel Toggle (Admin Only) */}
+              {user.role === 'admin' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDebugPanel(!showDebugPanel)}
+                  className={cn(
+                    "h-9 px-3 gap-2",
+                    showDebugPanel && "bg-violet-50 border-violet-300 text-violet-700"
+                  )}
+                >
+                  <Settings2 className="h-4 w-4" />
+                  调试
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {models.map(model => (
-                  <DropdownMenuItem
-                    key={model.id}
-                    onClick={() => setSelectedModel(model)}
-                    className="gap-2"
-                  >
-                    <Bot className="h-4 w-4" />
-                    {model.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            )}
-          </div>
+              )}
+            </div>
         </div>
 
         {/* Messages Area */}
