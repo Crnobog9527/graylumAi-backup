@@ -15,6 +15,11 @@ import Landing from './pages/Landing';
 import Marketplace from './pages/Marketplace';
 import Profile from './pages/Profile';
 import Templates from './pages/Templates';
+import Tickets from './pages/Tickets';
+import CreateTicket from './pages/CreateTicket';
+import TicketDetail from './pages/TicketDetail';
+import AdminTickets from './pages/AdminTickets';
+import AdminTicketDetail from './pages/AdminTicketDetail';
 import __Layout from './Layout.jsx';
 
 
@@ -36,6 +41,11 @@ export const PAGES = {
     "Marketplace": Marketplace,
     "Profile": Profile,
     "Templates": Templates,
+    "Tickets": Tickets,
+    "CreateTicket": CreateTicket,
+    "TicketDetail": TicketDetail,
+    "AdminTickets": AdminTickets,
+    "AdminTicketDetail": AdminTicketDetail,
 }
 
 export const pagesConfig = {
