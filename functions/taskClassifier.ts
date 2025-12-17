@@ -49,7 +49,7 @@ const KEYWORD_PATTERNS = {
   summarization: ['总结', '摘要', '概括', '简述', 'summarize', 'summary'],
   intent_detection: ['意图', '想要', '目的', '需求', 'intent', 'purpose'],
   simple_qa: ['是什么', '什么是', '解释', '定义', 'what is', 'explain'],
-  content_creation: ['写', '创作', '生成', '编写', 'write', 'create', 'generate'],
+  content_creation: ['写', '创作', '生成', '编写', '制作', '拍摄', '视频', '小说', '文章', '故事', '剧本', '脚本', 'write', 'create', 'generate', 'video', 'novel', 'story', 'script'],
   content_expansion: ['扩展', '详细', '展开', '补充', 'expand', 'elaborate', 'detail'],
   editing: ['修改', '优化', '改进', '润色', 'edit', 'improve', 'refine'],
   translation: ['翻译', '转换', 'translate', 'convert'],
@@ -86,9 +86,10 @@ const selectModelForTask = (taskType) => {
 const calculateComplexity = (message, conversationLength) => {
   let complexity = 0;
   
-  // 消息长度因素
-  if (message.length > 500) complexity += 1;
-  if (message.length > 1000) complexity += 1;
+  // 消息长度因素（降低阈值，增加权重）
+  if (message.length > 300) complexity += 1;
+  if (message.length > 800) complexity += 2;
+  if (message.length > 1500) complexity += 1;
   
   // 对话轮次因素
   if (conversationLength > 10) complexity += 1;
@@ -96,7 +97,15 @@ const calculateComplexity = (message, conversationLength) => {
   // 特殊字符和结构因素
   if (message.match(/```[\s\S]*```/)) complexity += 2; // 代码块
   if (message.match(/[一二三四五六七八九十、]+[\s\S]*/)) complexity += 1; // 列表结构
+  
+  // 多个问题标记（表示复杂查询）
+  const questionCount = (message.match(/[？?]/g) || []).length;
+  if (questionCount >= 3) complexity += 2;
+  if (questionCount >= 5) complexity += 1;
+  
+  // 关键词提示复杂度
   if (message.includes('专业') || message.includes('深入') || message.includes('详细')) complexity += 1;
+  if (message.includes('全面') || message.includes('系统') || message.includes('完整')) complexity += 1;
   
   return complexity;
 };

@@ -1196,8 +1196,9 @@ function MessageBubble({ message, isStreaming, user }) {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
   const time = message.timestamp ? format(new Date(message.timestamp), 'HH:mm') : '';
-  
-  const displayContent = isUser ? (message.text || message.content) : filterThinkingContent(message.content);
+
+  // 修复：同时检查 text 和 content 字段
+  const displayContent = isUser ? (message.text || message.content || '') : filterThinkingContent(message.content);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(displayContent);
