@@ -106,10 +106,12 @@ export default function Chat() {
 
   const longTextWarningEnabled = getSettingValue('enable_long_text_warning', 'true') === 'true';
   const longTextThreshold = parseInt(getSettingValue('long_text_warning_threshold', '5000')) || 5000;
-  const chatBillingHint = '⚡ 新计费规则：输入 1积分/1000tokens，输出 1积分/200tokens，联网搜索 5积分/次';
   const showModelSelector = getSettingValue('chat_show_model_selector', 'true') === 'true';
   const maxInputCharacters = parseInt(getSettingValue('max_input_characters', '2000')) || 2000;
   const showTokenUsageStats = getSettingValue('show_token_usage_stats', 'true') === 'true';
+  
+  // 从系统设置读取公告栏内容
+  const chatAnnouncementText = getSettingValue('chat_announcement_text', '');
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
@@ -975,13 +977,17 @@ export default function Chat() {
               </div>
             </div>
 
-            {/* Token Billing Info */}
-            <div className="text-center mt-2 space-y-1">
-              <div className="text-xs text-slate-500">
-                💡 输入 1积分/1K tokens，输出 1积分/200 tokens
-                {selectedModel?.enable_web_search && ' | 联网搜索 5积分/次'}
+            {/* 自定义公告栏 */}
+            {chatAnnouncementText && (
+              <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">⚠️</span>
+                  <div className="flex-1 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                    {chatAnnouncementText}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
