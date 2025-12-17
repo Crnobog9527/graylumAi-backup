@@ -222,6 +222,19 @@ Deno.serve(async (req) => {
       content: m.content
     }));
 
+    const useOpenAIFormat = model.api_endpoint && model.api_endpoint.includes('/chat/completions');
+
+    // CRITICAL: 只有当 system_prompt 有实际内容时才添加
+    const hasValidSystemPrompt = system_prompt && system_prompt.trim().length > 0;
+    console.log('[callAIModel] hasValidSystemPrompt:', hasValidSystemPrompt);
+
+    if (hasValidSystemPrompt && !useOpenAIFormat && provider !== 'anthropic') {
+      console.log('[callAIModel] ✓ Adding system prompt to messages, length:', system_prompt.length);
+      formattedMessages.unshift({ role: 'system', content: system_prompt });
+    } else {
+      console.log('[callAIModel] ✗ NOT adding system prompt to messages (will be handled separately)');
+    }
+
     // 如果有图片文件，将最后一条用户消息转换为多模态格式
     if (image_files && image_files.length > 0) {
       const lastUserMsgIdx = formattedMessages.length - 1;
@@ -254,25 +267,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    const useOpenAIFormat = model.api_endpoint && model.api_endpoint.includes('/chat/completions');
-
-    // CRITICAL: 只有当 system_prompt 有实际内容时才添加
-    const hasValidSystemPrompt = system_prompt && system_prompt.trim().length > 0;
-    console.log('[callAIModel] hasValidSystemPrompt:', hasValidSystemPrompt);
-
-    if (hasValidSystemPrompt) {
-      console.log('[callAIModel] ✓ Adding system prompt to messages, length:', system_prompt.length);
-      formattedMessages.unshift({ role: 'system', content: system_prompt });
-    } else {
-      console.log('[callAIModel] ✗ NOT adding system prompt (empty or null)');
-    }
-    
     // 记录最终发送到API的消息
     console.log('[callAIModel] Final messages to API:');
     console.log('[callAIModel] - Total messages:', formattedMessages.length);
+    console.log('[callAIModel] - Has images:', !!(image_files && image_files.length > 0));
     formattedMessages.forEach((m, i) => {
-      const tokens = estimateTokens(m.content);
-      console.log(`[callAIModel]   [${i}] ${m.role}: ${tokens} tokens, preview: ${m.content.slice(0, 100)}...`);
+      const contentStr = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+      const tokens = estimateTokens(contentStr);
+      console.log(`[callAIModel]   [${i}] ${m.role}: ${tokens} tokens`);
     });
 
     if (useOpenAIFormat || provider === 'openai' || provider === 'custom') {
