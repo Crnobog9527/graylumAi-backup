@@ -189,11 +189,10 @@ Deno.serve(async (req) => {
       // 估算输出tokens
       const estimatedOutputTokens = estimateTokens(result);
       
-      // 计算积分消耗（只有实际使用搜索时才计费）
-      const inputCredits = Math.ceil(estimatedInputTokens / 1000) * inputCreditsPerK;
-      const outputCredits = Math.ceil(estimatedOutputTokens / 1000) * outputCreditsPerK;
-      const searchCredits = (force_web_search === true) ? webSearchCredits : 0;
-      const totalCredits = inputCredits + outputCredits + searchCredits;
+      // 新的积分计算规则（精确小数，不向上取整）
+      const inputCredits = estimatedInputTokens / 1000;  // 1积分/1000tokens
+      const outputCredits = estimatedOutputTokens / 200;  // 1积分/200tokens
+      const totalCredits = inputCredits + outputCredits;
 
       return Response.json({
         response: result,
@@ -202,7 +201,6 @@ Deno.serve(async (req) => {
         output_tokens: estimatedOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
-        web_search_credits: searchCredits,
         web_search_enabled: force_web_search === true
       });
     }
@@ -343,11 +341,10 @@ Deno.serve(async (req) => {
         actualOutputTokens = estimateTokens(responseText);
       }
 
-      // 计算积分（只有实际使用搜索时才计费）
-      const inputCredits = Math.ceil(actualInputTokens / 1000) * inputCreditsPerK;
-      const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
-      const searchCredits = (force_web_search === true) ? webSearchCredits : 0;
-      const totalCredits = inputCredits + outputCredits + searchCredits;
+      // 新的积分计算规则（精确小数，不向上取整）
+      const inputCredits = actualInputTokens / 1000;
+      const outputCredits = actualOutputTokens / 200;
+      const totalCredits = inputCredits + outputCredits;
 
       return Response.json({
         response: responseText,
@@ -356,7 +353,6 @@ Deno.serve(async (req) => {
         output_tokens: actualOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
-        web_search_credits: searchCredits,
         model: data.model || null,
         usage: data.usage || null,
         web_search_enabled: force_web_search === true
@@ -450,18 +446,17 @@ Deno.serve(async (req) => {
           actualOutputTokens = estimateTokens(responseText);
         }
 
-        // 计算积分（缓存命中的 token 按 90% 折扣计算）
+        // 新的积分计算规则（精确小数，缓存命中按 90% 折扣）
         const uncachedInputTokens = actualInputTokens - cachedTokens;
-        const cachedInputCredits = Math.ceil(cachedTokens / 1000) * inputCreditsPerK * 0.1; // 缓存命中90%折扣
-        const uncachedInputCredits = Math.ceil(uncachedInputTokens / 1000) * inputCreditsPerK;
-        const inputCredits = Math.ceil(cachedInputCredits + uncachedInputCredits);
-        const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
-        const searchCredits = model.enable_web_search ? webSearchCredits : 0;
-        const totalCredits = inputCredits + outputCredits + searchCredits;
+        const cachedInputCredits = (cachedTokens / 1000) * 0.1; // 缓存命中90%折扣
+        const uncachedInputCredits = uncachedInputTokens / 1000;
+        const inputCredits = cachedInputCredits + uncachedInputCredits;
+        const outputCredits = actualOutputTokens / 200;
+        const totalCredits = inputCredits + outputCredits;
 
         // 计算缓存节省的积分
         const creditsSaved = cachedTokens > 0 ? 
-          Math.floor((cachedTokens / 1000) * inputCreditsPerK * 0.9) : 0;
+          ((cachedTokens / 1000) * 0.9) : 0;
 
         return Response.json({
           response: responseText,
@@ -470,7 +465,6 @@ Deno.serve(async (req) => {
           output_tokens: actualOutputTokens,
           input_credits: inputCredits,
           output_credits: outputCredits,
-          web_search_credits: searchCredits,
           usage: data.usage || null,
           web_search_enabled: force_web_search === true,
           // 缓存统计信息
@@ -525,9 +519,9 @@ Deno.serve(async (req) => {
         actualOutputTokens = estimateTokens(responseText);
       }
 
-      // 计算积分
-      const inputCredits = Math.ceil(actualInputTokens / 1000) * inputCreditsPerK;
-      const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
+      // 新的积分计算规则（精确小数）
+      const inputCredits = actualInputTokens / 1000;
+      const outputCredits = actualOutputTokens / 200;
       const totalCredits = inputCredits + outputCredits;
 
       return Response.json({
@@ -537,7 +531,6 @@ Deno.serve(async (req) => {
         output_tokens: actualOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
-        web_search_credits: 0,
         usage: data.usage || null,
         web_search_enabled: false
       });
@@ -600,9 +593,9 @@ Deno.serve(async (req) => {
         actualOutputTokens = estimateTokens(responseText);
       }
 
-      // 计算积分
-      const inputCredits = Math.ceil(actualInputTokens / 1000) * inputCreditsPerK;
-      const outputCredits = Math.ceil(actualOutputTokens / 1000) * outputCreditsPerK;
+      // 新的积分计算规则（精确小数）
+      const inputCredits = actualInputTokens / 1000;
+      const outputCredits = actualOutputTokens / 200;
       const totalCredits = inputCredits + outputCredits;
 
       return Response.json({
@@ -612,7 +605,6 @@ Deno.serve(async (req) => {
         output_tokens: actualOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
-        web_search_credits: 0,
         modelVersion: data.modelVersion || null,
         usageMetadata: data.usageMetadata || null,
         web_search_enabled: false
