@@ -415,23 +415,6 @@ export default function Chat() {
       }
       const response = result.response;
       
-      // 记录调试信息（仅管理员）
-      if (user.role === 'admin') {
-        setDebugInfo(prev => [...prev, {
-          timestamp: new Date().toISOString(),
-          message: inputMessage.slice(0, 50) + '...',
-          model: result.model_used || selectedModel.name,
-          task_type: result.task_classification?.task_type,
-          model_tier: result.task_classification?.recommended_model_tier,
-          input_tokens: result.input_tokens,
-          output_tokens: result.output_tokens,
-          compression_used: result.compression_used || false,
-          total_messages: updatedMessages.length,
-          context_type: result.context_type || '完整历史',
-          compression_info: result.compression_info || null
-        }]);
-      }
-
       // 从API返回的实际消耗
       const creditsUsed = result.credits_used || 0;
       const tokenCredits = result.token_credits || 0;
@@ -454,6 +437,23 @@ export default function Chat() {
 
       const updatedMessages = [...newMessages, assistantMessage];
       setMessages(updatedMessages);
+      
+      // 记录调试信息（仅管理员）
+      if (user.role === 'admin') {
+        setDebugInfo(prev => [...prev, {
+          timestamp: new Date().toISOString(),
+          message: inputMessage.slice(0, 50) + '...',
+          model: result.model_used || selectedModel.name,
+          task_type: result.task_classification?.task_type,
+          model_tier: result.task_classification?.recommended_model_tier,
+          input_tokens: result.input_tokens,
+          output_tokens: result.output_tokens,
+          compression_used: result.compression_used || false,
+          total_messages: updatedMessages.length,
+          context_type: result.context_type || '完整历史',
+          compression_info: result.compression_info || null
+        }]);
+      }
 
       // 更新用户余额（后端已扣除，这里同步状态）
       const newBalance = currentCredits - creditsUsed;
