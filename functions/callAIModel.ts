@@ -423,7 +423,6 @@ Deno.serve(async (req) => {
       const requestBody = {
         model: model.model_id,
         max_tokens: model.max_tokens || 4096,
-        system: system_prompt || '',
         messages: anthropicMessages
       };
 
