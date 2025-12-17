@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 export default function Credits() {
   const [user, setUser] = useState(null);
   const [purchasing, setPurchasing] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('monthly');
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -166,14 +167,50 @@ export default function Credits() {
 
         {/* Membership Plans */}
         <section className="mb-12">
-          <div className="flex items-center gap-2 mb-6">
-            <Crown className="h-5 w-5 text-slate-600" />
-            <h2 className="text-xl font-semibold text-slate-800">会员订阅</h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-slate-600" />
+              <h2 className="text-xl font-semibold text-slate-800">会员订阅</h2>
+            </div>
+            
+            <div className="inline-flex items-center rounded-lg bg-slate-100 p-1">
+              <button
+                onClick={() => setBillingCycle('monthly')}
+                className={cn(
+                  "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+                  billingCycle === 'monthly'
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                )}
+              >
+                按月支付
+              </button>
+              <button
+                onClick={() => setBillingCycle('yearly')}
+                className={cn(
+                  "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+                  billingCycle === 'yearly'
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                )}
+              >
+                按年支付
+              </button>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
             {membershipPlans.map((plan) => {
               const isCurrentPlan = user?.subscription_tier === plan.level;
+              
+              const displayPrice = billingCycle === 'monthly' ? plan.monthly_price : plan.yearly_price;
+              const displayPeriod = billingCycle === 'monthly' ? '月' : '年';
+              const monthlyEquivalent = billingCycle === 'yearly' ? plan.yearly_price / 12 : null;
+              const expectedYearlyPrice = plan.monthly_price * 12;
+              const discount = billingCycle === 'yearly' && expectedYearlyPrice > plan.yearly_price
+                ? Math.round((1 - plan.yearly_price / expectedYearlyPrice) * 100)
+                : 0;
+              
               return (
                 <div 
                   key={plan.id}
@@ -210,12 +247,21 @@ export default function Credits() {
                     ) : (
                       <>
                         <div className="flex items-baseline justify-center gap-1">
-                          <span className="text-3xl font-bold text-slate-900">${plan.monthly_price}</span>
-                          <span className="text-slate-500">/月</span>
+                          <span className="text-3xl font-bold text-slate-900">${displayPrice}</span>
+                          <span className="text-slate-500">/{displayPeriod}</span>
                         </div>
-                        <div className="text-sm text-slate-500 mt-1">
-                          年付 ${plan.yearly_price}/年
-                        </div>
+                        {billingCycle === 'yearly' && monthlyEquivalent && (
+                          <div className="text-sm text-slate-500 mt-1">
+                            年付 ${monthlyEquivalent.toFixed(1)}/月
+                          </div>
+                        )}
+                        {discount > 0 && (
+                          <div className="mt-2">
+                            <Badge className="bg-green-100 text-green-700 text-xs">
+                              节省{discount}%
+                            </Badge>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

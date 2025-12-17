@@ -6,20 +6,20 @@ import AdminModels from './pages/AdminModels';
 import AdminPackages from './pages/AdminPackages';
 import AdminPrompts from './pages/AdminPrompts';
 import AdminSettings from './pages/AdminSettings';
+import AdminTicketDetail from './pages/AdminTicketDetail';
+import AdminTickets from './pages/AdminTickets';
 import AdminTransactions from './pages/AdminTransactions';
 import AdminUsers from './pages/AdminUsers';
 import Chat from './pages/Chat';
+import CreateTicket from './pages/CreateTicket';
 import Credits from './pages/Credits';
 import Home from './pages/Home';
 import Landing from './pages/Landing';
 import Marketplace from './pages/Marketplace';
 import Profile from './pages/Profile';
 import Templates from './pages/Templates';
-import Tickets from './pages/Tickets';
-import CreateTicket from './pages/CreateTicket';
 import TicketDetail from './pages/TicketDetail';
-import AdminTickets from './pages/AdminTickets';
-import AdminTicketDetail from './pages/AdminTicketDetail';
+import Tickets from './pages/Tickets';
 import __Layout from './Layout.jsx';
 
 
@@ -32,20 +32,20 @@ export const PAGES = {
     "AdminPackages": AdminPackages,
     "AdminPrompts": AdminPrompts,
     "AdminSettings": AdminSettings,
+    "AdminTicketDetail": AdminTicketDetail,
+    "AdminTickets": AdminTickets,
     "AdminTransactions": AdminTransactions,
     "AdminUsers": AdminUsers,
     "Chat": Chat,
+    "CreateTicket": CreateTicket,
     "Credits": Credits,
     "Home": Home,
     "Landing": Landing,
     "Marketplace": Marketplace,
     "Profile": Profile,
     "Templates": Templates,
-    "Tickets": Tickets,
-    "CreateTicket": CreateTicket,
     "TicketDetail": TicketDetail,
-    "AdminTickets": AdminTickets,
-    "AdminTicketDetail": AdminTicketDetail,
+    "Tickets": Tickets,
 }
 
 export const pagesConfig = {
