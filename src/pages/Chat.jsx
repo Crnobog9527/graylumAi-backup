@@ -275,15 +275,18 @@ export default function Chat() {
       const freshConv = await base44.entities.Conversation.get(conv.id);
       setCurrentConversation(freshConv);
       setMessages(freshConv.messages || []);
-      // 切换对话时清空 selectedModule，确保不会意外加载系统提示词
       setSelectedModule(null);
       if (freshConv.model_id) {
         const model = models.find(m => m.id === freshConv.model_id);
         if (model) setSelectedModel(model);
       }
     } catch (e) {
-      // 对话已被删除，刷新列表
+      console.error('对话加载失败:', e);
+      // 对话已被删除，清理状态并刷新列表
+      setCurrentConversation(null);
+      setMessages([]);
       queryClient.invalidateQueries(['conversations']);
+      alert('该对话已被删除或不存在');
     }
   };
 

@@ -254,11 +254,19 @@ Deno.serve(async (req) => {
     
     if (conversation_id) {
       console.log('[smartChatWithSearch] Loading conversation:', conversation_id);
-      const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
-      if (convs.length > 0) {
-        conversation = convs[0];
-        conversationMessages = conversation.messages || [];
-        console.log('[smartChatWithSearch] Loaded', conversationMessages.length, 'messages from conversation');
+      try {
+        const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
+        if (convs.length > 0) {
+          conversation = convs[0];
+          conversationMessages = conversation.messages || [];
+          console.log('[smartChatWithSearch] Loaded', conversationMessages.length, 'messages from conversation');
+        } else {
+          console.log('[smartChatWithSearch] Conversation not found, treating as new');
+          conversation_id = null;
+        }
+      } catch (e) {
+        console.log('[smartChatWithSearch] Error loading conversation:', e.message, '- treating as new');
+        conversation_id = null;
       }
     } else {
       console.log('[smartChatWithSearch] New conversation, no history');
