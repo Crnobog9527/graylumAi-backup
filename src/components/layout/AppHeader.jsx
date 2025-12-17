@@ -61,20 +61,6 @@ export default function AppHeader({ user }) {
           </nav>
         </div>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-4">
-          {/* Search - visible on larger screens if not on Marketplace (which has its own search) */}
-          {!currentPath.includes('Marketplace') && (
-            <div className="hidden lg:flex items-center relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="搜索功能..."
-                className="h-9 pl-9 pr-4 rounded-full bg-slate-100 border-none text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all w-64"
-              />
-            </div>
-          )}
-
           {user ? (
             <>
               <div className="hidden sm:flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium gap-2">
