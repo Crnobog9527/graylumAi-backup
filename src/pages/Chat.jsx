@@ -882,12 +882,6 @@ export default function Chat() {
         {/* Input Area */}
         <div className="border-t border-slate-200 p-4 bg-slate-50">
           <div className="max-w-3xl mx-auto">
-            {/* Credits Info */}
-            <div className="flex items-center justify-center gap-2 text-xs text-slate-500 mb-3">
-              <span>上一条消息消耗了 {messages[messages.length - 1]?.credits_used || 0} 积分，</span>
-              <span>您还剩 <span className="text-blue-600 font-medium">{user.credits?.toLocaleString() || 0}</span> 积分</span>
-            </div>
-
             {/* Uploaded Files Preview */}
             {uploadedFiles.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
