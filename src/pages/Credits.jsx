@@ -67,33 +67,8 @@ export default function Credits() {
   });
 
   const handlePurchase = async (pkg) => {
-    setPurchasing(true);
-    try {
-      // In a real implementation, this would integrate with a payment provider
-      // For now, we'll simulate a successful purchase
-      const totalCredits = pkg.credits + (pkg.bonus_credits || 0);
-      const newBalance = (user.credits || 0) + totalCredits;
-      
-      await updateUserMutation.mutateAsync({
-        credits: newBalance,
-        total_credits_purchased: (user.total_credits_purchased || 0) + totalCredits,
-      });
-
-      await createTransactionMutation.mutateAsync({
-        user_email: user.email,
-        type: 'purchase',
-        amount: totalCredits,
-        balance_after: newBalance,
-        description: `Purchased ${pkg.name} - ${totalCredits} credits`,
-      });
-
-      alert(`Successfully purchased ${totalCredits} credits!`);
-    } catch (error) {
-      console.error('Purchase error:', error);
-      alert('Purchase failed. Please try again.');
-    } finally {
-      setPurchasing(false);
-    }
+    // 显示支付提示，实际项目需接入支付系统
+    alert(`即将跳转支付页面购买 ${pkg.name}（${pkg.credits} 积分），价格 $${pkg.price}\n\n请联系管理员完成支付或接入支付系统。`);
   };
 
   const getTransactionIcon = (type) => {
