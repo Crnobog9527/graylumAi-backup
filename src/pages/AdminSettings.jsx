@@ -32,6 +32,9 @@ const defaultSettings = {
   free_tier_messages: { value: '5', type: 'number', label: '免费消息数/天', description: '每天免费消息数量' },
   long_text_warning_threshold: { value: '5000', type: 'number', label: '长文本预警阈值(tokens)', description: '输入token超过此值时弹窗提示用户确认' },
   enable_long_text_warning: { value: 'true', type: 'boolean', label: '启用长文本预警', description: '开启后，超长文本会提示预计消耗积分' },
+  show_token_usage_stats: { value: 'true', type: 'boolean', label: '显示Token使用统计', description: '在聊天页面显示本次请求和累计的Token使用情况及预估成本' },
+  chat_show_model_selector: { value: 'true', type: 'boolean', label: '显示模型选择器', description: '在聊天界面显示AI模型选择下拉框' },
+  chat_billing_hint: { value: '⚡ 按实际Token消耗计费：输入 {input}积分/1K tokens，输出 {output}积分/1K tokens', type: 'string', label: '计费提示文案', description: '聊天页面底部显示的计费说明，{input}和{output}会被替换为实际值' },
   
   // Checkin
   checkin_day1: { value: '5', type: 'number', label: '签到第1天', description: '第1天签到奖励积分' },
@@ -310,7 +313,7 @@ function AdminSettingsContent() {
                 <CardDescription>启用或禁用平台功能</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {['enable_free_tier', 'free_tier_messages', 'max_messages_per_conversation', 'max_input_characters', 'enable_long_text_warning', 'long_text_warning_threshold'].map(key => {
+                {['enable_free_tier', 'free_tier_messages', 'max_messages_per_conversation', 'max_input_characters', 'enable_long_text_warning', 'long_text_warning_threshold', 'show_token_usage_stats', 'chat_show_model_selector', 'chat_billing_hint'].map(key => {
                   const data = settings[key];
                   if (!data) return null;
                   return (
