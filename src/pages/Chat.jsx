@@ -973,10 +973,10 @@ export default function Chat() {
 
                 {/* 聊天提示文案 */}
                 {chatBillingHint && (
-                <div className="mt-3 text-sm text-slate-600 leading-relaxed text-center">
+                <div className="mt-3 px-4 py-3 text-sm text-slate-600 leading-relaxed text-center whitespace-pre-line">
                 {chatBillingHint}
-              </div>
-               )}
+             </div>
+            )}
           </div>
         </div>
       </div>
