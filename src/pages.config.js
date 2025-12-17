@@ -1,37 +1,41 @@
+import Admin from './pages/Admin';
+import AdminAnnouncements from './pages/AdminAnnouncements';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminFinance from './pages/AdminFinance';
+import AdminModels from './pages/AdminModels';
+import AdminPackages from './pages/AdminPackages';
+import AdminPrompts from './pages/AdminPrompts';
+import AdminSettings from './pages/AdminSettings';
+import AdminTransactions from './pages/AdminTransactions';
+import AdminUsers from './pages/AdminUsers';
 import Chat from './pages/Chat';
 import Credits from './pages/Credits';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminModels from './pages/AdminModels';
-import AdminPrompts from './pages/AdminPrompts';
-import AdminPackages from './pages/AdminPackages';
-import AdminUsers from './pages/AdminUsers';
-import AdminTransactions from './pages/AdminTransactions';
-import AdminSettings from './pages/AdminSettings';
 import Home from './pages/Home';
+import Landing from './pages/Landing';
 import Marketplace from './pages/Marketplace';
 import Profile from './pages/Profile';
-import AdminFinance from './pages/AdminFinance';
-import AdminAnnouncements from './pages/AdminAnnouncements';
-import Landing from './pages/Landing';
+import Templates from './pages/Templates';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "Admin": Admin,
+    "AdminAnnouncements": AdminAnnouncements,
+    "AdminDashboard": AdminDashboard,
+    "AdminFinance": AdminFinance,
+    "AdminModels": AdminModels,
+    "AdminPackages": AdminPackages,
+    "AdminPrompts": AdminPrompts,
+    "AdminSettings": AdminSettings,
+    "AdminTransactions": AdminTransactions,
+    "AdminUsers": AdminUsers,
     "Chat": Chat,
     "Credits": Credits,
-    "AdminDashboard": AdminDashboard,
-    "AdminModels": AdminModels,
-    "AdminPrompts": AdminPrompts,
-    "AdminPackages": AdminPackages,
-    "AdminUsers": AdminUsers,
-    "AdminTransactions": AdminTransactions,
-    "AdminSettings": AdminSettings,
     "Home": Home,
+    "Landing": Landing,
     "Marketplace": Marketplace,
     "Profile": Profile,
-    "AdminFinance": AdminFinance,
-    "AdminAnnouncements": AdminAnnouncements,
-    "Landing": Landing,
+    "Templates": Templates,
 }
 
 export const pagesConfig = {

@@ -50,6 +50,8 @@ export default function Chat() {
   const [isUploading, setIsUploading] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [debugInfo, setDebugInfo] = useState([]);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -367,6 +369,20 @@ export default function Chat() {
         throw new Error(result.error);
       }
       const response = result.response;
+      
+      // 记录调试信息（仅管理员）
+      if (user.role === 'admin') {
+        setDebugInfo(prev => [...prev, {
+          timestamp: new Date().toISOString(),
+          message: inputMessage.slice(0, 50) + '...',
+          model: result.model_used || selectedModel.name,
+          task_type: result.task_classification?.task_type,
+          model_tier: result.task_classification?.recommended_model_tier,
+          input_tokens: result.input_tokens,
+          output_tokens: result.output_tokens,
+          compression_used: result.compression_used || false
+        }]);
+      }
 
       // 从API返回的实际token消耗计算积分
       const creditsUsed = result.credits_used || 1;
@@ -517,7 +533,7 @@ export default function Chat() {
   return (
     <div className="h-[calc(100vh-4rem)] flex bg-slate-100">
       {/* Left Sidebar - Conversation List */}
-      <div className="w-64 bg-white border-r border-slate-200 flex flex-col">
+      <div className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0">
         {/* New Chat Button */}
         <div className="p-4">
           <Button
@@ -664,7 +680,7 @@ export default function Chat() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-white">
+      <div className={cn("flex-1 flex flex-col bg-white", showDebugPanel && "mr-80")}
         {/* Chat Header */}
         <div className="h-14 border-b border-slate-200 flex items-center justify-between px-6">
           <div className="flex items-center gap-3">
@@ -724,9 +740,26 @@ export default function Chat() {
             )}
           </div>
 
-          {/* Model Selector */}
-          {showModelSelector && (
-            <DropdownMenu>
+          <div className="flex items-center gap-2">
+            {/* Debug Panel Toggle (Admin Only) */}
+            {user.role === 'admin' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDebugPanel(!showDebugPanel)}
+                className={cn(
+                  "h-9 px-3 gap-2",
+                  showDebugPanel && "bg-violet-50 border-violet-300 text-violet-700"
+                )}
+              >
+                <Settings2 className="h-4 w-4" />
+                调试
+              </Button>
+            )}
+            
+            {/* Model Selector */}
+            {showModelSelector && (
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="gap-2 h-9 px-3 border-slate-200">
                   <Bot className="h-4 w-4 text-blue-600" />
@@ -747,7 +780,8 @@ export default function Chat() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Messages Area */}
@@ -907,6 +941,84 @@ export default function Chat() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Debug Panel (Admin Only) */}
+      {user.role === 'admin' && showDebugPanel && (
+        <div className="w-80 border-l border-slate-200 bg-slate-50 fixed right-0 top-16 bottom-0 overflow-y-auto">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                <Settings2 className="h-4 w-4" />
+                开发者调试面板
+              </h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDebugInfo([])}
+                className="h-7 w-7 text-slate-400"
+                title="清空日志"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            
+            {debugInfo.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-8">暂无调试信息</p>
+            ) : (
+              <div className="space-y-3">
+                {debugInfo.slice().reverse().map((info, idx) => (
+                  <div key={idx} className="bg-white rounded-lg p-3 border border-slate-200 text-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">
+                        {format(new Date(info.timestamp), 'HH:mm:ss')}
+                      </span>
+                      {info.compression_used && (
+                        <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+                          压缩
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="text-slate-600 font-medium truncate">
+                      {info.message}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                      <div>
+                        <span className="text-slate-400">模型:</span>
+                        <div className="font-medium text-slate-700 mt-0.5">
+                          {info.model_tier === 'haiku' && '⚡ Haiku'}
+                          {info.model_tier === 'sonnet' && '🎯 Sonnet'}
+                          {info.model_tier === 'opus' && '💎 Opus'}
+                          {!info.model_tier && info.model}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">任务类型:</span>
+                        <div className="font-medium text-slate-700 mt-0.5 truncate" title={info.task_type}>
+                          {info.task_type || 'N/A'}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">输入Tokens:</span>
+                        <div className="font-medium text-slate-700 mt-0.5">
+                          {info.input_tokens?.toLocaleString() || 'N/A'}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">输出Tokens:</span>
+                        <div className="font-medium text-slate-700 mt-0.5">
+                          {info.output_tokens?.toLocaleString() || 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

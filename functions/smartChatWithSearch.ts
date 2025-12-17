@@ -434,7 +434,9 @@ Deno.serve(async (req) => {
         executed: webSearchUsed,
         cache_hit: false,
         cost: 0
-      }
+      },
+      task_classification: taskClassification,
+      compression_used: useSummary
     });
     
   } catch (error) {
