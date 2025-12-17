@@ -973,14 +973,16 @@ export default function Chat() {
 
             {/* 聊天提示文案 */}
             {chatBillingHint && (
-              <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <div className="flex items-start gap-2">
-                  <span className="text-lg">⚠️</span>
-                  <div className="flex-1 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                    {chatBillingHint}
-                  </div>
-                </div>
-              </div>
+            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+            <span className="text-lg flex-shrink-0">⚠️📢</span>
+            <div className="flex-1 text-sm text-slate-700 leading-relaxed text-center">
+            {chatBillingHint}
+            </div>
+            {/* 右侧占位，保持文字视觉居中 */}
+            <div className="w-8 flex-shrink-0"></div>
+            </div>
+            </div>
             )}
           </div>
         </div>
