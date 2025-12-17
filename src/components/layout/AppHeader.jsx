@@ -61,6 +61,8 @@ export default function AppHeader({ user }) {
           </nav>
         </div>
 
+        {/* User Menu */}
+        <div className="flex items-center gap-4">
           {user ? (
             <>
               <div className="hidden sm:flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium gap-2">
