@@ -28,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import FileAttachmentCard from '../components/chat/FileAttachmentCard';
 
 // 估算token数量 (约4字符=1token)
 function estimateTokens(text) {
@@ -327,16 +328,19 @@ export default function Chat() {
     }
     console.log('[Chat] ===================================');
 
-    // 准备附件数据
-    const attachments = fileContents.map((f, idx) => ({
-      fileName: f.file_name,
-      fileType: uploadedFiles[idx]?.type || f.media_type,
-      fileSize: uploadedFiles[idx]?.size,
-      contentType: f.content_type,
-      content: f.content,
-      mediaType: f.media_type,
-      truncated: f.truncated,
-      preview: f.content_type === 'text' ? f.content?.slice(0, 500) : null
+    // 准备附件数据（包含文件大小信息）
+    const attachments = await Promise.all(fileContents.map(async (f, idx) => {
+      const file = uploadedFiles[idx];
+      return {
+        fileName: f.file_name,
+        fileType: file?.type || f.media_type,
+        fileSize: file?.size,
+        contentType: f.content_type,
+        content: f.content,
+        mediaType: f.media_type,
+        truncated: f.truncated,
+        preview: f.content_type === 'text' ? f.content?.slice(0, 500) : null
+      };
     }));
 
     // 长文本预警检查（包含系统提示词和附件内容）
@@ -898,31 +902,34 @@ export default function Chat() {
             {/* Uploaded Files Preview */}
             {uploadedFiles.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
-                {uploadedFiles.map((file, index) => (
-                  <div key={index} className="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1.5 text-sm">
-                    {file.type?.startsWith('image/') ? (
-                      <Image className="h-4 w-4 text-blue-500" />
-                    ) : (
-                      <FileText className="h-4 w-4 text-blue-500" />
-                    )}
-                    <span className="text-slate-600 max-w-[150px] truncate">{file.name}</span>
-                    {file.status === 'extracting' && (
-                      <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />
-                    )}
-                    {file.status === 'ready' && (
-                      <span className="text-xs text-green-600">✓</span>
-                    )}
-                    {file.status === 'error' && (
-                      <span className="text-xs text-red-600" title={file.error}>⚠</span>
-                    )}
-                    <button
-                      onClick={() => removeUploadedFile(index)}
-                      className="text-slate-400 hover:text-red-500"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
+                {uploadedFiles.map((file, index) => {
+                  const content = fileContents[index];
+                  return (
+                    <div key={index} className="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1.5 text-sm">
+                      {file.type?.startsWith('image/') ? (
+                        <Image className="h-4 w-4 text-blue-500" />
+                      ) : (
+                        <FileText className="h-4 w-4 text-blue-500" />
+                      )}
+                      <span className="text-slate-600 max-w-[150px] truncate">{file.name}</span>
+                      {file.status === 'extracting' && (
+                        <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />
+                      )}
+                      {file.status === 'ready' && (
+                        <span className="text-xs text-green-600">✓</span>
+                      )}
+                      {file.status === 'error' && (
+                        <span className="text-xs text-red-600" title={file.error}>⚠</span>
+                      )}
+                      <button
+                        onClick={() => removeUploadedFile(index)}
+                        className="text-slate-400 hover:text-red-500"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -1182,19 +1189,19 @@ function MessageBubble({ message, isStreaming, user }) {
     return (
       <div className="flex justify-end py-4">
         <div className="max-w-[80%] space-y-2">
+          {/* 用户文字消息 */}
+          {displayContent && (
+            <div className="bg-blue-600 text-white rounded-2xl rounded-tr-md px-4 py-3">
+              <p className="whitespace-pre-wrap leading-relaxed">{displayContent}</p>
+            </div>
+          )}
+          
           {/* 附件卡片 */}
           {message.attachments?.length > 0 && (
             <div className="space-y-2">
               {message.attachments.map((attachment, idx) => (
                 <FileAttachmentCard key={idx} attachment={attachment} />
               ))}
-            </div>
-          )}
-          
-          {/* 用户文字消息 */}
-          {displayContent && (
-            <div className="bg-blue-600 text-white rounded-2xl rounded-tr-md px-4 py-3">
-              <p className="whitespace-pre-wrap leading-relaxed">{displayContent}</p>
             </div>
           )}
           
