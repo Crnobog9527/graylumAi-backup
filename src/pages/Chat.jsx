@@ -532,7 +532,19 @@ export default function Chat() {
           }));
       }
       
-      // 使用智能搜索系统
+      // 检查是否支持流式输出
+      const supportsStreaming = selectedModel.provider === 'anthropic' || 
+                               selectedModel.provider === 'openai' || 
+                               selectedModel.provider === 'custom' ||
+                               (selectedModel.api_endpoint && selectedModel.api_endpoint.includes('/chat/completions'));
+
+      if (supportsStreaming) {
+        // 使用流式API
+        await handleStreamingResponse(messageToSend, systemPrompt, imageFiles);
+        return;
+      }
+
+      // 不支持流式的模型使用原有逻辑
       const { data: result } = await base44.functions.invoke('smartChatWithSearch', {
         conversation_id: currentConversation?.id,
         message: messageToSend,
