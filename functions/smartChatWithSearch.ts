@@ -4,6 +4,9 @@ const CACHE_TTL_MINUTES = 15;
 const SIMILARITY_THRESHOLD = 0.85;
 const WEB_SEARCH_COST = 0.005;
 
+// Token 估算函数
+const estimateTokens = (text) => Math.ceil((text || '').length / 4);
+
 // 标准化查询
 const normalizeQuery = (query) => {
   return query.toLowerCase()
@@ -256,10 +259,6 @@ Deno.serve(async (req) => {
         conversation = convs[0];
         conversationMessages = conversation.messages || [];
         console.log('[smartChatWithSearch] Loaded', conversationMessages.length, 'messages from conversation');
-        console.log('[smartChatWithSearch] Conversation has system_prompt:', !!conversation.system_prompt);
-        if (conversation.system_prompt) {
-          console.log('[smartChatWithSearch] WARNING: Conversation has saved system_prompt, tokens:', estimateTokens(conversation.system_prompt));
-        }
       }
     } else {
       console.log('[smartChatWithSearch] New conversation, no history');
@@ -319,16 +318,19 @@ Deno.serve(async (req) => {
     // 添加当前增强消息
     apiMessages.push({ role: 'user', content: enhancedMessage });
     
+    // 过滤掉空消息
+    apiMessages = apiMessages.filter(m => m.content && m.content.trim().length > 0);
+    
     // 计算token估算
-    const estimateTokens = (text) => Math.ceil((text || '').length / 4);
-    const totalTokens = apiMessages.reduce((sum, m) => sum + estimateTokens(m.content), 0) + 
+    const totalTokens = apiMessages.reduce((sum, m) => sum + estimateTokens(m.content || ''), 0) + 
                         (system_prompt ? estimateTokens(system_prompt) : 0);
     
     console.log('[smartChatWithSearch] Calling AI model with', apiMessages.length, 'messages, estimated', totalTokens, 'tokens');
     console.log('[smartChatWithSearch] Message details:');
     apiMessages.forEach((m, i) => {
-      const tokens = estimateTokens(m.content);
-      console.log(`  [${i}] role=${m.role}, tokens=${tokens}, preview=${m.content.slice(0, 50)}...`);
+      const tokens = estimateTokens(m.content || '');
+      const preview = (m.content || '').slice(0, 50);
+      console.log(`  [${i}] role=${m.role}, tokens=${tokens}, preview=${preview}...`);
     });
     
     // 系统提示词只在新对话的第一轮时使用（消息列表为空）
