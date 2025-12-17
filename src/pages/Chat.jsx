@@ -437,6 +437,7 @@ export default function Chat() {
       };
 
       const updatedMessages = [...newMessages, assistantMessage];
+      // 立即更新消息列表，确保token数据可用
       setMessages(updatedMessages);
       
       // 记录调试信息（仅管理员）
@@ -469,31 +470,25 @@ export default function Chat() {
       const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
 
       if (currentConversation) {
-        const updated = await updateConversationMutation.mutateAsync({
+        await updateConversationMutation.mutateAsync({
           id: currentConversation.id,
           data: {
             messages: updatedMessages,
             total_credits_used: (currentConversation.total_credits_used || 0) + creditsUsed,
           }
         });
-        // 手动更新消息列表，确保包含最新的token数据
-        if (updated && updated.messages) {
-          setMessages(updated.messages);
-        }
+        // 保持使用本地的 updatedMessages，因为它包含最新的 token 数据
       } else {
         // 创建新对话，onSuccess 回调会自动设置 currentConversation
         // 注意：不保存 system_prompt 到对话记录中，避免后续对话加载
-        const newConv = await createConversationMutation.mutateAsync({
+        await createConversationMutation.mutateAsync({
           title,
           model_id: selectedModel.id,
           prompt_module_id: selectedModule?.id,
           messages: updatedMessages,
           total_credits_used: creditsUsed,
         });
-        // 手动更新消息列表，确保包含最新的token数据
-        if (newConv && newConv.messages) {
-          setMessages(newConv.messages);
-        }
+        // 保持使用本地的 updatedMessages，因为它包含最新的 token 数据
       }
     } catch (error) {
       console.error('Error sending message:', error);
