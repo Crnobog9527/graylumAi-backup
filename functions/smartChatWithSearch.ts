@@ -128,6 +128,47 @@ Deno.serve(async (req) => {
     
     console.log('[smartChatWithSearch] Using model:', selectedModel.name, 'Web search enabled:', selectedModel.enable_web_search);
     
+    // 步骤1.5：检查是否需要压缩历史（Token优化）
+    const historyTokens = conversationMessages.reduce((sum, m) => sum + estimateTokens(m.content), 0);
+    const COMPRESSION_THRESHOLD = 50000; // 超过5万token触发压缩
+    let useSummary = false;
+    let summaryText = '';
+    
+    if (conversation_id && historyTokens > COMPRESSION_THRESHOLD) {
+      console.log('[smartChatWithSearch] History tokens', historyTokens, 'exceeds threshold, checking for summary...');
+      
+      // 检查是否已有摘要
+      const summaries = await base44.asServiceRole.entities.ConversationSummary.filter(
+        { conversation_id },
+        '-created_date',
+        1
+      );
+      
+      if (summaries.length > 0 && summaries[0].covered_messages >= conversationMessages.length * 0.6) {
+        // 使用现有摘要
+        summaryText = summaries[0].summary_text;
+        useSummary = true;
+        console.log('[smartChatWithSearch] Using existing summary, covered', summaries[0].covered_messages, 'messages');
+      } else {
+        // 触发新的压缩
+        console.log('[smartChatWithSearch] Triggering compression for', conversationMessages.length, 'messages');
+        try {
+          const compressRes = await base44.functions.invoke('compressConversation', {
+            conversation_id,
+            messages_to_compress: Math.floor(conversationMessages.length * 0.6)
+          });
+          
+          if (compressRes.data?.summary?.text) {
+            summaryText = compressRes.data.summary.text;
+            useSummary = true;
+            console.log('[smartChatWithSearch] Compression completed, saved', compressRes.data.summary.tokens_saved, 'tokens');
+          }
+        } catch (error) {
+          console.error('[smartChatWithSearch] Compression failed:', error);
+        }
+      }
+    }
+    
     // 步骤2：简化的搜索判断（关键词匹配或URL检测）- 无论模型是否启用联网，都进行判断
     const lowerMessage = message.toLowerCase();
     const searchKeywords = [
@@ -196,11 +237,34 @@ Deno.serve(async (req) => {
       console.log('[smartChatWithSearch] New conversation, no history');
     }
     
-    // 构建消息列表 - 只包含当前对话的历史消息
-    const apiMessages = conversationMessages.map(m => ({
-      role: m.role,
-      content: m.content
-    }));
+    // 构建消息列表 - 如果有摘要则使用摘要替代早期消息
+    let apiMessages = [];
+    
+    if (useSummary && summaryText) {
+      // 使用摘要 + 最近的消息
+      const recentMessageCount = Math.min(6, conversationMessages.length); // 保留最近3轮
+      const recentMessages = conversationMessages.slice(-recentMessageCount);
+      
+      // 添加摘要作为系统消息
+      apiMessages.push({
+        role: 'user',
+        content: `【对话上下文摘要】\n${summaryText}\n\n【以下是最近的对话】`
+      });
+      
+      // 添加最近消息
+      apiMessages.push(...recentMessages.map(m => ({
+        role: m.role,
+        content: m.content
+      })));
+      
+      console.log('[smartChatWithSearch] Using summary + ', recentMessageCount, 'recent messages');
+    } else {
+      // 使用完整历史
+      apiMessages = conversationMessages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+    }
     
     // 添加当前增强消息
     apiMessages.push({ role: 'user', content: enhancedMessage });
@@ -274,6 +338,22 @@ Deno.serve(async (req) => {
     const inputCredits = modelData.input_credits || 0;
     const outputCredits = modelData.output_credits || 0;
     const webSearchUsed = modelData.web_search_enabled || false;
+    
+    // 记录Token统计
+    await base44.asServiceRole.entities.TokenStats.create({
+      conversation_id: finalConversationId || conversation_id,
+      user_email: user.email,
+      model_used: selectedModel.name,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      cached_tokens: modelData.cached_tokens || 0,
+      cache_creation_tokens: modelData.cache_creation_tokens || 0,
+      total_cost: (inputTokens / 1000000) * (selectedModel.input_token_cost || 3) + 
+                  (outputTokens / 1000000) * (selectedModel.output_token_cost || 15),
+      cache_savings: modelData.cache_savings || 0,
+      request_type: useSummary ? 'compression' : 'simple',
+      compression_triggered: useSummary
+    });
     
     // 更新或创建对话
     const newMessages = [
