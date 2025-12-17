@@ -132,23 +132,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Model not found' }, { status: 404 });
     }
 
-    // 获取积分换算设置（默认值：Input 1积分/1K, Output 5积分/1K, Web Search 5积分/次）
-    let inputCreditsPerK = 1;
-    let outputCreditsPerK = 5;
-    let webSearchCredits = 5;
-
-    try {
-      const settings = await base44.asServiceRole.entities.SystemSettings.filter({});
-      const inputSetting = settings.find(s => s.setting_key === 'input_credits_per_1k');
-      const outputSetting = settings.find(s => s.setting_key === 'output_credits_per_1k');
-      const webSearchSetting = settings.find(s => s.setting_key === 'web_search_credits');
-      if (inputSetting) inputCreditsPerK = parseFloat(inputSetting.setting_value) || 1;
-      if (outputSetting) outputCreditsPerK = parseFloat(outputSetting.setting_value) || 5;
-      if (webSearchSetting) webSearchCredits = parseFloat(webSearchSetting.setting_value) || 5;
-    } catch (e) {
-      // 使用默认值
-    }
-
     // 使用模型配置的 input_limit，默认 180000
     const inputLimit = model.input_limit || 180000;
     
@@ -189,18 +172,17 @@ Deno.serve(async (req) => {
       // 估算输出tokens
       const estimatedOutputTokens = estimateTokens(result);
       
-      // 新的积分计算规则（精确小数，不向上取整）
-      const inputCredits = estimatedInputTokens / 1000;  // 1积分/1000tokens
-      const outputCredits = estimatedOutputTokens / 200;  // 1积分/200tokens
-      const totalCredits = inputCredits + outputCredits;
+      // 新计费规则：输入1000tokens=1积分，输出200tokens=1积分（精确小数）
+      const inputCredits = estimatedInputTokens / 1000;
+      const outputCredits = estimatedOutputTokens / 200;
 
       return Response.json({
         response: result,
-        credits_used: totalCredits,
         input_tokens: estimatedInputTokens,
         output_tokens: estimatedOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
+        credits_used: inputCredits + outputCredits,
         web_search_enabled: force_web_search === true
       });
     }
@@ -296,25 +278,10 @@ Deno.serve(async (req) => {
         ];
       }
 
-      // 打印完整请求体
       console.log('[callAIModel] ========== OPENAI/CUSTOM API REQUEST ==========');
       console.log('[callAIModel] Endpoint:', endpoint);
-      console.log('[callAIModel] Provider:', provider);
       console.log('[callAIModel] IsOpenRouter:', isOpenRouter);
-      console.log('[callAIModel] --- Full Request Body ---');
-      console.log(JSON.stringify(requestBody, null, 2));
-      console.log('[callAIModel] --- Request Stats ---');
-      console.log('[callAIModel] Total JSON size:', JSON.stringify(requestBody).length, 'chars');
-      console.log('[callAIModel] Messages count:', requestBody.messages.length);
-      console.log('[callAIModel] Estimated total tokens:', Math.ceil(JSON.stringify(requestBody).length / 4));
-      requestBody.messages.forEach((msg, i) => {
-        const msgStr = JSON.stringify(msg.content);
-        console.log(`[callAIModel]   Message[${i}] ${msg.role}: ${msgStr.length} chars, ~${Math.ceil(msgStr.length / 4)} tokens`);
-      });
-      if (requestBody.plugins) {
-        console.log('[callAIModel] Plugins:', JSON.stringify(requestBody.plugins));
-      }
-      console.log('[callAIModel] =========================================');
+      console.log('[callAIModel] Force web search:', force_web_search);
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -341,18 +308,17 @@ Deno.serve(async (req) => {
         actualOutputTokens = estimateTokens(responseText);
       }
 
-      // 新的积分计算规则（精确小数，不向上取整）
+      // 新计费规则：输入1000tokens=1积分，输出200tokens=1积分（精确小数）
       const inputCredits = actualInputTokens / 1000;
       const outputCredits = actualOutputTokens / 200;
-      const totalCredits = inputCredits + outputCredits;
 
       return Response.json({
         response: responseText,
-        credits_used: totalCredits,
         input_tokens: actualInputTokens,
         output_tokens: actualOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
+        credits_used: inputCredits + outputCredits,
         model: data.model || null,
         usage: data.usage || null,
         web_search_enabled: force_web_search === true
@@ -391,30 +357,9 @@ Deno.serve(async (req) => {
           requestBody.plugins = [{ id: 'web', max_results: 5 }];
         }
 
-        // 打印完整请求体
         console.log('[callAIModel] ========== ANTHROPIC API REQUEST (OpenRouter) ==========');
-        console.log('[callAIModel] Endpoint:', endpoint);
-        console.log('[callAIModel] Model:', requestBody.model);
-        console.log('[callAIModel] Max Tokens:', requestBody.max_tokens);
-        console.log('[callAIModel] Messages Count:', requestBody.messages.length);
         console.log('[callAIModel] Cache Enabled:', cacheEnabled);
-        console.log('[callAIModel] Cached Blocks:', cachedBlocksCount);
-        console.log('[callAIModel] Plugins:', requestBody.plugins || 'none');
-        console.log('[callAIModel] --- Full Request Body ---');
-        console.log(JSON.stringify(requestBody, null, 2));
-        console.log('[callAIModel] --- Request Body Stats ---');
-        console.log('[callAIModel] Total JSON length:', JSON.stringify(requestBody).length, 'chars');
-        console.log('[callAIModel] Estimated tokens:', Math.ceil(JSON.stringify(requestBody).length / 4));
-        requestBody.messages.forEach((msg, i) => {
-          const contentStr = JSON.stringify(msg.content);
-          console.log(`[callAIModel]   Message[${i}] ${msg.role}: ${contentStr.length} chars, ~${Math.ceil(contentStr.length / 4)} tokens`);
-          if (msg.role === 'system') {
-            console.log(`[callAIModel]     System content preview:`, contentStr.slice(0, 500));
-          } else if (msg.role === 'user') {
-            console.log(`[callAIModel]     User content preview:`, contentStr.slice(0, 200));
-          }
-        });
-        console.log('[callAIModel] ====================================================');
+        console.log('[callAIModel] Force web search:', force_web_search);
 
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -432,7 +377,6 @@ Deno.serve(async (req) => {
 
         // 解析 token 使用情况（包括缓存统计）
         let cachedTokens = 0;
-        let cacheDiscount = 0;
         
         if (data.usage) {
           actualInputTokens = data.usage.prompt_tokens || data.usage.input_tokens || estimatedInputTokens;
@@ -441,30 +385,27 @@ Deno.serve(async (req) => {
           // OpenRouter 返回的缓存统计
           cachedTokens = data.usage.prompt_tokens_details?.cached_tokens || 
                          data.usage.cache_read_input_tokens || 0;
-          cacheDiscount = data.usage.cache_discount || 0;
         } else {
           actualOutputTokens = estimateTokens(responseText);
         }
 
-        // 新的积分计算规则（精确小数，缓存命中按 90% 折扣）
+        // 新计费规则：输入1000tokens=1积分，输出200tokens=1积分（缓存命中90%折扣）
         const uncachedInputTokens = actualInputTokens - cachedTokens;
         const cachedInputCredits = (cachedTokens / 1000) * 0.1; // 缓存命中90%折扣
         const uncachedInputCredits = uncachedInputTokens / 1000;
         const inputCredits = cachedInputCredits + uncachedInputCredits;
         const outputCredits = actualOutputTokens / 200;
-        const totalCredits = inputCredits + outputCredits;
 
         // 计算缓存节省的积分
-        const creditsSaved = cachedTokens > 0 ? 
-          ((cachedTokens / 1000) * 0.9) : 0;
+        const creditsSaved = cachedTokens > 0 ? (cachedTokens / 1000) * 0.9 : 0;
 
         return Response.json({
           response: responseText,
-          credits_used: totalCredits,
           input_tokens: actualInputTokens,
           output_tokens: actualOutputTokens,
           input_credits: inputCredits,
           output_credits: outputCredits,
+          credits_used: inputCredits + outputCredits,
           usage: data.usage || null,
           web_search_enabled: force_web_search === true,
           // 缓存统计信息
@@ -486,16 +427,7 @@ Deno.serve(async (req) => {
         messages: anthropicMessages
       };
 
-      // 打印完整请求体
       console.log('[callAIModel] ========== ANTHROPIC API REQUEST (Official) ==========');
-      console.log('[callAIModel] Endpoint:', endpoint);
-      console.log('[callAIModel] --- Full Request Body ---');
-      console.log(JSON.stringify(requestBody, null, 2));
-      console.log('[callAIModel] --- Request Stats ---');
-      console.log('[callAIModel] Total JSON size:', JSON.stringify(requestBody).length, 'chars');
-      console.log('[callAIModel] System prompt length:', requestBody.system.length, 'chars');
-      console.log('[callAIModel] Messages count:', requestBody.messages.length);
-      console.log('[callAIModel] =========================================');
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -519,18 +451,17 @@ Deno.serve(async (req) => {
         actualOutputTokens = estimateTokens(responseText);
       }
 
-      // 新的积分计算规则（精确小数）
+      // 新计费规则：输入1000tokens=1积分，输出200tokens=1积分
       const inputCredits = actualInputTokens / 1000;
       const outputCredits = actualOutputTokens / 200;
-      const totalCredits = inputCredits + outputCredits;
 
       return Response.json({
         response: responseText,
-        credits_used: totalCredits,
         input_tokens: actualInputTokens,
         output_tokens: actualOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
+        credits_used: inputCredits + outputCredits,
         usage: data.usage || null,
         web_search_enabled: false
       });
@@ -556,18 +487,7 @@ Deno.serve(async (req) => {
         requestBody.systemInstruction = { parts: [{ text: system_prompt }] };
       }
 
-      // 打印完整请求体
       console.log('[callAIModel] ========== GOOGLE GEMINI API REQUEST ==========');
-      console.log('[callAIModel] Endpoint:', endpoint.slice(0, 100) + '...');
-      console.log('[callAIModel] --- Full Request Body ---');
-      console.log(JSON.stringify(requestBody, null, 2));
-      console.log('[callAIModel] --- Request Stats ---');
-      console.log('[callAIModel] Total JSON size:', JSON.stringify(requestBody).length, 'chars');
-      console.log('[callAIModel] Contents count:', requestBody.contents.length);
-      if (requestBody.systemInstruction) {
-        console.log('[callAIModel] System instruction length:', JSON.stringify(requestBody.systemInstruction).length, 'chars');
-      }
-      console.log('[callAIModel] =========================================');
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -593,18 +513,17 @@ Deno.serve(async (req) => {
         actualOutputTokens = estimateTokens(responseText);
       }
 
-      // 新的积分计算规则（精确小数）
+      // 新计费规则：输入1000tokens=1积分，输出200tokens=1积分
       const inputCredits = actualInputTokens / 1000;
       const outputCredits = actualOutputTokens / 200;
-      const totalCredits = inputCredits + outputCredits;
 
       return Response.json({
         response: responseText,
-        credits_used: totalCredits,
         input_tokens: actualInputTokens,
         output_tokens: actualOutputTokens,
         input_credits: inputCredits,
         output_credits: outputCredits,
+        credits_used: inputCredits + outputCredits,
         modelVersion: data.modelVersion || null,
         usageMetadata: data.usageMetadata || null,
         web_search_enabled: false
