@@ -53,7 +53,7 @@ export default function SixStepsGuide() {
     if (guideModuleId) {
       return createPageUrl('Chat') + `?module_id=${guideModuleId}&auto_start=true`;
     }
-    return createPageUrl('Marketplace');
+    return createPageUrl('Chat');
   };
 
   return (
