@@ -434,7 +434,8 @@ export default function Chat() {
           output_tokens: result.output_tokens,
           compression_used: result.compression_used || false,
           total_messages: updatedMessages.length,
-          context_type: result.compression_used ? '摘要+最近消息' : '完整历史',
+          context_type: result.context_type || '完整历史',
+          compression_info: result.compression_info || null
         }]);
       }
 
@@ -1107,6 +1108,21 @@ export default function Chat() {
                           {info.context_type || '完整历史'}
                         </div>
                       </div>
+                      
+                      {/* 压缩信息 */}
+                      {info.compression_info && (
+                        <div className="col-span-2 pt-2 border-t border-slate-100">
+                          <span className="text-slate-400">压缩详情:</span>
+                          <div className="mt-1 space-y-0.5 text-green-700">
+                            <div>压缩前: {info.compression_info.before_tokens.toLocaleString()} tokens</div>
+                            <div>压缩后: {info.compression_info.after_tokens.toLocaleString()} tokens</div>
+                            <div className="font-semibold">
+                              节省: {info.compression_info.saved_tokens.toLocaleString()} tokens 
+                              ({info.compression_info.compression_ratio}%)
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

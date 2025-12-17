@@ -225,7 +225,8 @@ Deno.serve(async (req) => {
     // 步骤3.5：检查是否需要压缩历史
     let shouldCompress = false;
     let summaryToUse = null;
-    
+    let compressionInfo = null;
+
     if (conversation_id) {
       try {
         // 获取现有摘要
@@ -234,7 +235,7 @@ Deno.serve(async (req) => {
           '-created_date',
           1
         );
-        
+
         if (summaries.length > 0) {
           summaryToUse = summaries[0];
           console.log('[smartChatWithSearch] Found existing summary covering', summaryToUse.covered_messages, 'messages');
@@ -266,31 +267,53 @@ Deno.serve(async (req) => {
     
     // 构建消息列表 - 使用摘要替换旧消息（如果存在）
     let apiMessages = [];
-    
+    let contextType = '完整历史';
+    let beforeCompressionTokens = 0;
+    let afterCompressionTokens = 0;
+
     if (summaryToUse && conversationMessages.length > 8) {
       // 有摘要且消息较多时，使用摘要 + 最近消息
       const coveredCount = summaryToUse.covered_messages * 2; // 转换为消息数（一问一答=2条）
       const recentMessages = conversationMessages.slice(coveredCount);
-      
+
+      // 计算压缩前的 token 数（完整历史）
+      beforeCompressionTokens = conversationMessages
+        .slice(0, coveredCount)
+        .reduce((sum, m) => sum + estimateTokens(m.content || ''), 0);
+
       // 添加摘要作为系统消息
+      const summaryMessage = `[对话历史摘要 - 前${summaryToUse.covered_messages}轮]\n${summaryToUse.summary_text}`;
       apiMessages.push({
         role: 'user',
-        content: `[对话历史摘要 - 前${summaryToUse.covered_messages}轮]\n${summaryToUse.summary_text}`
+        content: summaryMessage
       });
-      
+
+      // 计算压缩后的 token 数（摘要）
+      afterCompressionTokens = estimateTokens(summaryMessage);
+
       // 添加最近的消息
       apiMessages.push(...recentMessages.map(m => ({
         role: m.role,
         content: m.content
       })));
-      
+
+      contextType = '摘要+最近消息';
+      compressionInfo = {
+        before_tokens: beforeCompressionTokens,
+        after_tokens: afterCompressionTokens,
+        saved_tokens: beforeCompressionTokens - afterCompressionTokens,
+        compression_ratio: ((1 - afterCompressionTokens / beforeCompressionTokens) * 100).toFixed(1)
+      };
+
       console.log('[smartChatWithSearch] Using summary + recent messages:', recentMessages.length);
+      console.log('[smartChatWithSearch] Compression:', beforeCompressionTokens, '→', afterCompressionTokens, 'tokens (saved:', compressionInfo.saved_tokens, ')');
     } else {
       // 没有摘要或消息较少，使用完整历史
       apiMessages = conversationMessages.map(m => ({
         role: m.role,
         content: m.content
       }));
+      contextType = '完整历史';
     }
     
     // 添加当前增强消息
@@ -436,7 +459,9 @@ Deno.serve(async (req) => {
         cost: 0
       },
       task_classification: taskClassification,
-      compression_used: !!summaryToUse
+      compression_used: !!summaryToUse,
+      context_type: contextType,
+      compression_info: compressionInfo
     });
     
   } catch (error) {
