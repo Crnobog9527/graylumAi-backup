@@ -98,12 +98,6 @@ export default function Chat() {
     queryFn: () => base44.entities.SystemSettings.list(),
   });
 
-  // 获取聊天提示公告
-  const { data: announcements = [] } = useQuery({
-    queryKey: ['chat-announcements'],
-    queryFn: () => base44.entities.Announcement.filter({ is_active: true }, 'sort_order'),
-  });
-
   // 解析系统设置
   const getSettingValue = (key, defaultValue) => {
     const setting = systemSettings.find(s => s.setting_key === key);
@@ -116,8 +110,8 @@ export default function Chat() {
   const maxInputCharacters = parseInt(getSettingValue('max_input_characters', '2000')) || 2000;
   const showTokenUsageStats = getSettingValue('show_token_usage_stats', 'true') === 'true';
   
-  // 从Announcement实体读取"聊天提示"类型的公告
-  const chatAnnouncement = announcements.find(a => a.tag === '聊天提示');
+  // 从系统设置读取聊天提示文案
+  const chatBillingHint = getSettingValue('chat_billing_hint', '');
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
@@ -977,14 +971,13 @@ export default function Chat() {
               </div>
             </div>
 
-            {/* 自定义公告栏 */}
-            {chatAnnouncement && (
+            {/* 聊天提示文案 */}
+            {chatBillingHint && (
               <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <div className="flex items-start gap-2">
                   <span className="text-lg">⚠️</span>
                   <div className="flex-1 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                    <div className="font-medium mb-1">{chatAnnouncement.title}</div>
-                    <div>{chatAnnouncement.description}</div>
+                    {chatBillingHint}
                   </div>
                 </div>
               </div>
