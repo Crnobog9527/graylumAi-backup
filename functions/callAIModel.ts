@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
           return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
-      const { model_id, messages, system_prompt, force_web_search } = await req.json();
+      const { model_id, messages, system_prompt, force_web_search, image_files } = await req.json();
 
     console.log('[callAIModel] ===== RECEIVED REQUEST =====');
     console.log('[callAIModel] - model_id:', model_id);
@@ -217,10 +217,42 @@ Deno.serve(async (req) => {
     let actualOutputTokens = 0;
 
     // 构建消息列表
-    const formattedMessages = processedMessages.map(m => ({
+    let formattedMessages = processedMessages.map(m => ({
       role: m.role,
       content: m.content
     }));
+
+    // 如果有图片文件，将最后一条用户消息转换为多模态格式
+    if (image_files && image_files.length > 0) {
+      const lastUserMsgIdx = formattedMessages.length - 1;
+      if (formattedMessages[lastUserMsgIdx]?.role === 'user') {
+        const textContent = formattedMessages[lastUserMsgIdx].content;
+        const contentArray = [];
+
+        // 添加图片
+        image_files.forEach(img => {
+          contentArray.push({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: img.media_type,
+              data: img.base64
+            }
+          });
+        });
+
+        // 添加文本
+        contentArray.push({
+          type: 'text',
+          text: textContent
+        });
+
+        formattedMessages[lastUserMsgIdx] = {
+          role: 'user',
+          content: contentArray
+        };
+      }
+    }
 
     const useOpenAIFormat = model.api_endpoint && model.api_endpoint.includes('/chat/completions');
 

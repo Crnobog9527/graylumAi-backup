@@ -48,6 +48,7 @@ export default function Chat() {
   const [longTextWarning, setLongTextWarning] = useState({ open: false, estimatedCredits: 0, estimatedTokens: 0 });
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [fileContents, setFileContents] = useState([]);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
   const [showDebugPanel, setShowDebugPanel] = useState(false);
@@ -289,7 +290,7 @@ export default function Chat() {
   };
 
   const handleSendMessage = async (skipWarning = false) => {
-    if (!inputMessage.trim() || !selectedModel || !user || isStreaming) return;
+    if ((!inputMessage.trim() && fileContents.length === 0) || !selectedModel || !user || isStreaming) return;
 
     const currentCredits = user.credits || 0;
 
@@ -346,23 +347,55 @@ export default function Chat() {
       return;
     }
 
+    // 构建消息内容（包含文件）
+    let messageContent = inputMessage;
+    const hasTextFiles = fileContents.some(f => f.content_type === 'text');
+    const hasImageFiles = fileContents.some(f => f.content_type === 'image');
+    
+    // 添加文本文件内容
+    if (hasTextFiles) {
+      const textParts = fileContents
+        .filter(f => f.content_type === 'text')
+        .map(f => `[用户上传的文件: ${f.file_name}]\n\n${f.content}${f.truncated ? '\n\n⚠️ 文件过大，已截取前半部分' : ''}`)
+        .join('\n\n---\n\n');
+      
+      messageContent = `${textParts}\n\n[用户的问题]\n${inputMessage}`;
+    }
+    
     const userMessage = {
       role: 'user',
-      content: inputMessage,
+      content: messageContent,
       timestamp: new Date().toISOString(),
     };
 
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInputMessage('');
+    setUploadedFiles([]);
+    setFileContents([]);
     setIsStreaming(true);
 
     try {
+      // 准备发送的消息（包含图片）
+      let messageToSend = messageContent;
+      let imageFiles = null;
+      
+      if (hasImageFiles) {
+        imageFiles = fileContents
+          .filter(f => f.content_type === 'image')
+          .map(f => ({
+            file_name: f.file_name,
+            media_type: f.media_type,
+            base64: f.content
+          }));
+      }
+      
       // 使用智能搜索系统
       const { data: result } = await base44.functions.invoke('smartChatWithSearch', {
         conversation_id: currentConversation?.id,
-        message: inputMessage,
-        system_prompt: systemPrompt || undefined
+        message: messageToSend,
+        system_prompt: systemPrompt || undefined,
+        image_files: imageFiles
       });
 
       if (result.error) {
@@ -485,10 +518,48 @@ export default function Chat() {
     try {
       const uploadPromises = files.map(async (file) => {
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        return { name: file.name, url: file_url, type: file.type };
+        return { name: file.name, url: file_url, type: file.type, status: 'extracting' };
       });
       const uploaded = await Promise.all(uploadPromises);
       setUploadedFiles(prev => [...prev, ...uploaded]);
+      
+      // 提取文件内容
+      const extractPromises = uploaded.map(async (file, idx) => {
+        try {
+          const { data } = await base44.functions.invoke('extractFileContent', {
+            file_url: file.url,
+            file_name: file.name,
+            file_type: file.type
+          });
+          
+          if (data.success) {
+            // 更新状态为就绪
+            setUploadedFiles(prev => prev.map((f, i) => 
+              f.url === file.url ? { ...f, status: 'ready' } : f
+            ));
+            
+            return {
+              file_name: data.file_name,
+              content_type: data.content_type,
+              content: data.content,
+              media_type: data.media_type,
+              truncated: data.truncated
+            };
+          } else {
+            throw new Error(data.error || 'Failed to extract content');
+          }
+        } catch (error) {
+          console.error('文件内容提取失败:', error);
+          setUploadedFiles(prev => prev.map((f, i) => 
+            f.url === file.url ? { ...f, status: 'error', error: error.message } : f
+          ));
+          return null;
+        }
+      });
+      
+      const contents = await Promise.all(extractPromises);
+      setFileContents(prev => [...prev, ...contents.filter(c => c !== null)]);
+      
     } catch (error) {
       console.error('文件上传失败:', error);
       alert('文件上传失败，请重试');
@@ -502,6 +573,7 @@ export default function Chat() {
 
   const removeUploadedFile = (index) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    setFileContents(prev => prev.filter((_, i) => i !== index));
   };
 
   // Group conversations by date
@@ -846,6 +918,15 @@ export default function Chat() {
                       <FileText className="h-4 w-4 text-blue-500" />
                     )}
                     <span className="text-slate-600 max-w-[150px] truncate">{file.name}</span>
+                    {file.status === 'extracting' && (
+                      <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />
+                    )}
+                    {file.status === 'ready' && (
+                      <span className="text-xs text-green-600">✓</span>
+                    )}
+                    {file.status === 'error' && (
+                      <span className="text-xs text-red-600" title={file.error}>⚠</span>
+                    )}
                     <button
                       onClick={() => removeUploadedFile(index)}
                       className="text-slate-400 hover:text-red-500"
@@ -896,7 +977,7 @@ export default function Chat() {
                   <Button
                     data-send-button
                     onClick={() => handleSendMessage(false)}
-                    disabled={!inputMessage.trim() || isStreaming}
+                    disabled={(!inputMessage.trim() && fileContents.length === 0) || isStreaming || uploadedFiles.some(f => f.status === 'extracting')}
                     className="bg-blue-600 hover:bg-blue-700 h-9 px-4 gap-2"
                   >
                     {isStreaming ? (
