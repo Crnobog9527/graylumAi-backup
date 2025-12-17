@@ -367,12 +367,18 @@ Deno.serve(async (req) => {
     }
     console.log('[smartChatWithSearch] === END PARAMETERS ===');
     
-    const modelRes = await base44.functions.invoke('callAIModel', {
+    // 构建调用参数，只在需要时添加 system_prompt
+    const callParams = {
       model_id: selectedModel.id,
       messages: apiMessages,
-      system_prompt: shouldUseSystemPrompt ? system_prompt : undefined,
       force_web_search: decision.will_use_web_search || false
-    });
+    };
+    
+    if (shouldUseSystemPrompt && system_prompt) {
+      callParams.system_prompt = system_prompt;
+    }
+    
+    const modelRes = await base44.functions.invoke('callAIModel', callParams);
     
     if (!modelRes.data || modelRes.data.error) {
       throw new Error(modelRes.data?.error || 'AI model call failed');
