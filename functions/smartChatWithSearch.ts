@@ -350,7 +350,7 @@ Deno.serve(async (req) => {
     // CRITICAL: 只有当 system_prompt 有实际内容时才使用
     const isFirstTurn = conversationMessages.length === 0;
     const hasValidSystemPrompt = system_prompt && system_prompt.trim().length > 0;
-    const shouldUseSystemPrompt = isFirstTurn && !conversation && hasValidSystemPrompt;
+    const shouldUseSystemPrompt = isFirstTurn && hasValidSystemPrompt;
     
     console.log('[smartChatWithSearch] ===== SYSTEM PROMPT DECISION =====');
     console.log('[smartChatWithSearch] isFirstTurn:', isFirstTurn, '(conversationMessages.length:', conversationMessages.length, ')');
