@@ -436,7 +436,7 @@ Deno.serve(async (req) => {
         cost: 0
       },
       task_classification: taskClassification,
-      compression_used: useSummary
+      compression_used: !!summaryToUse
     });
     
   } catch (error) {
