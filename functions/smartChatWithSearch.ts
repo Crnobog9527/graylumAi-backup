@@ -149,6 +149,7 @@ Deno.serve(async (req) => {
     
     // 步骤2：智能任务分类和模型选择
     let taskClassification = null;
+    let shouldUpdateSessionTaskType = false;
     try {
       const classifyRes = await base44.functions.invoke('taskClassifier', {
         message,
@@ -157,9 +158,12 @@ Deno.serve(async (req) => {
       
       if (classifyRes.data && !classifyRes.data.error) {
         taskClassification = classifyRes.data;
+        shouldUpdateSessionTaskType = taskClassification.should_update_session_task_type;
+        
         console.log('[smartChatWithSearch] Task classification:', taskClassification.task_type, 
                     '| Model:', taskClassification.recommended_model,
-                    '| Complexity:', taskClassification.complexity_score);
+                    '| Complexity:', taskClassification.complexity_score,
+                    '| Continuation:', taskClassification.is_continuation);
         
         // 根据任务分类结果选择模型（如果有对应的AI模型）
         if (taskClassification.model_id) {
@@ -513,19 +517,35 @@ Deno.serve(async (req) => {
     
     if (conversation) {
       console.log('[smartChatWithSearch] Updating conversation');
-      await base44.asServiceRole.entities.Conversation.update(conversation.id, {
+      const updateData = {
         messages: newMessages,
         total_credits_used: (conversation.total_credits_used || 0) + actualDeducted,
         updated_date: new Date().toISOString()
-      });
+      };
+      
+      // 如果需要更新 session_task_type
+      if (shouldUpdateSessionTaskType && taskClassification) {
+        updateData.session_task_type = taskClassification.task_type;
+        console.log('[smartChatWithSearch] Updating session_task_type to:', taskClassification.task_type);
+      }
+      
+      await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
     } else {
       console.log('[smartChatWithSearch] Creating new conversation');
-      const newConv = await base44.asServiceRole.entities.Conversation.create({
+      const createData = {
         title: message.slice(0, 50),
         model_id: selectedModel.id,
         messages: newMessages,
         total_credits_used: actualDeducted
-      });
+      };
+      
+      // 如果是创作类任务，记录 session_task_type
+      if (shouldUpdateSessionTaskType && taskClassification) {
+        createData.session_task_type = taskClassification.task_type;
+        console.log('[smartChatWithSearch] Setting initial session_task_type to:', taskClassification.task_type);
+      }
+      
+      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
     }
     

@@ -30,6 +30,20 @@ const MODEL_SELECTION_RULES = {
   'opus': ['complex_analysis', 'professional_writing', 'code_generation', 'research']
 };
 
+// 续写关键词列表
+const CONTINUATION_KEYWORDS = [
+  '继续', '接着写', '下一章', '下一段', '继续写', '往下写', '继续创作',
+  '再写一段', '接下去', '下一部分', '接下来', '后续', '续写',
+  'continue', 'keep going', 'go on', 'next chapter', 'next part',
+  'keep writing', 'write more', 'continue writing'
+];
+
+// 创作类任务类型（需要记录到会话上下文）
+const CREATIVE_TASK_TYPES = [
+  'content_creation', 'content_expansion', 'professional_writing', 
+  'code_generation', 'complex_analysis'
+];
+
 // 关键词匹配规则
 const KEYWORD_PATTERNS = {
   summarization: ['总结', '摘要', '概括', '简述', 'summarize', 'summary'],
@@ -102,17 +116,44 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Message is required' }, { status: 400 });
     }
     
-    // 获取对话长度
+    // 获取会话上下文
     let conversationLength = 0;
+    let sessionTaskType = null;
+    let conversation = null;
+    
     if (conversation_id) {
       const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
       if (convs.length > 0) {
-        conversationLength = (convs[0].messages || []).length / 2;
+        conversation = convs[0];
+        conversationLength = (conversation.messages || []).length / 2;
+        sessionTaskType = conversation.session_task_type;
       }
     }
     
-    // 步骤1：基于关键词的任务分类
-    const taskType = classifyTaskByKeywords(message);
+    // 检查是否是续写指令
+    const lowerMessage = message.toLowerCase();
+    const isContinuation = CONTINUATION_KEYWORDS.some(kw => 
+      lowerMessage.includes(kw.toLowerCase())
+    );
+    
+    console.log('[taskClassifier] isContinuation:', isContinuation, 'sessionTaskType:', sessionTaskType);
+    
+    // 如果是续写指令且有会话任务类型，则继承原任务类型
+    let taskType;
+    let shouldUpdateSessionTaskType = false;
+    
+    if (isContinuation && sessionTaskType) {
+      taskType = sessionTaskType;
+      console.log('[taskClassifier] 继承会话任务类型:', taskType);
+    } else {
+      // 否则正常判断任务类型
+      taskType = classifyTaskByKeywords(message);
+      
+      // 如果是创作类任务，需要更新会话的 session_task_type
+      if (CREATIVE_TASK_TYPES.includes(taskType)) {
+        shouldUpdateSessionTaskType = true;
+      }
+    }
     
     // 步骤2：计算复杂度
     const complexity = calculateComplexity(message, conversationLength);
@@ -140,7 +181,9 @@ Deno.serve(async (req) => {
       recommended_model: recommendedModel,
       model_id: modelMap[recommendedModel],
       confidence: complexity >= 3 ? 0.7 : 0.9,
-      reason: `任务类型: ${taskType}, 复杂度: ${complexity}, 对话轮次: ${conversationLength}`
+      reason: `任务类型: ${taskType}, 复杂度: ${complexity}, 对话轮次: ${conversationLength}${isContinuation ? ' (续写)' : ''}`,
+      should_update_session_task_type: shouldUpdateSessionTaskType,
+      is_continuation: isContinuation
     });
     
   } catch (error) {
