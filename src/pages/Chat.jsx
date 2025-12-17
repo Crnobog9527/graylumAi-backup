@@ -314,12 +314,12 @@ export default function Chat() {
 
     if (hasModule && isFirstTurn && isNewConversation) {
       systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
-    ${selectedModule.system_prompt}
+  ${selectedModule.system_prompt}
 
-    【行为规范】
-    1. 你必须严格遵循上述角色定位和功能约束
-    2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
-    3. 保持专业、专注，不要偏离主题`;
+  【行为规范】
+  1. 你必须严格遵循上述角色定位和功能约束
+  2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
+  3. 保持专业、专注，不要偏离主题`;
       console.log('[Chat] System prompt created, length:', systemPrompt.length, 'chars, ~', Math.ceil(systemPrompt.length / 4), 'tokens');
       console.log('[Chat] System prompt preview:', systemPrompt.slice(0, 200) + '...');
     } else {
@@ -327,17 +327,33 @@ export default function Chat() {
     }
     console.log('[Chat] ===================================');
 
-    // 长文本预警检查（包含系统提示词）
-    const allContent = systemPrompt + messages.map(m => m.content).join('') + inputMessage;
+    // 准备附件数据
+    const attachments = fileContents.map((f, idx) => ({
+      fileName: f.file_name,
+      fileType: uploadedFiles[idx]?.type || f.media_type,
+      fileSize: uploadedFiles[idx]?.size,
+      contentType: f.content_type,
+      content: f.content,
+      mediaType: f.media_type,
+      truncated: f.truncated,
+      preview: f.content_type === 'text' ? f.content?.slice(0, 500) : null
+    }));
+
+    // 长文本预警检查（包含系统提示词和附件内容）
+    const fileTextContent = fileContents
+      .filter(f => f.content_type === 'text')
+      .map(f => f.content)
+      .join('');
+    const allContent = systemPrompt + messages.map(m => m.content || m.text).join('') + inputMessage + fileTextContent;
     const estimatedInputTokens = estimateTokens(allContent);
-    
+
     if (!skipWarning && longTextWarningEnabled && estimatedInputTokens > longTextThreshold) {
       // 预估积分消耗 (输入 + 预估输出)
-      const estimatedOutputTokens = Math.min(estimatedInputTokens * 0.5, 4000); // 预估输出为输入的50%，最多4000
+      const estimatedOutputTokens = Math.min(estimatedInputTokens * 0.5, 4000);
       const inputCost = Math.ceil(estimatedInputTokens / 1000) * inputCreditsPerK;
       const outputCost = Math.ceil(estimatedOutputTokens / 1000) * outputCreditsPerK;
       const totalEstimatedCredits = inputCost + outputCost;
-      
+
       setLongTextWarning({
         open: true,
         estimatedCredits: totalEstimatedCredits,
@@ -346,24 +362,11 @@ export default function Chat() {
       return;
     }
 
-    // 构建消息内容（包含文件）
-    let messageContent = inputMessage;
-    const hasTextFiles = fileContents.some(f => f.content_type === 'text');
-    const hasImageFiles = fileContents.some(f => f.content_type === 'image');
-    
-    // 添加文本文件内容
-    if (hasTextFiles) {
-      const textParts = fileContents
-        .filter(f => f.content_type === 'text')
-        .map(f => `[用户上传的文件: ${f.file_name}]\n\n${f.content}${f.truncated ? '\n\n⚠️ 文件过大，已截取前半部分' : ''}`)
-        .join('\n\n---\n\n');
-      
-      messageContent = `${textParts}\n\n[用户的问题]\n${inputMessage}`;
-    }
-    
+    // 构建用户消息（前端显示用，分开存储文字和附件）
     const userMessage = {
       role: 'user',
-      content: messageContent,
+      text: inputMessage,
+      attachments: attachments,
       timestamp: new Date().toISOString(),
     };
 
@@ -375,17 +378,28 @@ export default function Chat() {
     setIsStreaming(true);
 
     try {
-      // 准备发送的消息（包含图片）
-      let messageToSend = messageContent;
-      let imageFiles = null;
+      // 构建发送给API的消息内容（拼接文件内容）
+      let messageToSend = inputMessage;
+      const hasTextFiles = attachments.some(a => a.contentType === 'text');
+      const hasImageFiles = attachments.some(a => a.contentType === 'image');
       
+      if (hasTextFiles) {
+        const textParts = attachments
+          .filter(a => a.contentType === 'text')
+          .map(a => `[用户上传的文件: ${a.fileName}]\n\n${a.content}${a.truncated ? '\n\n⚠️ 文件过大，已截取前半部分' : ''}`)
+          .join('\n\n---\n\n');
+        
+        messageToSend = `${textParts}\n\n[用户的问题]\n${inputMessage}`;
+      }
+      
+      let imageFiles = null;
       if (hasImageFiles) {
-        imageFiles = fileContents
-          .filter(f => f.content_type === 'image')
-          .map(f => ({
-            file_name: f.file_name,
-            media_type: f.media_type,
-            base64: f.content
+        imageFiles = attachments
+          .filter(a => a.contentType === 'image')
+          .map(a => ({
+            file_name: a.fileName,
+            media_type: a.mediaType,
+            base64: a.content
           }));
       }
       
@@ -844,7 +858,7 @@ export default function Chat() {
                 </div>
               ) : (
                 messages.map((message, index) => (
-                  <ChatMessageItem
+                  <MessageBubble
                     key={index}
                     message={message}
                     isStreaming={isStreaming && index === messages.length - 1 && message.role === 'assistant'}
@@ -1150,13 +1164,13 @@ function filterThinkingContent(content) {
   return filtered || content; // 如果过滤后为空，返回原内容
 }
 
-// Chat Message Item Component
-function ChatMessageItem({ message, isStreaming, user }) {
+// Message Bubble Component
+function MessageBubble({ message, isStreaming, user }) {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
   const time = message.timestamp ? format(new Date(message.timestamp), 'HH:mm') : '';
   
-  const displayContent = isUser ? message.content : filterThinkingContent(message.content);
+  const displayContent = isUser ? (message.text || message.content) : filterThinkingContent(message.content);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(displayContent);
@@ -1167,10 +1181,23 @@ function ChatMessageItem({ message, isStreaming, user }) {
   if (isUser) {
     return (
       <div className="flex justify-end py-4">
-        <div className="max-w-[80%]">
-          <div className="bg-blue-600 text-white rounded-2xl rounded-tr-md px-4 py-3">
-            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-          </div>
+        <div className="max-w-[80%] space-y-2">
+          {/* 附件卡片 */}
+          {message.attachments?.length > 0 && (
+            <div className="space-y-2">
+              {message.attachments.map((attachment, idx) => (
+                <FileAttachmentCard key={idx} attachment={attachment} />
+              ))}
+            </div>
+          )}
+          
+          {/* 用户文字消息 */}
+          {displayContent && (
+            <div className="bg-blue-600 text-white rounded-2xl rounded-tr-md px-4 py-3">
+              <p className="whitespace-pre-wrap leading-relaxed">{displayContent}</p>
+            </div>
+          )}
+          
           <div className="text-xs text-slate-400 text-right mt-1">{time}</div>
         </div>
       </div>
