@@ -511,11 +511,37 @@ Deno.serve(async (req) => {
       }
     }
     
+    // 创建积分交易记录
+    await base44.asServiceRole.entities.CreditTransaction.create({
+      user_email: user.email,
+      type: 'usage',
+      amount: -totalCreditsDeducted,
+      balance_after: finalCredits,
+      description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits.toFixed(3)}积分, 输出:${outputTokens}tokens/${outputCredits.toFixed(3)}积分${webSearchUsed ? ', 联网搜索:5积分' : ''})`,
+      model_used: selectedModel.name,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      input_credits: inputCredits,
+      output_credits: outputCredits,
+      web_search_used: webSearchUsed,
+    });
+    
     // 更新或创建对话
     const newMessages = [
       ...conversationMessages,
-      { role: 'user', content: message, timestamp: new Date().toISOString() },
-      { role: 'assistant', content: modelData.response, timestamp: new Date().toISOString() }
+      { 
+        role: 'user', 
+        content: message, 
+        timestamp: new Date().toISOString() 
+      },
+      { 
+        role: 'assistant', 
+        content: modelData.response, 
+        timestamp: new Date().toISOString(),
+        credits_used: totalCreditsDeducted,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens
+      }
     ];
     
     let finalConversationId = conversation_id;
@@ -524,7 +550,7 @@ Deno.serve(async (req) => {
       console.log('[smartChatWithSearch] Updating conversation');
       await base44.asServiceRole.entities.Conversation.update(conversation.id, {
         messages: newMessages,
-        total_credits_used: (conversation.total_credits_used || 0) + totalCredits,
+        total_credits_used: (conversation.total_credits_used || 0) + totalCreditsDeducted,
         updated_date: new Date().toISOString()
       });
     } else {
@@ -533,7 +559,7 @@ Deno.serve(async (req) => {
         title: message.slice(0, 50),
         model_id: selectedModel.id,
         messages: newMessages,
-        total_credits_used: totalCredits
+        total_credits_used: totalCreditsDeducted
       });
       finalConversationId = newConv.id;
     }
@@ -544,7 +570,11 @@ Deno.serve(async (req) => {
       conversation_id: finalConversationId,
       response: modelData.response,
       model_used: selectedModel.name,
-      credits_used: totalCredits,
+      credits_used: totalCreditsDeducted,
+      token_credits: tokenCredits,
+      search_fee: searchFeeDeducted,
+      token_fee_deducted: tokenFeeDeducted,
+      pending_credits: finalPendingCredits,
       input_tokens: inputTokens,
       output_tokens: outputTokens,
       input_credits: inputCredits,
@@ -552,7 +582,7 @@ Deno.serve(async (req) => {
       search_info: {
         executed: webSearchUsed,
         cache_hit: false,
-        cost: 0
+        cost: searchFeeDeducted
       },
       task_classification: taskClassification,
       compression_used: !!summaryToUse,

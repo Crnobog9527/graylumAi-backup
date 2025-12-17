@@ -435,19 +435,16 @@ export default function Chat() {
         }]);
       }
 
-      // 从API返回的实际token消耗计算积分
-      const creditsUsed = result.credits_used || 1;
+      // 从API返回的实际消耗
+      const creditsUsed = result.credits_used || 0;
+      const tokenCredits = result.token_credits || 0;
+      const searchFee = result.search_fee || 0;
+      const tokenFeeDeducted = result.token_fee_deducted || 0;
+      const pendingCredits = result.pending_credits || 0;
       const inputTokens = result.input_tokens || 0;
       const outputTokens = result.output_tokens || 0;
       const inputCredits = result.input_credits || 0;
       const outputCredits = result.output_credits || 0;
-
-      // 检查积分是否足够
-      if (currentCredits < creditsUsed) {
-        alert(`积分不足！本次对话需要 ${creditsUsed} 积分，您当前只有 ${currentCredits} 积分。`);
-        setMessages(messages); // 恢复消息
-        return;
-      }
 
       const assistantMessage = {
         role: 'assistant',
@@ -461,32 +458,15 @@ export default function Chat() {
       const updatedMessages = [...newMessages, assistantMessage];
       setMessages(updatedMessages);
 
+      // 更新用户余额（后端已扣除，这里同步状态）
       const newBalance = currentCredits - creditsUsed;
       await updateUserMutation.mutateAsync({
         credits: newBalance,
+        pending_credits: pendingCredits,
         total_credits_used: (user.total_credits_used || 0) + creditsUsed,
       });
 
-      // 搜索信息（来自智能搜索系统）
-      const searchInfo = result.search_info?.executed 
-        ? ` [智能搜索${result.search_info.cache_hit ? '(缓存)' : ''}]` 
-        : '';
-      const webSearchUsed = result.search_info?.executed || false;
-      
-      await createTransactionMutation.mutateAsync({
-        user_email: user.email,
-        type: 'usage',
-        amount: -creditsUsed,
-        balance_after: newBalance,
-        description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits}积分, 输出:${outputTokens}tokens/${outputCredits}积分)${searchInfo}`,
-        model_used: selectedModel.name,
-        prompt_module_used: selectedModule?.title,
-        input_tokens: inputTokens,
-        output_tokens: outputTokens,
-        input_credits: inputCredits,
-        output_credits: outputCredits,
-        web_search_used: webSearchUsed,
-      });
+      // 交易记录已在后端创建，前端不需要再次创建
 
       const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
 
@@ -998,8 +978,16 @@ export default function Chat() {
             </div>
 
             {/* Token Billing Info */}
-            <div className="text-center mt-2">
-              <span className="text-xs text-slate-500 whitespace-pre-line">{chatBillingHint}</span>
+            <div className="text-center mt-2 space-y-1">
+              <div className="text-xs text-slate-500">
+                💡 输入 1积分/1K tokens，输出 1积分/200 tokens
+                {selectedModel?.enable_web_search && ' | 联网搜索 5积分/次'}
+              </div>
+              {user?.pending_credits > 0 && (
+                <div className="text-xs text-amber-600">
+                  零钱罐余额: {user.pending_credits.toFixed(3)} 积分（满1积分自动扣除）
+                </div>
+              )}
             </div>
           </div>
         </div>
