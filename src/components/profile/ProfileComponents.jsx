@@ -6,10 +6,20 @@ import { useQuery } from '@tanstack/react-query';
 import { 
   User, CreditCard, History, Shield, LogOut, 
   Crown, Zap, Clock, ChevronRight, ChevronLeft,
-  CheckCircle2, RefreshCw, Settings, Wallet, Package, Mail, Lock, Loader2, Headphones
+  CheckCircle2, RefreshCw, Settings, Wallet, Package, Mail, Lock, Loader2, Headphones, X
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
@@ -460,17 +470,25 @@ export function UsageHistoryCard({ user }) {
 export function SecuritySettingsCard({ user }) {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showVerifyDialog, setShowVerifyDialog] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
 
-  const handleVerifyEmail = async () => {
+  const handleSendVerificationEmail = async () => {
     setVerifyLoading(true);
     try {
-      // 发送验证邮件
-      await base44.integrations.Core.SendEmail({
-        to: user.email,
-        subject: '邮箱验证',
-        body: `您好 ${user.full_name || '用户'}，\n\n感谢您使用我们的服务！您的邮箱已确认为：${user.email}\n\n如果这不是您的操作，请忽略此邮件。\n\n祝好！`
-      });
-      toast.success('验证邮件已发送，请查收邮箱');
+      const { data } = await base44.functions.invoke('sendVerificationEmail');
+      if (data.success) {
+        toast.success(data.message);
+        setShowVerifyDialog(true);
+      } else {
+        toast.error(data.error || '发送失败');
+      }
     } catch (error) {
       toast.error('发送失败，请稍后重试');
     } finally {
@@ -478,82 +496,253 @@ export function SecuritySettingsCard({ user }) {
     }
   };
 
-  const handleChangePassword = () => {
-    toast.info('如需修改密码，请联系管理员或通过忘记密码功能重置');
+  const handleVerifyEmail = async () => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      toast.error('请输入6位验证码');
+      return;
+    }
+
+    setVerifyLoading(true);
+    try {
+      const { data } = await base44.functions.invoke('verifyEmail', {
+        verification_code: verificationCode
+      });
+      if (data.success) {
+        toast.success(data.message);
+        setShowVerifyDialog(false);
+        setVerificationCode('');
+        window.location.reload(); // 刷新页面以更新用户状态
+      } else {
+        toast.error(data.error || '验证失败');
+      }
+    } catch (error) {
+      toast.error('验证失败，请稍后重试');
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordForm.current_password || !passwordForm.new_password || !passwordForm.confirm_password) {
+      toast.error('请填写完整信息');
+      return;
+    }
+
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      toast.error('两次输入的新密码不一致');
+      return;
+    }
+
+    if (passwordForm.new_password.length < 8) {
+      toast.error('新密码长度至少为8位');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const { data } = await base44.functions.invoke('changePassword', {
+        current_password: passwordForm.current_password,
+        new_password: passwordForm.new_password
+      });
+      if (data.success) {
+        toast.success(data.message);
+        setShowPasswordDialog(false);
+        setPasswordForm({
+          current_password: '',
+          new_password: '',
+          confirm_password: ''
+        });
+      } else {
+        toast.error(data.error || '修改失败');
+      }
+    } catch (error) {
+      toast.error('修改失败，请稍后重试');
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-      <h3 className="text-lg font-bold text-slate-900 mb-6">账户安全</h3>
-      
-      <div className="space-y-6">
-        {/* 登录方式 */}
-        <div className="p-4 border border-slate-100 rounded-xl">
-          <div className="flex items-center justify-between mb-2">
-            <div className="font-medium text-slate-900">登录方式</div>
-            <span className="text-sm text-slate-500">
-              {user?.login_provider === 'google' ? 'Google 账号' : 
-               user?.login_provider === 'wechat' ? '微信' : '邮箱密码'}
-            </span>
-          </div>
-          <div className="text-sm text-slate-500">{user?.email}</div>
-        </div>
-
-        {/* 邮箱验证 */}
-        <div className="p-4 border border-slate-100 rounded-xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-slate-900">邮箱验证</div>
-              <div className="text-sm text-slate-500 mt-1">
-                {user?.email_verified ? '已验证' : '未验证'}
-              </div>
+    <>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <h3 className="text-lg font-bold text-slate-900 mb-6">账户安全</h3>
+        
+        <div className="space-y-6">
+          {/* 登录方式 */}
+          <div className="p-4 border border-slate-100 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <div className="font-medium text-slate-900">登录方式</div>
+              <span className="text-sm px-3 py-1 bg-slate-100 text-slate-700 rounded-full">
+                邮箱密码
+              </span>
             </div>
-            {user?.email_verified ? (
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
-            ) : (
+            <div className="text-sm text-slate-500">{user?.email}</div>
+          </div>
+
+          {/* 邮箱验证 */}
+          <div className="p-4 border border-slate-100 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium text-slate-900">邮箱验证</div>
+                <div className="text-sm text-slate-500 mt-1">
+                  {user?.email_verified ? '已验证' : '未验证'}
+                </div>
+              </div>
+              {user?.email_verified ? (
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleSendVerificationEmail}
+                  disabled={verifyLoading}
+                >
+                  {verifyLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    '验证邮箱'
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* 修改密码 */}
+          <div className="p-4 border border-slate-100 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium text-slate-900">修改密码</div>
+                <div className="text-sm text-slate-500 mt-1">定期更新密码以保障账户安全</div>
+              </div>
               <Button 
                 variant="outline" 
-                size="sm" 
-                onClick={handleVerifyEmail}
-                disabled={verifyLoading}
+                size="sm"
+                onClick={() => setShowPasswordDialog(true)}
               >
-                {verifyLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  '验证邮箱'
-                )}
+                修改
               </Button>
-            )}
-          </div>
-        </div>
-
-        {/* 修改密码 */}
-        <div className="p-4 border border-slate-100 rounded-xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-slate-900">修改密码</div>
-              <div className="text-sm text-slate-500 mt-1">定期更新密码以保障账户安全</div>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleChangePassword}
-            >
-              修改
-            </Button>
           </div>
-        </div>
 
-        {/* 账户注册时间 */}
-        <div className="p-4 border border-slate-100 rounded-xl">
-          <div className="flex items-center justify-between">
-            <div className="font-medium text-slate-900">注册时间</div>
-            <span className="text-sm text-slate-500">
-              {user?.created_date ? format(new Date(user.created_date), 'yyyy年MM月dd日') : '-'}
-            </span>
+          {/* 账户注册时间 */}
+          <div className="p-4 border border-slate-100 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div className="font-medium text-slate-900">注册时间</div>
+              <span className="text-sm text-slate-500">
+                {user?.created_date ? format(new Date(user.created_date), 'yyyy年MM月dd日') : '-'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* 邮箱验证对话框 */}
+      <Dialog open={showVerifyDialog} onOpenChange={setShowVerifyDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>邮箱验证</DialogTitle>
+            <DialogDescription>
+              验证码已发送至 {user?.email}，请查收邮箱
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="code">验证码</Label>
+              <Input
+                id="code"
+                placeholder="请输入6位验证码"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                maxLength={6}
+              />
+            </div>
+            <div className="text-xs text-slate-500">
+              验证码有效期30分钟，未收到邮件？
+              <button 
+                onClick={handleSendVerificationEmail}
+                className="text-blue-600 hover:underline ml-1"
+                disabled={verifyLoading}
+              >
+                重新发送
+              </button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowVerifyDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={handleVerifyEmail} disabled={verifyLoading || verificationCode.length !== 6}>
+              {verifyLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  验证中...
+                </>
+              ) : (
+                '确认验证'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 修改密码对话框 */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>修改密码</DialogTitle>
+            <DialogDescription>
+              请输入当前密码和新密码
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="current">当前密码</Label>
+              <Input
+                id="current"
+                type="password"
+                placeholder="请输入当前密码"
+                value={passwordForm.current_password}
+                onChange={(e) => setPasswordForm({...passwordForm, current_password: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new">新密码</Label>
+              <Input
+                id="new"
+                type="password"
+                placeholder="至少8位字符"
+                value={passwordForm.new_password}
+                onChange={(e) => setPasswordForm({...passwordForm, new_password: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm">确认新密码</Label>
+              <Input
+                id="confirm"
+                type="password"
+                placeholder="再次输入新密码"
+                value={passwordForm.confirm_password}
+                onChange={(e) => setPasswordForm({...passwordForm, confirm_password: e.target.value})}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPasswordDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={handleChangePassword} disabled={passwordLoading}>
+              {passwordLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  修改中...
+                </>
+              ) : (
+                '确认修改'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
