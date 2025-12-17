@@ -432,7 +432,9 @@ export default function Chat() {
           model_tier: result.task_classification?.recommended_model_tier,
           input_tokens: result.input_tokens,
           output_tokens: result.output_tokens,
-          compression_used: result.compression_used || false
+          compression_used: result.compression_used || false,
+          total_messages: updatedMessages.length,
+          context_type: result.compression_used ? '摘要+最近消息' : '完整历史',
         }]);
       }
 
@@ -1055,11 +1057,16 @@ export default function Chat() {
                       <span className="text-slate-400">
                         {format(new Date(info.timestamp), 'HH:mm:ss')}
                       </span>
-                      {info.compression_used && (
-                        <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
-                          压缩
+                      <div className="flex items-center gap-1">
+                        {info.compression_used && (
+                          <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+                            压缩
+                          </span>
+                        )}
+                        <span className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">
+                          {info.total_messages}条
                         </span>
-                      )}
+                      </div>
                     </div>
                     
                     <div className="text-slate-600 font-medium truncate">
@@ -1092,6 +1099,12 @@ export default function Chat() {
                         <span className="text-slate-400">输出Tokens:</span>
                         <div className="font-medium text-slate-700 mt-0.5">
                           {info.output_tokens?.toLocaleString() || 'N/A'}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-slate-400">上下文模式:</span>
+                        <div className="font-medium text-slate-700 mt-0.5">
+                          {info.context_type || '完整历史'}
                         </div>
                       </div>
                     </div>
