@@ -269,7 +269,7 @@ export function QuickActionsCard() {
       title: '联系客服',
       description: '遇到问题？我们随时为您提供帮助',
       linkText: '立即咨询',
-      linkUrl: '#',
+      linkUrl: createPageUrl('CreateTicket'),
       iconBg: 'bg-purple-50',
       iconColor: 'text-purple-600',
       showOnline: true,
