@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 import mammoth from 'npm:mammoth@1.8.0';
 import pdfParse from 'npm:pdf-parse@1.1.1';
+import { Buffer } from 'node:buffer';
 
 const MAX_TEXT_LENGTH = 50000;
 
