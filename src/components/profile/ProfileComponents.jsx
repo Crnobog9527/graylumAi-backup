@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { 
   User, CreditCard, History, Shield, LogOut, 
   Crown, Zap, Clock, ChevronRight, ChevronLeft,
-  CheckCircle2, RefreshCw, Settings, Wallet, Package, Mail, Lock, Loader2
+  CheckCircle2, RefreshCw, Settings, Wallet, Package, Mail, Lock, Loader2, Headphones
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -22,6 +22,7 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
     { id: 'credits', label: '积分记录', icon: Wallet },
     { id: 'history', label: '使用历史', icon: History },
     { id: 'security', label: '账户安全', icon: Shield },
+    { id: 'tickets', label: '工单记录', icon: Headphones, isLink: true, path: 'Tickets' },
   ];
 
   const handleLogout = async () => {
@@ -36,6 +37,20 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            
+            if (item.isLink) {
+              return (
+                <Link key={item.id} to={createPageUrl(item.path)}>
+                  <button
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </button>
+                </Link>
+              );
+            }
+            
             return (
               <button
                 key={item.id}
