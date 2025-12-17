@@ -429,13 +429,9 @@ Deno.serve(async (req) => {
       const requestBody = {
         model: model.model_id,
         max_tokens: model.max_tokens || 4096,
+        system: enhancedSystemPrompt || '',
         messages: anthropicMessages
       };
-
-      // 只在有有效 system_prompt 时才添加
-      if (system_prompt && system_prompt.trim().length > 0) {
-      requestBody.system = system_prompt;
-      }
 
       console.log('[callAIModel] ========== ANTHROPIC API REQUEST (Official) ==========');
       console.log('[callAIModel] Model ID:', model.model_id);
