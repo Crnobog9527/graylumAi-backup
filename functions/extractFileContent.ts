@@ -24,7 +24,10 @@ Deno.serve(async (req) => {
     // 下载文件
     const fileResponse = await fetch(file_url);
     if (!fileResponse.ok) {
-      return Response.json({ error: 'Failed to download file' }, { status: 400 });
+      return Response.json({ 
+        success: false,
+        error: 'Failed to download file' 
+      }, { status: 400 });
     }
     
     const fileBuffer = await fileResponse.arrayBuffer();
@@ -59,7 +62,9 @@ Deno.serve(async (req) => {
         const result = await mammoth.extractRawText({ buffer: Buffer.from(fileBuffer) });
         content = result.value;
       } catch (error) {
+        console.error('[extractFileContent] DOCX extraction error:', error);
         return Response.json({ 
+          success: false,
           error: `Failed to extract DOCX: ${error.message}` 
         }, { status: 500 });
       }
@@ -71,7 +76,9 @@ Deno.serve(async (req) => {
         const pdfData = await pdfParse(Buffer.from(fileBuffer));
         content = pdfData.text;
       } catch (error) {
+        console.error('[extractFileContent] PDF extraction error:', error);
         return Response.json({ 
+          success: false,
           error: `Failed to extract PDF: ${error.message}` 
         }, { status: 500 });
       }
@@ -80,6 +87,7 @@ Deno.serve(async (req) => {
     // 不支持的文件类型
     else {
       return Response.json({ 
+        success: false,
         error: 'Unsupported file type. Supported: txt, docx, pdf, images' 
       }, { status: 400 });
     }
@@ -104,7 +112,9 @@ Deno.serve(async (req) => {
     
   } catch (error) {
     console.error('[extractFileContent] Error:', error);
+    console.error('[extractFileContent] Stack:', error.stack);
     return Response.json({ 
+      success: false,
       error: error.message 
     }, { status: 500 });
   }
