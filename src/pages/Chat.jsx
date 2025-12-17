@@ -134,7 +134,7 @@ export default function Chat() {
     onSuccess: (newConv) => {
       // 创建后设置当前对话，并刷新列表
       setCurrentConversation(newConv);
-      setMessages(newConv.messages || []);
+      // 不覆盖 messages，保持前端状态
       queryClient.invalidateQueries(['conversations']);
     },
   });
@@ -145,7 +145,7 @@ export default function Chat() {
       // 更新后同步当前对话状态
       if (currentConversation?.id === updatedConv.id) {
         setCurrentConversation(updatedConv);
-        setMessages(updatedConv.messages || []);
+        // 不覆盖 messages，保持前端状态和token数据
       }
       queryClient.invalidateQueries(['conversations']);
     },
