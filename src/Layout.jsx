@@ -19,6 +19,42 @@ export default function Layout({ children, currentPageName }) {
       try {
         const userData = await base44.auth.me();
         setUser(userData);
+        
+        // 检查是否需要发放注册奖励
+        if (userData && !userData.registration_bonus_granted) {
+          try {
+            // 获取系统设置中的注册奖励积分
+            const settings = await base44.entities.SystemSettings.filter({ 
+              setting_key: 'new_user_bonus_credits' 
+            });
+            const bonusCredits = settings.length > 0 ? parseInt(settings[0].setting_value) : 100;
+            
+            // 发放注册奖励
+            const newBalance = (userData.credits || 0) + bonusCredits;
+            await base44.auth.updateMe({
+              credits: newBalance,
+              registration_bonus_granted: true
+            });
+            
+            // 创建积分交易记录
+            await base44.entities.CreditTransaction.create({
+              user_email: userData.email,
+              type: 'bonus',
+              amount: bonusCredits,
+              balance_after: newBalance,
+              description: `新用户注册奖励 - ${bonusCredits}积分`
+            });
+            
+            // 更新本地用户状态
+            setUser({
+              ...userData,
+              credits: newBalance,
+              registration_bonus_granted: true
+            });
+          } catch (error) {
+            console.error('发放注册奖励失败:', error);
+          }
+        }
       } catch (e) {
         setUser(null);
         // 如果未登录且不是公开页面，重定向到Landing
