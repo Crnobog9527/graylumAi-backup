@@ -222,17 +222,11 @@ export default function Chat() {
         handleStartNewChat(module);
         // 清除URL参数
         window.history.replaceState({}, '', createPageUrl('Chat'));
-        
-        if (autoStart && module.user_prompt_template) {
+
+        // 只有当有用户提示词模板时才自动发送
+        if (autoStart && module.user_prompt_template && module.user_prompt_template.trim()) {
           setTimeout(() => {
             setInputMessage(module.user_prompt_template);
-            setTimeout(() => {
-              document.querySelector('[data-send-button]')?.click();
-            }, 200);
-          }, 200);
-        } else if (autoStart) {
-          setTimeout(() => {
-            setInputMessage('请开始');
             setTimeout(() => {
               document.querySelector('[data-send-button]')?.click();
             }, 200);
