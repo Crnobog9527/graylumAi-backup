@@ -284,6 +284,135 @@ export default function Chat() {
     }
   };
 
+  // 处理流式响应
+  const handleStreamingResponse = async (messageToSend, systemPrompt, imageFiles) => {
+    const assistantMessage = {
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+      credits_used: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+    };
+    
+    const streamingMessages = [...newMessages, assistantMessage];
+    setMessages(streamingMessages);
+    
+    try {
+      // 构建函数URL
+      const functionUrl = `${window.location.origin}/api/functions/callAIModelStream`;
+      
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await base44.auth.getToken()}`
+        },
+        body: JSON.stringify({
+          model_id: selectedModel.id,
+          messages: [...messages, { role: 'user', content: messageToSend }],
+          system_prompt: systemPrompt,
+          force_web_search: selectedModel.enable_web_search,
+          image_files: imageFiles
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Stream request failed');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let fullContent = '';
+      let finalTokens = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.type === 'content') {
+                fullContent = data.fullContent;
+                assistantMessage.content = fullContent;
+                setMessages([...newMessages, { ...assistantMessage }]);
+              } else if (data.type === 'done') {
+                finalTokens = {
+                  input_tokens: data.input_tokens,
+                  output_tokens: data.output_tokens,
+                  credits_used: data.credits_used,
+                  input_credits: data.input_credits,
+                  output_credits: data.output_credits
+                };
+                fullContent = data.fullContent;
+              } else if (data.type === 'error') {
+                throw new Error(data.error);
+              }
+            } catch (e) {
+              console.error('Parse SSE error:', e);
+            }
+          }
+        }
+      }
+
+      if (!finalTokens) {
+        throw new Error('Stream ended without final token data');
+      }
+
+      // 更新最终消息和token数据
+      assistantMessage.content = fullContent;
+      assistantMessage.credits_used = finalTokens.credits_used;
+      assistantMessage.input_tokens = finalTokens.input_tokens;
+      assistantMessage.output_tokens = finalTokens.output_tokens;
+
+      const finalMessages = [...newMessages, assistantMessage];
+      setMessages(finalMessages);
+
+      // 更新余额和保存对话（与原逻辑相同）
+      const creditsUsed = finalTokens.credits_used;
+      const newBalance = currentCredits - creditsUsed;
+      
+      await updateUserMutation.mutateAsync({
+        credits: newBalance,
+        total_credits_used: (user.total_credits_used || 0) + creditsUsed,
+      });
+
+      const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
+
+      if (currentConversation) {
+        await updateConversationMutation.mutateAsync({
+          id: currentConversation.id,
+          data: {
+            messages: finalMessages,
+            total_credits_used: (currentConversation.total_credits_used || 0) + creditsUsed,
+          }
+        });
+      } else {
+        await createConversationMutation.mutateAsync({
+          title,
+          model_id: selectedModel.id,
+          prompt_module_id: selectedModule?.id,
+          messages: finalMessages,
+          total_credits_used: creditsUsed,
+        });
+      }
+
+    } catch (error) {
+      console.error('Streaming error:', error);
+      alert('流式输出失败: ' + error.message);
+    } finally {
+      setIsStreaming(false);
+    }
+  };
+
   const handleSendMessage = async (skipWarning = false) => {
     if ((!inputMessage.trim() && fileContents.length === 0) || !selectedModel || !user || isStreaming) return;
 
