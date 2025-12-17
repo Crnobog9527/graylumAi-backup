@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import FileAttachmentCard from '../components/chat/FileAttachmentCard';
+import TokenUsageStats from '../components/chat/TokenUsageStats';
 
 // 估算token数量 (约4字符=1token)
 function estimateTokens(text) {
@@ -112,6 +113,7 @@ export default function Chat() {
     .replace('{output}', outputCreditsPerK);
   const showModelSelector = getSettingValue('chat_show_model_selector', 'true') === 'true';
   const maxInputCharacters = parseInt(getSettingValue('max_input_characters', '2000')) || 2000;
+  const showTokenUsageStats = getSettingValue('show_token_usage_stats', 'true') === 'true';
 
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
@@ -889,6 +891,11 @@ export default function Chat() {
             </div>
           </ScrollArea>
         </div>
+
+        {/* Token Usage Statistics */}
+        {showTokenUsageStats && messages.length > 0 && (
+          <TokenUsageStats messages={messages} currentModel={selectedModel} />
+        )}
 
         {/* Input Area */}
         <div className="border-t border-slate-200 p-4 bg-slate-50">
