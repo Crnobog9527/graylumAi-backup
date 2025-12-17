@@ -3,18 +3,18 @@ import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { cn } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
-import { 
-  LayoutGrid, Home, User, Search, Bell, 
-  LogOut, Settings, CreditCard, Bot 
-} from 'lucide-react';
+import {
+  LayoutGrid, Home, User, Search, Bell,
+  LogOut, Settings, CreditCard, Bot } from
+'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  DropdownMenuTrigger } from
+"@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { base44 } from '@/api/base44Client';
 
@@ -23,11 +23,11 @@ export default function AppHeader({ user }) {
   const currentPath = location.pathname;
 
   const navItems = [
-    { name: '首页', path: 'Home', icon: Home },
-    { name: '对话', path: 'Chat', icon: Bot },
-    { name: '功能广场', path: 'Marketplace', icon: LayoutGrid },
-    { name: '个人中心', path: 'Profile', icon: User },
-  ];
+  { name: '首页', path: 'Home', icon: Home },
+  { name: '对话', path: 'Chat', icon: Bot },
+  { name: '功能广场', path: 'Marketplace', icon: LayoutGrid },
+  { name: '个人中心', path: 'Profile', icon: User }];
+
 
   return (
     <header className="h-16 border-b border-slate-200 bg-white sticky top-0 z-50">
@@ -38,12 +38,12 @@ export default function AppHeader({ user }) {
             <div className="bg-indigo-600 p-1.5 rounded-lg">
               <Bot className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-lg text-slate-900">AI工具平台</span>
+            <span className="font-bold text-lg text-slate-900">Graylum AI</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
-              const isActive = currentPath.includes(item.path) || (item.path === 'Home' && currentPath === '/');
+              const isActive = currentPath.includes(item.path) || item.path === 'Home' && currentPath === '/';
               return (
                 <Link key={item.path} to={createPageUrl(item.path)}>
                   <Button
@@ -51,20 +51,20 @@ export default function AppHeader({ user }) {
                     className={cn(
                       "text-slate-600 hover:text-indigo-600 hover:bg-indigo-50",
                       isActive && "text-indigo-600 bg-indigo-50 font-medium"
-                    )}
-                  >
+                    )}>
+
                     {item.name}
                   </Button>
-                </Link>
-              );
+                </Link>);
+
             })}
           </nav>
         </div>
 
         {/* User Menu */}
         <div className="flex items-center gap-4">
-          {user ? (
-            <>
+          {user ?
+          <>
               <div className="hidden sm:flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium gap-2">
                 <CreditCard className="h-4 w-4" />
                 <span>{user.credits?.toLocaleString() || 0} 积分</span>
@@ -99,14 +99,14 @@ export default function AppHeader({ user }) {
                       充值中心
                     </DropdownMenuItem>
                   </Link>
-                  {user.role === 'admin' && (
-                    <Link to={createPageUrl('AdminDashboard')}>
+                  {user.role === 'admin' &&
+                <Link to={createPageUrl('AdminDashboard')}>
                       <DropdownMenuItem>
                         <Settings className="h-4 w-4 mr-2" />
                         管理后台
                       </DropdownMenuItem>
                     </Link>
-                  )}
+                }
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-red-600" onClick={() => base44.auth.logout(createPageUrl('Landing'))}>
                     <LogOut className="h-4 w-4 mr-2" />
@@ -114,14 +114,14 @@ export default function AppHeader({ user }) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </>
-          ) : (
-            <Button onClick={() => base44.auth.redirectToLogin()} className="bg-indigo-600 hover:bg-indigo-700">
+            </> :
+
+          <Button onClick={() => base44.auth.redirectToLogin()} className="bg-indigo-600 hover:bg-indigo-700">
               登录 / 注册
             </Button>
-          )}
+          }
         </div>
       </div>
-    </header>
-  );
+    </header>);
+
 }
