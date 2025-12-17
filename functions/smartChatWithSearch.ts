@@ -491,12 +491,48 @@ Deno.serve(async (req) => {
       web_search_used: webSearchUsed
     });
     
-    const totalCredits = actualDeducted;
+    // 更新或创建对话
+    const newMessages = [
+      ...conversationMessages,
+      { 
+        role: 'user', 
+        content: message, 
+        timestamp: new Date().toISOString() 
+      },
+      { 
+        role: 'assistant', 
+        content: modelData.response, 
+        timestamp: new Date().toISOString(),
+        credits_used: actualDeducted,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens
+      }
+    ];
+    
+    let finalConversationId = conversation_id;
+    
+    if (conversation) {
+      console.log('[smartChatWithSearch] Updating conversation');
+      await base44.asServiceRole.entities.Conversation.update(conversation.id, {
+        messages: newMessages,
+        total_credits_used: (conversation.total_credits_used || 0) + actualDeducted,
+        updated_date: new Date().toISOString()
+      });
+    } else {
+      console.log('[smartChatWithSearch] Creating new conversation');
+      const newConv = await base44.asServiceRole.entities.Conversation.create({
+        title: message.slice(0, 50),
+        model_id: selectedModel.id,
+        messages: newMessages,
+        total_credits_used: actualDeducted
+      });
+      finalConversationId = newConv.id;
+    }
     
     // 步骤5：更新Token预算（使用最新的用户余额）
     try {
       await base44.functions.invoke('tokenBudgetManager', {
-        conversation_id: finalConversationId || conversation_id || 'temp',
+        conversation_id: finalConversationId,
         operation: 'consume',
         tokens: inputTokens + outputTokens
       });
@@ -511,65 +547,12 @@ Deno.serve(async (req) => {
       try {
         // 异步触发压缩，不等待结果
         base44.functions.invoke('compressConversation', {
-          conversation_id: finalConversationId || conversation_id,
+          conversation_id: finalConversationId,
           messages_to_compress: messageCount - 8 // 保留最近4轮
         }).catch(err => console.log('[smartChatWithSearch] Compression failed:', err.message));
       } catch (e) {
         console.log('[smartChatWithSearch] Compression trigger skipped:', e.message);
       }
-    }
-    
-    // 创建积分交易记录
-    await base44.asServiceRole.entities.CreditTransaction.create({
-      user_email: user.email,
-      type: 'usage',
-      amount: -totalCreditsDeducted,
-      balance_after: finalCredits,
-      description: `对话消耗 - ${selectedModel.name}${selectedModule ? ` - ${selectedModule.title}` : ''} (输入:${inputTokens}tokens/${inputCredits.toFixed(3)}积分, 输出:${outputTokens}tokens/${outputCredits.toFixed(3)}积分${webSearchUsed ? ', 联网搜索:5积分' : ''})`,
-      model_used: selectedModel.name,
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      input_credits: inputCredits,
-      output_credits: outputCredits,
-      web_search_used: webSearchUsed,
-    });
-    
-    // 更新或创建对话
-    const newMessages = [
-      ...conversationMessages,
-      { 
-        role: 'user', 
-        content: message, 
-        timestamp: new Date().toISOString() 
-      },
-      { 
-        role: 'assistant', 
-        content: modelData.response, 
-        timestamp: new Date().toISOString(),
-        credits_used: totalCreditsDeducted,
-        input_tokens: inputTokens,
-        output_tokens: outputTokens
-      }
-    ];
-    
-    let finalConversationId = conversation_id;
-    
-    if (conversation) {
-      console.log('[smartChatWithSearch] Updating conversation');
-      await base44.asServiceRole.entities.Conversation.update(conversation.id, {
-        messages: newMessages,
-        total_credits_used: (conversation.total_credits_used || 0) + totalCreditsDeducted,
-        updated_date: new Date().toISOString()
-      });
-    } else {
-      console.log('[smartChatWithSearch] Creating new conversation');
-      const newConv = await base44.asServiceRole.entities.Conversation.create({
-        title: message.slice(0, 50),
-        model_id: selectedModel.id,
-        messages: newMessages,
-        total_credits_used: totalCreditsDeducted
-      });
-      finalConversationId = newConv.id;
     }
     
     console.log('[smartChatWithSearch] Request completed successfully');
@@ -578,11 +561,11 @@ Deno.serve(async (req) => {
       conversation_id: finalConversationId,
       response: modelData.response,
       model_used: selectedModel.name,
-      credits_used: totalCreditsDeducted,
+      credits_used: actualDeducted,
       token_credits: tokenCredits,
-      search_fee: searchFeeDeducted,
-      token_fee_deducted: tokenFeeDeducted,
-      pending_credits: finalPendingCredits,
+      search_fee: webSearchDeducted,
+      token_fee_deducted: tokenDeducted,
+      pending_credits: finalPending,
       input_tokens: inputTokens,
       output_tokens: outputTokens,
       input_credits: inputCredits,
@@ -590,7 +573,7 @@ Deno.serve(async (req) => {
       search_info: {
         executed: webSearchUsed,
         cache_hit: false,
-        cost: searchFeeDeducted
+        cost: webSearchDeducted
       },
       task_classification: taskClassification,
       compression_used: !!summaryToUse,
