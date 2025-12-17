@@ -18,7 +18,7 @@ import { LanguageProvider, useLanguage } from '../components/admin/LanguageConte
 
 const defaultSettings = {
   // 聊天页面
-  chat_billing_hint: { value: '⚡ 按实际Token消耗计费：输入 {input}积分/1K tokens，输出 {output}积分/1K tokens', type: 'string', label: '计费提示文案', description: '聊天页面底部显示的计费说明，{input}和{output}会替换为实际值' },
+  chat_billing_hint: { value: '⚡ 按实际Token消耗计费：输入 {input}积分/1K tokens，输出 {output}积分/1K tokens', type: 'string', label: '聊天提示文案', description: '聊天页面底部显示的公告说明' },
   chat_show_model_selector: { value: 'true', type: 'boolean', label: '显示模型选择器', description: '是否在聊天页面顶部显示模型切换按钮' },
   // 首页引导
   home_guide_button_module_id: { value: '', type: 'string', label: '首页引导按钮关联模块', description: '选择"开始分析"按钮点击后跳转的功能模块' },
