@@ -25,17 +25,9 @@ export default function TokenUsageStats({ messages, currentModel }) {
   const calculateCost = (inputTokens, outputTokens) => {
     if (!currentModel) return 0;
     
-    // 判断是否超过200K tokens
-    const inputCostPerM = inputTokens > 200000 
-      ? (currentModel.input_token_cost_above_200k || currentModel.input_token_cost || 0)
-      : (currentModel.input_token_cost || 0);
-    
-    const outputCostPerM = outputTokens > 200000
-      ? (currentModel.output_token_cost_above_200k || currentModel.output_token_cost || 0)
-      : (currentModel.output_token_cost || 0);
-    
-    const inputCost = (inputTokens / 1_000_000) * inputCostPerM;
-    const outputCost = (outputTokens / 1_000_000) * outputCostPerM;
+    // 新的积分计算规则
+    const inputCost = inputTokens / 1000;  // 1积分/1000tokens
+    const outputCost = outputTokens / 200;  // 1积分/200tokens
     
     return inputCost + outputCost;
   };
@@ -87,17 +79,17 @@ export default function TokenUsageStats({ messages, currentModel }) {
             </div>
           </div>
 
-          {/* 预估成本 */}
+          {/* 预估积分 */}
           <div className="bg-white rounded-lg p-3 border border-green-200">
             <div className="flex items-center gap-2 text-xs text-green-600 mb-1">
               <DollarSign className="h-3 w-3" />
-              <span>预估成本</span>
+              <span>预估积分</span>
             </div>
             <div className="text-lg font-semibold text-green-700">
-              ${totalCost.toFixed(4)}
+              {totalCost.toFixed(2)}
             </div>
             <div className="text-xs text-green-500">
-              本次: ${lastCost.toFixed(4)}
+              本次: {lastCost.toFixed(2)}
             </div>
           </div>
         </div>

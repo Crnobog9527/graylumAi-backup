@@ -389,15 +389,103 @@ Deno.serve(async (req) => {
     const modelData = modelRes.data;
     console.log('[smartChatWithSearch] AI response received, web_search_used:', modelData.web_search_enabled);
     
-    // 计算积分消耗（使用callAIModel返回的积分）
-    const totalCredits = modelData.credits_used || 1;
+    // ========== 新的双轨制结算逻辑 ==========
     const inputTokens = modelData.input_tokens || 0;
     const outputTokens = modelData.output_tokens || 0;
     const inputCredits = modelData.input_credits || 0;
     const outputCredits = modelData.output_credits || 0;
     const webSearchUsed = modelData.web_search_enabled || false;
     
-    // 步骤5：更新Token预算
+    // Token消耗（精确小数）
+    const tokenCredits = inputCredits + outputCredits;
+    
+    // 获取用户当前状态
+    const currentUser = await base44.asServiceRole.entities.User.filter({ email: user.email });
+    if (currentUser.length === 0) {
+      throw new Error('User not found');
+    }
+    const userRecord = currentUser[0];
+    const currentBalance = userRecord.credits || 0;
+    const currentPending = userRecord.pending_credits || 0;
+    
+    console.log('[smartChatWithSearch] ===== 结算开始 =====');
+    console.log('[smartChatWithSearch] 当前余额:', currentBalance, '积分');
+    console.log('[smartChatWithSearch] 待结算余额:', currentPending, '积分');
+    console.log('[smartChatWithSearch] Token消耗:', tokenCredits.toFixed(4), '积分');
+    console.log('[smartChatWithSearch] 联网搜索:', webSearchUsed ? 'YES (5积分)' : 'NO');
+    
+    let finalBalance = currentBalance;
+    let finalPending = currentPending;
+    let actualDeducted = 0;
+    let webSearchDeducted = 0;
+    let tokenDeducted = 0;
+    
+    // 步骤1：联网搜索费用（立即扣除）
+    if (webSearchUsed) {
+      const WEB_SEARCH_FEE = 5;
+      if (finalBalance < WEB_SEARCH_FEE) {
+        throw new Error(`积分不足，联网搜索需要${WEB_SEARCH_FEE}积分，您当前只有${finalBalance}积分`);
+      }
+      finalBalance -= WEB_SEARCH_FEE;
+      webSearchDeducted = WEB_SEARCH_FEE;
+      console.log('[smartChatWithSearch] → 扣除联网搜索费:', WEB_SEARCH_FEE, '积分，余额:', finalBalance);
+    }
+    
+    // 步骤2：Token费用加入待结算
+    finalPending += tokenCredits;
+    console.log('[smartChatWithSearch] → Token费用加入待结算:', tokenCredits.toFixed(4), '积分');
+    console.log('[smartChatWithSearch] → 待结算余额更新为:', finalPending.toFixed(4), '积分');
+    
+    // 步骤3：待结算余额>=1时扣除整数部分
+    if (finalPending >= 1) {
+      const toDeduct = Math.floor(finalPending);
+      if (finalBalance < toDeduct) {
+        throw new Error(`积分不足，需要${toDeduct}积分，您当前只有${finalBalance}积分`);
+      }
+      finalBalance -= toDeduct;
+      finalPending -= toDeduct;
+      tokenDeducted = toDeduct;
+      console.log('[smartChatWithSearch] → 待结算≥1，扣除Token费:', toDeduct, '积分，余额:', finalBalance);
+      console.log('[smartChatWithSearch] → 待结算余额更新为:', finalPending.toFixed(4), '积分');
+    }
+    
+    actualDeducted = webSearchDeducted + tokenDeducted;
+    
+    console.log('[smartChatWithSearch] ===== 结算完成 =====');
+    console.log('[smartChatWithSearch] 本次扣除: 功能费', webSearchDeducted, '+ Token费', tokenDeducted, '= 总计', actualDeducted, '积分');
+    console.log('[smartChatWithSearch] 最终余额:', finalBalance, '积分');
+    console.log('[smartChatWithSearch] 最终待结算:', finalPending.toFixed(4), '积分');
+    console.log('[smartChatWithSearch] ========================');
+    
+    // 更新用户余额和待结算余额
+    await base44.asServiceRole.entities.User.update(userRecord.id, {
+      credits: finalBalance,
+      pending_credits: finalPending,
+      total_credits_used: (userRecord.total_credits_used || 0) + actualDeducted
+    });
+    
+    // 创建交易记录
+    const transactionDesc = webSearchUsed 
+      ? `对话消耗 - ${selectedModel.name} (输入:${inputTokens}/${inputCredits.toFixed(3)}积分, 输出:${outputTokens}/${outputCredits.toFixed(3)}积分, 联网搜索:5积分)`
+      : `对话消耗 - ${selectedModel.name} (输入:${inputTokens}/${inputCredits.toFixed(3)}积分, 输出:${outputTokens}/${outputCredits.toFixed(3)}积分)`;
+    
+    await base44.asServiceRole.entities.CreditTransaction.create({
+      user_email: user.email,
+      type: 'usage',
+      amount: -actualDeducted,
+      balance_after: finalBalance,
+      description: transactionDesc,
+      model_used: selectedModel.name,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      input_credits: inputCredits,
+      output_credits: outputCredits,
+      web_search_used: webSearchUsed
+    });
+    
+    const totalCredits = actualDeducted;
+    
+    // 步骤5：更新Token预算（使用最新的用户余额）
     try {
       await base44.functions.invoke('tokenBudgetManager', {
         conversation_id: finalConversationId || conversation_id || 'temp',

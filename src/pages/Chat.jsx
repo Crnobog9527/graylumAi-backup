@@ -106,11 +106,7 @@ export default function Chat() {
 
   const longTextWarningEnabled = getSettingValue('enable_long_text_warning', 'true') === 'true';
   const longTextThreshold = parseInt(getSettingValue('long_text_warning_threshold', '5000')) || 5000;
-  const inputCreditsPerK = parseInt(getSettingValue('input_credits_per_1k', '1')) || 1;
-  const outputCreditsPerK = parseInt(getSettingValue('output_credits_per_1k', '5')) || 5;
-  const chatBillingHint = getSettingValue('chat_billing_hint', '⚡ 按实际Token消耗计费：输入 {input}积分/1K tokens，输出 {output}积分/1K tokens')
-    .replace('{input}', inputCreditsPerK)
-    .replace('{output}', outputCreditsPerK);
+  const chatBillingHint = '⚡ 新计费规则：输入 1积分/1000tokens，输出 1积分/200tokens，联网搜索 5积分/次';
   const showModelSelector = getSettingValue('chat_show_model_selector', 'true') === 'true';
   const maxInputCharacters = parseInt(getSettingValue('max_input_characters', '2000')) || 2000;
   const showTokenUsageStats = getSettingValue('show_token_usage_stats', 'true') === 'true';
@@ -354,11 +350,11 @@ export default function Chat() {
     const estimatedInputTokens = estimateTokens(allContent);
 
     if (!skipWarning && longTextWarningEnabled && estimatedInputTokens > longTextThreshold) {
-      // 预估积分消耗 (输入 + 预估输出)
+      // 预估积分消耗（新规则）
       const estimatedOutputTokens = Math.min(estimatedInputTokens * 0.5, 4000);
-      const inputCost = Math.ceil(estimatedInputTokens / 1000) * inputCreditsPerK;
-      const outputCost = Math.ceil(estimatedOutputTokens / 1000) * outputCreditsPerK;
-      const totalEstimatedCredits = inputCost + outputCost;
+      const inputCost = estimatedInputTokens / 1000;  // 1积分/1000tokens
+      const outputCost = estimatedOutputTokens / 200;  // 1积分/200tokens
+      const totalEstimatedCredits = Math.ceil(inputCost + outputCost);
 
       setLongTextWarning({
         open: true,
@@ -907,6 +903,9 @@ export default function Chat() {
             <div className="flex items-center justify-center gap-2 text-xs text-slate-500 mb-3">
               <span>上一条消息消耗了 {messages[messages.length - 1]?.credits_used || 0} 积分，</span>
               <span>您还剩 <span className="text-blue-600 font-medium">{user.credits?.toLocaleString() || 0}</span> 积分</span>
+              {user.pending_credits > 0 && (
+                <span className="text-amber-600">（待结算 {user.pending_credits.toFixed(3)} 积分）</span>
+              )}
             </div>
 
             {/* Uploaded Files Preview */}
