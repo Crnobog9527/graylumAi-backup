@@ -603,7 +603,7 @@ function AdminAnnouncementsContent() {
                 />
               </div>
 
-              {/* 计费提示文案 */}
+              {/* 聊天提示文案 */}
               <div className="space-y-3 pt-4">
                 <div>
                   <Label className="text-base">{settings.chat_billing_hint?.label}</Label>
@@ -612,7 +612,7 @@ function AdminAnnouncementsContent() {
                 <Textarea
                   value={settings.chat_billing_hint?.value || ''}
                   onChange={(e) => updateSetting('chat_billing_hint', e.target.value)}
-                  placeholder="输入计费提示文案..."
+                  placeholder="输入聊天提示文案..."
                   className="min-h-[80px]"
                 />
                 <div className="p-3 bg-slate-50 rounded-lg border">
