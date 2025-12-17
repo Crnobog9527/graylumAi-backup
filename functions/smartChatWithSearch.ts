@@ -4,6 +4,9 @@ const CACHE_TTL_MINUTES = 15;
 const SIMILARITY_THRESHOLD = 0.85;
 const WEB_SEARCH_COST = 0.005;
 
+// Token 估算函数
+const estimateTokens = (text) => Math.ceil((text || '').length / 4);
+
 // 标准化查询
 const normalizeQuery = (query) => {
   return query.toLowerCase()
@@ -319,8 +322,7 @@ Deno.serve(async (req) => {
     // 添加当前增强消息
     apiMessages.push({ role: 'user', content: enhancedMessage });
     
-    // 计算token估算
-    const estimateTokens = (text) => Math.ceil((text || '').length / 4);
+    // 计算token总数
     const totalTokens = apiMessages.reduce((sum, m) => sum + estimateTokens(m.content), 0) + 
                         (system_prompt ? estimateTokens(system_prompt) : 0);
     
