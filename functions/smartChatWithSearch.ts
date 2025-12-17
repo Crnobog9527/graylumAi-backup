@@ -128,48 +128,53 @@ Deno.serve(async (req) => {
     
     console.log('[smartChatWithSearch] Using model:', selectedModel.name, 'Web search enabled:', selectedModel.enable_web_search);
     
-    // 步骤1.5：检查是否需要压缩历史（Token优化）
-    const historyTokens = conversationMessages.reduce((sum, m) => sum + estimateTokens(m.content), 0);
-    const COMPRESSION_THRESHOLD = 50000; // 超过5万token触发压缩
-    let useSummary = false;
-    let summaryText = '';
-    
-    if (conversation_id && historyTokens > COMPRESSION_THRESHOLD) {
-      console.log('[smartChatWithSearch] History tokens', historyTokens, 'exceeds threshold, checking for summary...');
+    // 步骤1.5：Token预算检查
+    try {
+      const budgetRes = await base44.functions.invoke('tokenBudgetManager', {
+        conversation_id: conversation_id || 'temp',
+        operation: 'check'
+      });
       
-      // 检查是否已有摘要
-      const summaries = await base44.asServiceRole.entities.ConversationSummary.filter(
-        { conversation_id },
-        '-created_date',
-        1
-      );
-      
-      if (summaries.length > 0 && summaries[0].covered_messages >= conversationMessages.length * 0.6) {
-        // 使用现有摘要
-        summaryText = summaries[0].summary_text;
-        useSummary = true;
-        console.log('[smartChatWithSearch] Using existing summary, covered', summaries[0].covered_messages, 'messages');
-      } else {
-        // 触发新的压缩
-        console.log('[smartChatWithSearch] Triggering compression for', conversationMessages.length, 'messages');
-        try {
-          const compressRes = await base44.functions.invoke('compressConversation', {
-            conversation_id,
-            messages_to_compress: Math.floor(conversationMessages.length * 0.6)
-          });
-          
-          if (compressRes.data?.summary?.text) {
-            summaryText = compressRes.data.summary.text;
-            useSummary = true;
-            console.log('[smartChatWithSearch] Compression completed, saved', compressRes.data.summary.tokens_saved, 'tokens');
-          }
-        } catch (error) {
-          console.error('[smartChatWithSearch] Compression failed:', error);
-        }
+      if (budgetRes.data?.budget?.is_exceeded) {
+        console.log('[smartChatWithSearch] WARNING: Token budget exceeded');
+      } else if (budgetRes.data?.budget?.should_warn) {
+        console.log('[smartChatWithSearch] WARNING: Token budget at', budgetRes.data.budget.usage_percent);
       }
+    } catch (e) {
+      console.log('[smartChatWithSearch] Budget check skipped:', e.message);
     }
     
-    // 步骤2：简化的搜索判断（关键词匹配或URL检测）- 无论模型是否启用联网，都进行判断
+    // 步骤2：智能任务分类和模型选择
+    let taskClassification = null;
+    try {
+      const classifyRes = await base44.functions.invoke('taskClassifier', {
+        message,
+        conversation_id
+      });
+      
+      if (classifyRes.data && !classifyRes.data.error) {
+        taskClassification = classifyRes.data;
+        console.log('[smartChatWithSearch] Task classification:', taskClassification.task_type, 
+                    '| Model:', taskClassification.recommended_model,
+                    '| Complexity:', taskClassification.complexity_score);
+        
+        // 根据任务分类结果选择模型（如果有对应的AI模型）
+        if (taskClassification.model_id) {
+          const classifiedModel = models.find(m => 
+            m.model_id === taskClassification.model_id || 
+            m.model_id.includes(taskClassification.recommended_model)
+          );
+          if (classifiedModel && classifiedModel.is_active) {
+            selectedModel = classifiedModel;
+            console.log('[smartChatWithSearch] Switched to classified model:', selectedModel.name);
+          }
+        }
+      }
+    } catch (e) {
+      console.log('[smartChatWithSearch] Task classification skipped:', e.message);
+    }
+    
+    // 步骤3：简化的搜索判断（关键词匹配或URL检测）- 无论模型是否启用联网，都进行判断
     const lowerMessage = message.toLowerCase();
     const searchKeywords = [
       "天气", "股价", "汇率", "比赛", "新闻", "最新", "今天", "昨天", "现在", "当前",
@@ -217,6 +222,28 @@ Deno.serve(async (req) => {
     // 步骤3：构建消息（不需要额外处理，联网在callAIModel中启用）
     const enhancedMessage = message;
     
+    // 步骤3.5：检查是否需要压缩历史
+    let shouldCompress = false;
+    let summaryToUse = null;
+    
+    if (conversation_id) {
+      try {
+        // 获取现有摘要
+        const summaries = await base44.asServiceRole.entities.ConversationSummary.filter(
+          { conversation_id },
+          '-created_date',
+          1
+        );
+        
+        if (summaries.length > 0) {
+          summaryToUse = summaries[0];
+          console.log('[smartChatWithSearch] Found existing summary covering', summaryToUse.covered_messages, 'messages');
+        }
+      } catch (e) {
+        console.log('[smartChatWithSearch] Summary fetch skipped:', e.message);
+      }
+    }
+    
     // 步骤4：获取对话历史
     let conversation;
     let conversationMessages = [];
@@ -237,29 +264,29 @@ Deno.serve(async (req) => {
       console.log('[smartChatWithSearch] New conversation, no history');
     }
     
-    // 构建消息列表 - 如果有摘要则使用摘要替代早期消息
+    // 构建消息列表 - 使用摘要替换旧消息（如果存在）
     let apiMessages = [];
     
-    if (useSummary && summaryText) {
-      // 使用摘要 + 最近的消息
-      const recentMessageCount = Math.min(6, conversationMessages.length); // 保留最近3轮
-      const recentMessages = conversationMessages.slice(-recentMessageCount);
+    if (summaryToUse && conversationMessages.length > 8) {
+      // 有摘要且消息较多时，使用摘要 + 最近消息
+      const coveredCount = summaryToUse.covered_messages * 2; // 转换为消息数（一问一答=2条）
+      const recentMessages = conversationMessages.slice(coveredCount);
       
       // 添加摘要作为系统消息
       apiMessages.push({
         role: 'user',
-        content: `【对话上下文摘要】\n${summaryText}\n\n【以下是最近的对话】`
+        content: `[对话历史摘要 - 前${summaryToUse.covered_messages}轮]\n${summaryToUse.summary_text}`
       });
       
-      // 添加最近消息
+      // 添加最近的消息
       apiMessages.push(...recentMessages.map(m => ({
         role: m.role,
         content: m.content
       })));
       
-      console.log('[smartChatWithSearch] Using summary + ', recentMessageCount, 'recent messages');
+      console.log('[smartChatWithSearch] Using summary + recent messages:', recentMessages.length);
     } else {
-      // 使用完整历史
+      // 没有摘要或消息较少，使用完整历史
       apiMessages = conversationMessages.map(m => ({
         role: m.role,
         content: m.content
@@ -339,21 +366,31 @@ Deno.serve(async (req) => {
     const outputCredits = modelData.output_credits || 0;
     const webSearchUsed = modelData.web_search_enabled || false;
     
-    // 记录Token统计
-    await base44.asServiceRole.entities.TokenStats.create({
-      conversation_id: finalConversationId || conversation_id,
-      user_email: user.email,
-      model_used: selectedModel.name,
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      cached_tokens: modelData.cached_tokens || 0,
-      cache_creation_tokens: modelData.cache_creation_tokens || 0,
-      total_cost: (inputTokens / 1000000) * (selectedModel.input_token_cost || 3) + 
-                  (outputTokens / 1000000) * (selectedModel.output_token_cost || 15),
-      cache_savings: modelData.cache_savings || 0,
-      request_type: useSummary ? 'compression' : 'simple',
-      compression_triggered: useSummary
-    });
+    // 步骤5：更新Token预算
+    try {
+      await base44.functions.invoke('tokenBudgetManager', {
+        conversation_id: finalConversationId || conversation_id || 'temp',
+        operation: 'consume',
+        tokens: inputTokens + outputTokens
+      });
+    } catch (e) {
+      console.log('[smartChatWithSearch] Budget update skipped:', e.message);
+    }
+    
+    // 步骤6：检查是否需要触发压缩
+    const messageCount = conversationMessages.length + 2; // +2 = 当前一问一答
+    if (messageCount >= 16 && messageCount % 8 === 0) { // 每8轮检查一次
+      console.log('[smartChatWithSearch] Triggering compression check for', messageCount / 2, 'rounds');
+      try {
+        // 异步触发压缩，不等待结果
+        base44.functions.invoke('compressConversation', {
+          conversation_id: finalConversationId || conversation_id,
+          messages_to_compress: messageCount - 8 // 保留最近4轮
+        }).catch(err => console.log('[smartChatWithSearch] Compression failed:', err.message));
+      } catch (e) {
+        console.log('[smartChatWithSearch] Compression trigger skipped:', e.message);
+      }
+    }
     
     // 更新或创建对话
     const newMessages = [
