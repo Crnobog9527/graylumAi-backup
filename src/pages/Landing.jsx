@@ -201,10 +201,10 @@ export default function Landing() {
             <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
               <Bot className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-white">AI工具平台</span>
+            <span className="text-xl font-bold text-white">Graylum AI</span>
           </div>
-          <p className="text-slate-500 text-sm">
-            © 2024 AI工具平台. All rights reserved.
+          <p className="text-slate-500 text-sm">© 2025 Grayscale Luminary LLC. 
+
           </p>
         </div>
       </footer>
