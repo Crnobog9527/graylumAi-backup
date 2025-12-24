@@ -266,7 +266,7 @@ export function QuickActionsCard() {
     },
     {
       icon: Headphones,
-      title: '联系客服',
+      title: '提交工单',
       description: '遇到问题？我们随时为您提供帮助',
       linkText: '立即咨询',
       linkUrl: createPageUrl('CreateTicket'),
@@ -299,7 +299,7 @@ export function QuickActionsCard() {
               {action.showOnline && (
                 <div className="flex items-center gap-1 text-xs text-green-600 mb-3">
                   <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                  在线客服
+                  在线反馈
                 </div>
               )}
               
