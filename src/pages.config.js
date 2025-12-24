@@ -2,6 +2,7 @@ import Admin from './pages/Admin';
 import AdminAnnouncements from './pages/AdminAnnouncements';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminFinance from './pages/AdminFinance';
+import AdminInvitations from './pages/AdminInvitations';
 import AdminModels from './pages/AdminModels';
 import AdminPackages from './pages/AdminPackages';
 import AdminPrompts from './pages/AdminPrompts';
@@ -20,8 +21,6 @@ import Profile from './pages/Profile';
 import Templates from './pages/Templates';
 import TicketDetail from './pages/TicketDetail';
 import Tickets from './pages/Tickets';
-import Invite from './pages/Invite';
-import AdminInvitations from './pages/AdminInvitations';
 import __Layout from './Layout.jsx';
 
 
@@ -30,6 +29,7 @@ export const PAGES = {
     "AdminAnnouncements": AdminAnnouncements,
     "AdminDashboard": AdminDashboard,
     "AdminFinance": AdminFinance,
+    "AdminInvitations": AdminInvitations,
     "AdminModels": AdminModels,
     "AdminPackages": AdminPackages,
     "AdminPrompts": AdminPrompts,
@@ -48,8 +48,6 @@ export const PAGES = {
     "Templates": Templates,
     "TicketDetail": TicketDetail,
     "Tickets": Tickets,
-    "Invite": Invite,
-    "AdminInvitations": AdminInvitations,
 }
 
 export const pagesConfig = {

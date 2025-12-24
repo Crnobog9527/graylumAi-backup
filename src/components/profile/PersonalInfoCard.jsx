@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { format, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
+import InviteDialog from '../invite/InviteDialog';
 
 export function UserProfileHeader({ user }) {
   const registerDate = user?.created_date ? format(new Date(user.created_date), 'yyyy年M月d日') : '-';
@@ -243,74 +244,69 @@ export function UsageStatsCard({ user }) {
   );
 }
 
-export function QuickActionsCard() {
-  const actions = [
-    {
-      icon: Key,
-      title: '账户安全',
-      description: '管理登录方式和密码设置',
-      linkText: '前往设置',
-      linkUrl: '#security',
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-600',
-    },
-    {
-      icon: Users,
-      title: '邀请好友',
-      description: '邀请好友注册，获得积分奖励',
-      linkText: '生成邀请码',
-      linkUrl: createPageUrl('Invite'),
-      iconBg: 'bg-green-50',
-      iconColor: 'text-green-600',
-      showBadge: '+50积分',
-    },
-    {
-      icon: Headphones,
-      title: '提交工单',
-      description: '遇到问题？我们随时为您提供帮助',
-      linkText: '立即咨询',
-      linkUrl: createPageUrl('CreateTicket'),
-      iconBg: 'bg-purple-50',
-      iconColor: 'text-purple-600',
-      showOnline: true,
-    },
-  ];
+export function QuickActionsCard({ user }) {
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-slate-200">
       <h3 className="font-semibold text-slate-900 mb-6">快捷操作</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {actions.map((action, index) => {
-          const Icon = action.icon;
-          return (
-            <div key={index} className="p-4 border border-slate-100 rounded-xl hover:border-blue-200 hover:bg-blue-50/30 transition-colors">
-              <div className={`w-10 h-10 rounded-lg ${action.iconBg} flex items-center justify-center mb-3`}>
-                <Icon className={`h-5 w-5 ${action.iconColor}`} />
-              </div>
-              <h4 className="font-medium text-slate-900 mb-1">{action.title}</h4>
-              <p className="text-sm text-slate-500 mb-3 min-h-[40px]">{action.description}</p>
-              
-              {action.showBadge && (
-                <div className="inline-block bg-green-100 text-green-600 text-xs px-2 py-0.5 rounded mb-3">
-                  {action.showBadge}
-                </div>
-              )}
-              
-              {action.showOnline && (
-                <div className="flex items-center gap-1 text-xs text-green-600 mb-3">
-                  <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                  在线反馈
-                </div>
-              )}
-              
-              <a href={action.linkUrl} className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
-                {action.linkText}
-                <span>→</span>
-              </a>
-            </div>
-          );
-        })}
+        {/* 账户安全 */}
+        <div className="p-4 border border-slate-100 rounded-xl hover:border-blue-200 hover:bg-blue-50/30 transition-colors">
+          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mb-3">
+            <Key className="h-5 w-5 text-blue-600" />
+          </div>
+          <h4 className="font-medium text-slate-900 mb-1">账户安全</h4>
+          <p className="text-sm text-slate-500 mb-3 min-h-[40px]">管理登录方式和密码设置</p>
+          <a href="#security" className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+            前往设置
+            <span>→</span>
+          </a>
+        </div>
+
+        {/* 邀请好友 - 弹窗触发 */}
+        <div 
+          className="p-4 border border-slate-100 rounded-xl hover:border-green-200 hover:bg-green-50/30 transition-colors cursor-pointer"
+          onClick={() => setInviteDialogOpen(true)}
+        >
+          <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center mb-3">
+            <Users className="h-5 w-5 text-green-600" />
+          </div>
+          <h4 className="font-medium text-slate-900 mb-1">邀请好友</h4>
+          <p className="text-sm text-slate-500 mb-3 min-h-[40px]">邀请好友注册，获得积分奖励</p>
+          <div className="inline-block bg-green-100 text-green-600 text-xs px-2 py-0.5 rounded mb-3">
+            +50积分
+          </div>
+          <div className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+            生成邀请码
+            <span>→</span>
+          </div>
+        </div>
+
+        {/* 提交工单 */}
+        <div className="p-4 border border-slate-100 rounded-xl hover:border-purple-200 hover:bg-purple-50/30 transition-colors">
+          <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center mb-3">
+            <Headphones className="h-5 w-5 text-purple-600" />
+          </div>
+          <h4 className="font-medium text-slate-900 mb-1">提交工单</h4>
+          <p className="text-sm text-slate-500 mb-3 min-h-[40px]">遇到问题？我们随时为您提供帮助</p>
+          <div className="flex items-center gap-1 text-xs text-green-600 mb-3">
+            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+            在线反馈
+          </div>
+          <Link to={createPageUrl('CreateTicket')} className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+            立即咨询
+            <span>→</span>
+          </Link>
+        </div>
       </div>
+
+      {/* 邀请弹窗 */}
+      <InviteDialog 
+        open={inviteDialogOpen} 
+        onOpenChange={setInviteDialogOpen}
+        user={user}
+      />
     </div>
   );
 }
