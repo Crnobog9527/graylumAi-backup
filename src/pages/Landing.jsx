@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
@@ -9,6 +9,16 @@ import {
 'lucide-react';
 
 export default function Landing() {
+  // 处理邀请码参数
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const inviteCode = urlParams.get('invite');
+    if (inviteCode) {
+      // 存储邀请码到 localStorage
+      localStorage.setItem('pending_invite_code', inviteCode);
+    }
+  }, []);
+
   const handleLogin = () => {
     base44.auth.redirectToLogin(createPageUrl('Home'));
   };
