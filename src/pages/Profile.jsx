@@ -68,7 +68,7 @@ export default function Profile() {
                     <UserProfileHeader user={user} />
                     <CreditsAndSubscriptionCards user={user} />
                     <UsageStatsCard user={user} />
-                    <QuickActionsCard />
+                    <QuickActionsCard user={user} />
                   </>
                 )}
 
