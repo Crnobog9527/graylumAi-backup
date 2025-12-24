@@ -47,7 +47,14 @@ const defaultSettings = {
   // Referral
   referrer_bonus: { value: '50', type: 'number', label: '邀请人奖励', description: '成功邀请1人注册获得的积分' },
   referee_bonus: { value: '50', type: 'number', label: '被邀请人奖励', description: '被邀请人注册额外获得的积分' },
-  referral_purchase_rebate: { value: '10', type: 'number', label: '邀请购买返利%', description: '被邀请人购买会员，邀请人返利百分比' },
+  referral_purchase_rebate: { value: '10', type: 'number', label: '消费返利%', description: '被邀请人消费时，邀请人获得的返利百分比' },
+  referral_binding_days: { value: '30', type: 'number', label: '绑定期天数', description: '被邀请人消费返利的有效天数' },
+  daily_invite_reward_limit: { value: '1000', type: 'number', label: '每日奖励上限', description: '邀请人每日最多获得的奖励积分' },
+  monthly_invite_limit: { value: '50', type: 'number', label: '每月邀请上限', description: '邀请人每月最多有效邀请人数' },
+  total_invite_reward_limit: { value: '50000', type: 'number', label: '总奖励上限', description: '邀请人累计最多获得的奖励积分' },
+  enable_invite_risk_control: { value: 'true', type: 'boolean', label: '启用邀请风控', description: '开启后自动检测异常邀请行为' },
+  ip_hourly_register_limit: { value: '3', type: 'number', label: 'IP小时注册限制', description: '同一IP每小时最多注册账号数' },
+  ip_daily_register_limit: { value: '5', type: 'number', label: 'IP每日注册限制', description: '同一IP每天最多注册账号数' },
   
   // First Purchase
   first_purchase_bonus_percent: { value: '20', type: 'number', label: '首充赠送%', description: '首次购买额外赠送积分百分比' },
@@ -283,13 +290,57 @@ function AdminSettingsContent() {
           </TabsContent>
 
           <TabsContent value="referral">
-            <Card>
+            <Card className="mb-6">
               <CardHeader>
-                <CardTitle>邀请奖励</CardTitle>
-                <CardDescription>配置邀请注册和购买返利</CardDescription>
+                <CardTitle>基础奖励设置</CardTitle>
+                <CardDescription>配置邀请注册和消费返利积分</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {['referrer_bonus', 'referee_bonus', 'referral_purchase_rebate'].map(key => {
+                {['referrer_bonus', 'referee_bonus', 'referral_purchase_rebate', 'referral_binding_days'].map(key => {
+                  const data = settings[key];
+                  if (!data) return null;
+                  return (
+                    <div key={key} className="flex items-center justify-between py-4 border-b border-slate-100 last:border-0">
+                      <div>
+                        <Label className="text-base">{data.label}</Label>
+                        <p className="text-sm text-slate-500 mt-1">{data.description}</p>
+                      </div>
+                      {renderSettingInput(key, data)}
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+            
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>奖励上限设置</CardTitle>
+                <CardDescription>防止无限刷积分的限制配置</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {['daily_invite_reward_limit', 'monthly_invite_limit', 'total_invite_reward_limit'].map(key => {
+                  const data = settings[key];
+                  if (!data) return null;
+                  return (
+                    <div key={key} className="flex items-center justify-between py-4 border-b border-slate-100 last:border-0">
+                      <div>
+                        <Label className="text-base">{data.label}</Label>
+                        <p className="text-sm text-slate-500 mt-1">{data.description}</p>
+                      </div>
+                      {renderSettingInput(key, data)}
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>风控设置</CardTitle>
+                <CardDescription>配置防刷机制和IP限制</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {['enable_invite_risk_control', 'ip_hourly_register_limit', 'ip_daily_register_limit'].map(key => {
                   const data = settings[key];
                   if (!data) return null;
                   return (
