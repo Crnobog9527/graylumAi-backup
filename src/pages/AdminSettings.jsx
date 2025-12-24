@@ -44,17 +44,17 @@ const defaultSettings = {
   checkin_day5: { value: '25', type: 'number', label: '签到第5天', description: '第5天签到奖励积分（之后重置）' },
   checkin_monthly_bonus: { value: '50', type: 'number', label: '月度全勤奖', description: '当月签到满30天额外奖励' },
   
-  // Referral
-  referrer_bonus: { value: '50', type: 'number', label: '邀请人奖励', description: '成功邀请1人注册获得的积分' },
-  referee_bonus: { value: '50', type: 'number', label: '被邀请人奖励', description: '被邀请人注册额外获得的积分' },
-  referral_purchase_rebate: { value: '10', type: 'number', label: '消费返利%', description: '被邀请人消费时，邀请人获得的返利百分比' },
-  referral_binding_days: { value: '30', type: 'number', label: '绑定期天数', description: '被邀请人消费返利的有效天数' },
-  daily_invite_reward_limit: { value: '1000', type: 'number', label: '每日奖励上限', description: '邀请人每日最多获得的奖励积分' },
-  monthly_invite_limit: { value: '50', type: 'number', label: '每月邀请上限', description: '邀请人每月最多有效邀请人数' },
-  total_invite_reward_limit: { value: '50000', type: 'number', label: '总奖励上限', description: '邀请人累计最多获得的奖励积分' },
-  enable_invite_risk_control: { value: 'true', type: 'boolean', label: '启用邀请风控', description: '开启后自动检测异常邀请行为' },
-  ip_hourly_register_limit: { value: '3', type: 'number', label: 'IP小时注册限制', description: '同一IP每小时最多注册账号数' },
-  ip_daily_register_limit: { value: '5', type: 'number', label: 'IP每日注册限制', description: '同一IP每天最多注册账号数' },
+  // Referral / Invite
+  invite_inviter_reward: { value: '50', type: 'number', label: '邀请人奖励', description: '成功邀请1人注册，邀请人获得的积分' },
+  invite_invitee_reward: { value: '30', type: 'number', label: '被邀请人奖励', description: '被邀请人注册额外获得的积分' },
+  invite_rebate_percent: { value: '5', type: 'number', label: '消费返利比例%', description: '被邀请人30天内消费，邀请人获得的返利比例' },
+  invite_binding_days: { value: '30', type: 'number', label: '双向绑定期(天)', description: '被邀请人消费返利的有效期' },
+  invite_daily_reward_limit: { value: '1000', type: 'number', label: '每日奖励上限', description: '单用户每日邀请奖励积分上限' },
+  invite_monthly_count_limit: { value: '50', type: 'number', label: '每月邀请上限', description: '单用户每月有效邀请人数上限' },
+  invite_total_reward_limit: { value: '50000', type: 'number', label: '总奖励封顶', description: '单用户邀请奖励总积分上限' },
+  invite_same_ip_hour_limit: { value: '3', type: 'number', label: '同IP小时限制', description: '同一IP每小时最多注册账号数' },
+  invite_same_ip_day_limit: { value: '5', type: 'number', label: '同IP日限制', description: '同一IP每天最多注册账号数' },
+  invite_risk_auto_reject: { value: 'true', type: 'boolean', label: '高风险自动拒绝', description: '高风险邀请自动拒绝发放奖励' },
   
   // First Purchase
   first_purchase_bonus_percent: { value: '20', type: 'number', label: '首充赠送%', description: '首次购买额外赠送积分百分比' },
@@ -290,57 +290,21 @@ function AdminSettingsContent() {
           </TabsContent>
 
           <TabsContent value="referral">
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>基础奖励设置</CardTitle>
-                <CardDescription>配置邀请注册和消费返利积分</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {['referrer_bonus', 'referee_bonus', 'referral_purchase_rebate', 'referral_binding_days'].map(key => {
-                  const data = settings[key];
-                  if (!data) return null;
-                  return (
-                    <div key={key} className="flex items-center justify-between py-4 border-b border-slate-100 last:border-0">
-                      <div>
-                        <Label className="text-base">{data.label}</Label>
-                        <p className="text-sm text-slate-500 mt-1">{data.description}</p>
-                      </div>
-                      {renderSettingInput(key, data)}
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-            
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>奖励上限设置</CardTitle>
-                <CardDescription>防止无限刷积分的限制配置</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {['daily_invite_reward_limit', 'monthly_invite_limit', 'total_invite_reward_limit'].map(key => {
-                  const data = settings[key];
-                  if (!data) return null;
-                  return (
-                    <div key={key} className="flex items-center justify-between py-4 border-b border-slate-100 last:border-0">
-                      <div>
-                        <Label className="text-base">{data.label}</Label>
-                        <p className="text-sm text-slate-500 mt-1">{data.description}</p>
-                      </div>
-                      {renderSettingInput(key, data)}
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-            
             <Card>
               <CardHeader>
-                <CardTitle>风控设置</CardTitle>
-                <CardDescription>配置防刷机制和IP限制</CardDescription>
+                <CardTitle>邀请奖励设置</CardTitle>
+                <CardDescription>配置邀请注册奖励、消费返利和防刷限制</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {['enable_invite_risk_control', 'ip_hourly_register_limit', 'ip_daily_register_limit'].map(key => {
+                <div className="p-4 bg-green-50 rounded-lg border border-green-100 mb-4">
+                  <p className="text-sm text-green-800">
+                    <strong>邀请规则：</strong>用户通过邀请码邀请好友注册，双方都能获得积分奖励
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    被邀请人在绑定期内的消费，邀请人可获得一定比例返利
+                  </p>
+                </div>
+                {['invite_inviter_reward', 'invite_invitee_reward', 'invite_rebate_percent', 'invite_binding_days', 'invite_daily_reward_limit', 'invite_monthly_count_limit', 'invite_total_reward_limit', 'invite_same_ip_hour_limit', 'invite_same_ip_day_limit', 'invite_risk_auto_reject'].map(key => {
                   const data = settings[key];
                   if (!data) return null;
                   return (
