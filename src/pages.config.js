@@ -21,6 +21,7 @@ import Templates from './pages/Templates';
 import TicketDetail from './pages/TicketDetail';
 import Tickets from './pages/Tickets';
 import Invite from './pages/Invite';
+import AdminInvitations from './pages/AdminInvitations';
 import __Layout from './Layout.jsx';
 
 
@@ -48,6 +49,7 @@ export const PAGES = {
     "TicketDetail": TicketDetail,
     "Tickets": Tickets,
     "Invite": Invite,
+    "AdminInvitations": AdminInvitations,
 }
 
 export const pagesConfig = {
