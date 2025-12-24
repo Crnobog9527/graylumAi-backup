@@ -20,6 +20,7 @@ import Profile from './pages/Profile';
 import Templates from './pages/Templates';
 import TicketDetail from './pages/TicketDetail';
 import Tickets from './pages/Tickets';
+import Invite from './pages/Invite';
 import __Layout from './Layout.jsx';
 
 
@@ -46,6 +47,7 @@ export const PAGES = {
     "Templates": Templates,
     "TicketDetail": TicketDetail,
     "Tickets": Tickets,
+    "Invite": Invite,
 }
 
 export const pagesConfig = {
