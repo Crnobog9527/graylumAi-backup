@@ -26,9 +26,9 @@ const translations = {
     creditPackages: '积分套餐',
     users: '用户管理',
     transactions: '交易记录',
-    invitations: '邀请管理',
     settings: '系统设置',
     tickets: '工单管理',
+    invitations: '邀请管理',
     backToApp: '返回应用',
     language: '语言',
     
@@ -209,9 +209,9 @@ const translations = {
     creditPackages: 'Credit Packages',
     users: 'Users',
     transactions: 'Transactions',
-    invitations: 'Invitations',
     settings: 'Settings',
     tickets: 'Tickets',
+    invitations: 'Invitations',
     backToApp: 'Back to App',
     language: 'Language',
     
