@@ -259,7 +259,7 @@ export function QuickActionsCard() {
       title: '邀请好友',
       description: '邀请好友注册，获得积分奖励',
       linkText: '生成邀请码',
-      linkUrl: '#',
+      linkUrl: createPageUrl('Invite'),
       iconBg: 'bg-green-50',
       iconColor: 'text-green-600',
       showBadge: '+50积分',
