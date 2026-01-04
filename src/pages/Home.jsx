@@ -18,14 +18,14 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#050505] relative overflow-hidden">
       {/* 光晕层 - 底部氛围光 */}
-      <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] rounded-full bg-gradient-radial from-white/10 to-transparent blur-[120px] pointer-events-none" />
-      <div className="absolute top-1/4 right-0 w-[400px] h-[400px] rounded-full bg-gradient-radial from-[#FFD02F]/5 to-transparent blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-r from-white/10 to-transparent blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 right-0 w-[400px] h-[400px] rounded-full bg-gradient-to-r from-yellow-500/5 to-transparent blur-[100px] pointer-events-none" />
       
       {/* 噪点层 */}
       <div 
         className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
         }}
       />
       
