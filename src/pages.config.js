@@ -14,7 +14,6 @@ import AdminUsers from './pages/AdminUsers';
 import Chat from './pages/Chat';
 import CreateTicket from './pages/CreateTicket';
 import Credits from './pages/Credits';
-import Home from './pages/Home';
 import Landing from './pages/Landing';
 import Marketplace from './pages/Marketplace';
 import Profile from './pages/Profile';
@@ -41,7 +40,6 @@ export const PAGES = {
     "Chat": Chat,
     "CreateTicket": CreateTicket,
     "Credits": Credits,
-    "Home": Home,
     "Landing": Landing,
     "Marketplace": Marketplace,
     "Profile": Profile,
@@ -51,7 +49,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Home",
+    mainPage: "Admin",
     Pages: PAGES,
     Layout: __Layout,
 };
