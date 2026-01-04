@@ -11,14 +11,14 @@ import AdminTicketDetail from './pages/AdminTicketDetail';
 import AdminTickets from './pages/AdminTickets';
 import AdminTransactions from './pages/AdminTransactions';
 import AdminUsers from './pages/AdminUsers';
-import Chat from './pages/Chat';
 import CreateTicket from './pages/CreateTicket';
-import Credits from './pages/Credits';
-import Marketplace from './pages/Marketplace';
-import Profile from './pages/Profile';
 import Templates from './pages/Templates';
 import TicketDetail from './pages/TicketDetail';
+import Chat from './pages/Chat';
+import Profile from './pages/Profile';
 import Tickets from './pages/Tickets';
+import Credits from './pages/Credits';
+import Marketplace from './pages/Marketplace';
 import Home from './pages/Home';
 import __Layout from './Layout.jsx';
 
@@ -37,14 +37,14 @@ export const PAGES = {
     "AdminTickets": AdminTickets,
     "AdminTransactions": AdminTransactions,
     "AdminUsers": AdminUsers,
-    "Chat": Chat,
     "CreateTicket": CreateTicket,
-    "Credits": Credits,
-    "Marketplace": Marketplace,
-    "Profile": Profile,
     "Templates": Templates,
     "TicketDetail": TicketDetail,
+    "Chat": Chat,
+    "Profile": Profile,
     "Tickets": Tickets,
+    "Credits": Credits,
+    "Marketplace": Marketplace,
     "Home": Home,
 }
 

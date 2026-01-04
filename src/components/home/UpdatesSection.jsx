@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Sparkles, Volume2, Wrench, Megaphone, Gift, Bell, AlertTriangle, Info, Star } from 'lucide-react';
+import { Sparkles, Volume2, Wrench, Megaphone, Gift, Bell, AlertTriangle, Info, Star, ArrowUpRight } from 'lucide-react';
 import { format } from 'date-fns';
 
 // 图标映射
@@ -17,22 +17,13 @@ const iconMap = {
   Star,
 };
 
-// 标签颜色映射
+// 标签颜色映射 - 深色主题
 const tagColorMap = {
-  blue: 'bg-blue-100 text-blue-700',
-  orange: 'bg-amber-100 text-amber-700',
-  green: 'bg-green-100 text-green-700',
-  red: 'bg-red-100 text-red-700',
-  purple: 'bg-purple-100 text-purple-700',
-};
-
-// 图标背景色映射
-const iconBgMap = {
-  blue: 'bg-blue-50 text-blue-600',
-  orange: 'bg-amber-50 text-amber-600',
-  green: 'bg-green-50 text-green-600',
-  red: 'bg-red-50 text-red-600',
-  purple: 'bg-purple-50 text-purple-600',
+  blue: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+  orange: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+  green: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+  red: 'bg-red-500/20 text-red-400 border border-red-500/30',
+  purple: 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
 };
 
 export default function UpdatesSection() {
@@ -40,7 +31,6 @@ export default function UpdatesSection() {
     queryKey: ['announcements'],
     queryFn: async () => {
       const all = await base44.entities.Announcement.filter({ is_active: true }, 'sort_order');
-      // 过滤掉已过期的公告
       const now = new Date();
       return all.filter(a => !a.expire_date || new Date(a.expire_date) >= now);
     },
@@ -49,14 +39,20 @@ export default function UpdatesSection() {
   if (isLoading) {
     return (
       <div className="mb-8">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">平台公告</h2>
+        {/* 标题 */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="inline-flex items-center gap-2 bg-[#111111] px-4 py-2 rounded-full border border-[#222222]">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#888888] font-medium">ANNOUNCEMENTS</span>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white p-6 rounded-xl border border-slate-200 animate-pulse">
-              <div className="h-10 w-10 bg-slate-200 rounded-lg mb-4" />
-              <div className="h-5 bg-slate-200 rounded mb-2 w-3/4" />
-              <div className="h-4 bg-slate-100 rounded mb-1" />
-              <div className="h-4 bg-slate-100 rounded w-2/3" />
+            <div key={i} className="bg-[#111111] p-8 rounded-3xl border border-[#222222] animate-pulse">
+              <div className="h-10 w-10 bg-[#1A1A1A] rounded-xl mb-6" />
+              <div className="h-5 bg-[#1A1A1A] rounded mb-3 w-3/4" />
+              <div className="h-4 bg-[#0A0A0A] rounded mb-2" />
+              <div className="h-4 bg-[#0A0A0A] rounded w-2/3" />
             </div>
           ))}
         </div>
@@ -70,41 +66,62 @@ export default function UpdatesSection() {
 
   return (
     <div className="mb-8">
-      <h2 className="text-lg font-bold text-slate-900 mb-4">平台公告</h2>
+      {/* 标题区域 */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="inline-flex items-center gap-2 bg-[#111111] px-4 py-2 rounded-full border border-[#222222]">
+          <Bell className="h-3 w-3 text-[#FFD02F]" />
+          <span className="text-[10px] uppercase tracking-[0.2em] text-[#888888] font-medium">ANNOUNCEMENTS</span>
+        </div>
+        
+        <h2 className="text-xl font-semibold text-white tracking-tight">平台公告</h2>
+      </div>
+      
+      {/* Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {announcements.slice(0, 3).map((item) => {
           const IconComponent = iconMap[item.icon] || Megaphone;
           const tagColor = tagColorMap[item.tag_color] || tagColorMap.blue;
-          const iconBg = iconBgMap[item.tag_color] || iconBgMap.blue;
           
-          // 格式化日期显示
           let dateDisplay = '';
           if (item.expire_date) {
             dateDisplay = `活动截止: ${format(new Date(item.expire_date), 'yyyy-MM-dd')}`;
           } else if (item.publish_date) {
-            dateDisplay = `${format(new Date(item.publish_date), 'yyyy-MM-dd')} 发布`;
+            dateDisplay = `${format(new Date(item.publish_date), 'yyyy-MM-dd')}`;
           } else {
-            dateDisplay = `${format(new Date(item.created_date), 'yyyy-MM-dd')} 发布`;
+            dateDisplay = `${format(new Date(item.created_date), 'yyyy-MM-dd')}`;
           }
 
           return (
-            <div key={item.id} className="bg-white p-6 rounded-xl border border-slate-200 flex flex-col h-full">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-2 rounded-lg ${iconBg}`}>
-                  <IconComponent className="h-5 w-5" />
+            <div 
+              key={item.id} 
+              className="group bg-[#111111] p-8 rounded-3xl border border-[#222222] flex flex-col h-full transition-all duration-300 hover:border-[#444444] hover:scale-[1.01] hover:bg-[#1A1A1A]"
+            >
+              {/* 头部 - 图标和标签 */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-12 h-12 rounded-xl bg-[#0A0A0A] border border-[#222222] flex items-center justify-center group-hover:border-[#FFD02F] transition-colors">
+                  <IconComponent className="h-5 w-5 text-[#FFD02F]" />
                 </div>
                 {item.tag && (
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${tagColor}`}>
+                  <span className={`text-[10px] uppercase tracking-wider px-3 py-1 rounded-full font-medium ${tagColor}`}>
                     {item.tag}
                   </span>
                 )}
               </div>
-              <h3 className="font-bold text-slate-900 mb-2">{item.title}</h3>
-              <p className="text-sm text-slate-500 mb-4 flex-1 leading-relaxed">
+              
+              {/* 标题 */}
+              <h3 className="font-bold text-white text-lg mb-3 tracking-tight group-hover:text-[#FFD02F] transition-colors">
+                {item.title}
+              </h3>
+              
+              {/* 描述 */}
+              <p className="text-sm text-[#888888] mb-6 flex-1 leading-relaxed font-light">
                 {item.description}
               </p>
-              <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                <span className="text-xs text-slate-400">{dateDisplay}</span>
+              
+              {/* 底部 - 日期和箭头 */}
+              <div className="flex items-center justify-between pt-4 border-t border-[#1A1A1A]">
+                <span className="text-xs text-[#666666]">{dateDisplay}</span>
+                <ArrowUpRight className="h-4 w-4 text-[#444444] group-hover:text-[#FFD02F] transition-colors" />
               </div>
             </div>
           );
