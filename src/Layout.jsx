@@ -4,8 +4,7 @@ import AppHeader from '@/components/layout/AppHeader';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 
-// 公开页面列表（无需登录即可访问）
-const publicPages = ['Landing'];
+// 无公开页面，所有页面都需要登录
 
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
@@ -91,21 +90,14 @@ export default function Layout({ children, currentPageName }) {
         }
       } catch (e) {
         setUser(null);
-        // 如果未登录且不是公开页面，重定向到Landing
-        if (!publicPages.includes(currentPageName)) {
-          navigate(createPageUrl('Landing'), { replace: true });
-        }
+        // 未登录用户重定向到登录页面
+        base44.auth.redirectToLogin();
       } finally {
         setLoading(false);
       }
     };
     checkAuth();
   }, [location.pathname, currentPageName, navigate]);
-
-  // 公开页面（Landing）不显示AppHeader，直接渲染内容
-  if (currentPageName === 'Landing') {
-    return children;
-  }
 
   // 加载中显示加载状态
   if (loading) {
@@ -116,8 +108,8 @@ export default function Layout({ children, currentPageName }) {
     );
   }
 
-  // 未登录且非公开页面已在useEffect中重定向
-  if (!user && !publicPages.includes(currentPageName)) {
+  // 未登录已在useEffect中重定向到登录页
+  if (!user) {
     return null;
   }
   

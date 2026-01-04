@@ -14,13 +14,12 @@ import AdminUsers from './pages/AdminUsers';
 import Chat from './pages/Chat';
 import CreateTicket from './pages/CreateTicket';
 import Credits from './pages/Credits';
-import Home from './pages/Home';
-import Landing from './pages/Landing';
 import Marketplace from './pages/Marketplace';
 import Profile from './pages/Profile';
 import Templates from './pages/Templates';
 import TicketDetail from './pages/TicketDetail';
 import Tickets from './pages/Tickets';
+import Home from './pages/Home';
 import __Layout from './Layout.jsx';
 
 
@@ -41,13 +40,12 @@ export const PAGES = {
     "Chat": Chat,
     "CreateTicket": CreateTicket,
     "Credits": Credits,
-    "Home": Home,
-    "Landing": Landing,
     "Marketplace": Marketplace,
     "Profile": Profile,
     "Templates": Templates,
     "TicketDetail": TicketDetail,
     "Tickets": Tickets,
+    "Home": Home,
 }
 
 export const pagesConfig = {
