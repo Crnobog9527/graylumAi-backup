@@ -20,7 +20,7 @@ export default function Landing() {
   }, []);
 
   const handleLogin = () => {
-    base44.auth.redirectToLogin(createPageUrl('Chat'));
+    base44.auth.redirectToLogin(createPageUrl('Home'));
   };
 
   return (

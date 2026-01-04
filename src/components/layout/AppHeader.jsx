@@ -4,7 +4,7 @@ import { createPageUrl } from '@/utils';
 import { cn } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
 import {
-  LayoutGrid, User, Search, Bell,
+  LayoutGrid, Home, User, Search, Bell,
   LogOut, Settings, CreditCard, Bot } from
 'lucide-react';
 import {
@@ -23,6 +23,7 @@ export default function AppHeader({ user }) {
   const currentPath = location.pathname;
 
   const navItems = [
+  { name: '首页', path: 'Home', icon: Home },
   { name: '对话', path: 'Chat', icon: Bot },
   { name: '功能广场', path: 'Marketplace', icon: LayoutGrid },
   { name: '个人中心', path: 'Profile', icon: User }];
@@ -33,7 +34,7 @@ export default function AppHeader({ user }) {
       <div className="container mx-auto h-full px-4 flex items-center justify-between">
         {/* Logo & Nav */}
         <div className="flex items-center gap-8">
-          <Link to={createPageUrl('Chat')} className="flex items-center gap-2">
+          <Link to={createPageUrl('Home')} className="flex items-center gap-2">
             <div className="bg-indigo-600 p-1.5 rounded-lg">
               <Bot className="h-5 w-5 text-white" />
             </div>
@@ -42,7 +43,7 @@ export default function AppHeader({ user }) {
 
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
-              const isActive = currentPath.includes(item.path);
+              const isActive = currentPath.includes(item.path) || item.path === 'Home' && currentPath === '/';
               return (
                 <Link key={item.path} to={createPageUrl(item.path)}>
                   <Button
