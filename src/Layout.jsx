@@ -102,8 +102,8 @@ export default function Layout({ children, currentPageName }) {
   // 加载中显示加载状态
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
       </div>
     );
   }
@@ -113,8 +113,23 @@ export default function Layout({ children, currentPageName }) {
     return null;
   }
   
+  // 检查是否是管理员页面
+  const isAdminPage = currentPageName?.startsWith('Admin');
+  
+  if (isAdminPage) {
+    // 管理员页面保持原有样式
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans">
+        <AppHeader user={user} isAdmin={true} />
+        <main className="animate-in fade-in duration-500">
+          {children}
+        </main>
+      </div>
+    );
+  }
+  
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div className="min-h-screen bg-[#050505] font-sans">
       <AppHeader user={user} />
       <main className="animate-in fade-in duration-500">
         {children}
