@@ -12,16 +12,17 @@ export default function Home() {
   });
 
   if (!user) {
-    return <div className="min-h-screen bg-[#050505]" />;
+    // Assuming Layout handles redirect or waiting for auth, but for Home we might want to show something even if loading
+    return <div className="min-h-screen bg-slate-50" />;
   }
 
   return (
-    <div className="min-h-screen bg-[#050505]">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <WelcomeBanner user={user} />
-        <SixStepsGuide />
-        <UpdatesSection />
-      </div>
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <WelcomeBanner user={user} />
+      
+      <SixStepsGuide />
+      
+      <UpdatesSection />
     </div>
   );
 }
