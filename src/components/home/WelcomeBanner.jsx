@@ -23,7 +23,7 @@ export default function WelcomeBanner({ user }) {
     <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
-          欢迎回来，{user.full_name || user.email.split('@')[0]}！
+          欢迎回来，{user.full_name || user.email?.split('@')[0] || '用户'}！
         </h1>
         <div className="flex items-center gap-2 text-slate-500 text-sm">
           <Crown className="h-4 w-4 text-amber-500" />
