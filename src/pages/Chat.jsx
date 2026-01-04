@@ -597,21 +597,21 @@ export default function Chat() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#050505]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex bg-slate-100">
+    <div className="h-[calc(100vh-4rem)] flex bg-[#050505]">
       {/* Left Sidebar - Conversation List */}
-      <div className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0">
+      <div className="w-64 bg-[#0a0a0a] border-r border-[#1a1a1a] flex flex-col shrink-0">
         {/* New Chat Button */}
         <div className="p-4">
           <Button
             onClick={() => handleStartNewChat()}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2 h-11 rounded-lg font-medium"
+            className="w-full bg-amber-500 hover:bg-amber-600 text-black gap-2 h-11 rounded-lg font-medium"
           >
             <Plus className="h-5 w-5" />
             新建对话
@@ -619,8 +619,8 @@ export default function Chat() {
         </div>
 
         {/* All Conversations Header with Manage Button - Outside ScrollArea */}
-        <div className="flex items-center justify-between px-5 py-2 border-b border-slate-100">
-          <span className="text-sm text-slate-500">全部对话</span>
+        <div className="flex items-center justify-between px-5 py-2 border-b border-[#1a1a1a]">
+          <span className="text-sm text-[#666666]">全部对话</span>
           <Button
             variant="ghost"
             size="sm"
@@ -630,7 +630,7 @@ export default function Chat() {
                 setSelectedConversations([]);
               }
             }}
-            className="h-7 px-2 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            className="h-7 px-2 text-xs font-medium text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
           >
             <Settings2 className="h-3.5 w-3.5 mr-1" />
             {isSelectMode ? '完成' : '管理'}
@@ -644,7 +644,7 @@ export default function Chat() {
               
               {/* 批量操作栏 */}
               {isSelectMode && (
-                <div className="flex items-center gap-2 px-2 py-2 mb-2 bg-slate-50 rounded-lg">
+                <div className="flex items-center gap-2 px-2 py-2 mb-2 bg-[#111111] rounded-lg border border-[#1a1a1a]">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -668,7 +668,7 @@ export default function Chat() {
               {/* Today */}
               {groupedConversations.today.length > 0 && (
                 <div className="mb-3">
-                  <div className="px-2 py-1 text-xs text-slate-400">今天</div>
+                  <div className="px-2 py-1 text-xs text-[#444444]">今天</div>
                   {groupedConversations.today.map(conv => (
                     <ConversationItem
                       key={conv.id}
@@ -687,7 +687,7 @@ export default function Chat() {
               {/* Yesterday */}
               {groupedConversations.yesterday.length > 0 && (
                 <div className="mb-3">
-                  <div className="px-2 py-1 text-xs text-slate-400">昨天</div>
+                  <div className="px-2 py-1 text-xs text-[#444444]">昨天</div>
                   {groupedConversations.yesterday.map(conv => (
                     <ConversationItem
                       key={conv.id}
@@ -706,7 +706,7 @@ export default function Chat() {
               {/* This Week */}
               {groupedConversations.thisWeek.length > 0 && (
                 <div className="mb-3">
-                  <div className="px-2 py-1 text-xs text-slate-400">本周</div>
+                  <div className="px-2 py-1 text-xs text-[#444444]">本周</div>
                   {groupedConversations.thisWeek.map(conv => (
                     <ConversationItem
                       key={conv.id}
@@ -725,7 +725,7 @@ export default function Chat() {
               {/* Older */}
               {groupedConversations.older.length > 0 && (
                 <div className="mb-3">
-                  <div className="px-2 py-1 text-xs text-slate-400">更早</div>
+                  <div className="px-2 py-1 text-xs text-[#444444]">更早</div>
                   {groupedConversations.older.map(conv => (
                     <ConversationItem
                       key={conv.id}
@@ -743,7 +743,7 @@ export default function Chat() {
 
               {/* Empty state */}
               {conversations.length === 0 && (
-                <div className="text-center py-8 text-slate-400 text-sm">
+                <div className="text-center py-8 text-[#444444] text-sm">
                   暂无对话记录
                 </div>
               )}
@@ -753,9 +753,9 @@ export default function Chat() {
       </div>
 
       {/* Main Chat Area */}
-      <div className={cn("flex-1 flex flex-col bg-white", showDebugPanel && "mr-80")}>
+      <div className={cn("flex-1 flex flex-col bg-[#050505]", showDebugPanel && "mr-80")}>
         {/* Chat Header */}
-        <div className="h-14 border-b border-slate-200 flex items-center justify-between px-6">
+        <div className="h-14 border-b border-[#1a1a1a] flex items-center justify-between px-6">
           <div className="flex items-center gap-3">
             {isEditingTitle && currentConversation ? (
               <div className="flex items-center gap-2">
@@ -771,13 +771,13 @@ export default function Chat() {
                     }
                   }}
                   autoFocus
-                  className="text-lg font-medium text-slate-800 border border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="text-lg font-medium text-white bg-[#1a1a1a] border border-amber-500/30 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={handleSaveTitle}
-                  className="text-blue-600 hover:text-blue-700"
+                  className="text-amber-500 hover:text-amber-400"
                 >
                   保存
                 </Button>
@@ -785,20 +785,20 @@ export default function Chat() {
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setIsEditingTitle(false)}
-                  className="text-slate-400 hover:text-slate-600"
+                  className="text-[#666666] hover:text-white"
                 >
                   取消
                 </Button>
               </div>
             ) : (
               <>
-                <h1 className="text-lg font-medium text-slate-800">
+                <h1 className="text-lg font-medium text-white">
                   {currentConversation?.title || '新对话'}
                 </h1>
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                  className="h-8 w-8 text-[#666666] hover:text-white"
                   onClick={() => {
                     if (currentConversation) {
                       setEditingTitleValue(currentConversation.title || '');
@@ -838,11 +838,11 @@ export default function Chat() {
             <div className="max-w-3xl mx-auto py-6 px-4">
               {messages.length === 0 ? (
                 <div className="text-center py-20">
-                  <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <MessageSquare className="h-8 w-8 text-blue-600" />
+                  <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="h-8 w-8 text-amber-500" />
                   </div>
-                  <h2 className="text-xl font-medium text-slate-800 mb-2">开始新对话</h2>
-                  <p className="text-slate-500">请输入您的问题，AI将为您解答</p>
+                  <h2 className="text-xl font-medium text-white mb-2">开始新对话</h2>
+                  <p className="text-[#666666]">请输入您的问题，AI将为您解答</p>
                 </div>
               ) : (
                 messages.map((message, index) => (
@@ -856,14 +856,14 @@ export default function Chat() {
               )}
               {isStreaming && messages[messages.length - 1]?.role === 'user' && (
                 <div className="flex gap-4 py-4">
-                  <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                    <Bot className="h-5 w-5 text-blue-600" />
+                  <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                    <Bot className="h-5 w-5 text-amber-500" />
                   </div>
-                  <div className="flex items-center gap-2 text-slate-500">
+                  <div className="flex items-center gap-2 text-[#666666]">
                     <span className="flex gap-1">
-                      <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </span>
                     <span className="text-sm">AI正在思考中...</span>
                   </div>
@@ -880,7 +880,7 @@ export default function Chat() {
         )}
 
         {/* Input Area */}
-        <div className="border-t border-slate-200 p-4 bg-slate-50">
+        <div className="border-t border-[#1a1a1a] p-4 bg-[#0a0a0a]">
           <div className="max-w-3xl mx-auto">
             {/* Uploaded Files Preview */}
             {uploadedFiles.length > 0 && (
@@ -888,25 +888,25 @@ export default function Chat() {
                 {uploadedFiles.map((file, index) => {
                   const content = fileContents[index];
                   return (
-                    <div key={index} className="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1.5 text-sm">
+                    <div key={index} className="flex items-center gap-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-1.5 text-sm">
                       {file.type?.startsWith('image/') ? (
-                        <Image className="h-4 w-4 text-blue-500" />
+                        <Image className="h-4 w-4 text-amber-500" />
                       ) : (
-                        <FileText className="h-4 w-4 text-blue-500" />
+                        <FileText className="h-4 w-4 text-amber-500" />
                       )}
-                      <span className="text-slate-600 max-w-[150px] truncate">{file.name}</span>
+                      <span className="text-[#a3a3a3] max-w-[150px] truncate">{file.name}</span>
                       {file.status === 'extracting' && (
-                        <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />
+                        <Loader2 className="h-3 w-3 text-amber-500 animate-spin" />
                       )}
                       {file.status === 'ready' && (
-                        <span className="text-xs text-green-600">✓</span>
+                        <span className="text-xs text-green-500">✓</span>
                       )}
                       {file.status === 'error' && (
-                        <span className="text-xs text-red-600" title={file.error}>⚠</span>
+                        <span className="text-xs text-red-500" title={file.error}>⚠</span>
                       )}
                       <button
                         onClick={() => removeUploadedFile(index)}
-                        className="text-slate-400 hover:text-red-500"
+                        className="text-[#666666] hover:text-red-500"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -917,7 +917,7 @@ export default function Chat() {
             )}
 
             {/* Input Box */}
-            <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm">
+            <div className="relative bg-[#111111] rounded-xl border border-[#1a1a1a]">
               <div className="flex items-end p-3">
                 <input
                   ref={fileInputRef}
@@ -930,7 +930,7 @@ export default function Chat() {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-9 w-9 text-slate-400 hover:text-slate-600 shrink-0"
+                  className="h-9 w-9 text-[#666666] hover:text-white shrink-0"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
                 >
@@ -947,16 +947,16 @@ export default function Chat() {
                   onKeyDown={handleKeyDown}
                   placeholder="请输入您的问题..."
                   disabled={isStreaming}
-                  className="flex-1 min-h-[44px] max-h-[120px] resize-none border-0 focus-visible:ring-0 py-2 px-2 text-base placeholder:text-slate-400 bg-transparent"
+                  className="flex-1 min-h-[44px] max-h-[120px] resize-none border-0 focus-visible:ring-0 py-2 px-2 text-base placeholder:text-[#666666] bg-transparent text-white"
                   rows={1}
                 />
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-slate-400">{inputMessage.length}/{maxInputCharacters}</span>
+                  <span className="text-xs text-[#444444]">{inputMessage.length}/{maxInputCharacters}</span>
                   <Button
                     data-send-button
                     onClick={() => handleSendMessage(false)}
                     disabled={(!inputMessage.trim() && fileContents.length === 0) || isStreaming || uploadedFiles.some(f => f.status === 'extracting')}
-                    className="bg-blue-600 hover:bg-blue-700 h-9 px-4 gap-2"
+                    className="bg-amber-500 hover:bg-amber-600 text-black h-9 px-4 gap-2"
                   >
                     {isStreaming ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -973,7 +973,7 @@ export default function Chat() {
 
                 {/* 聊天提示文案 */}
                 {chatBillingHint && (
-                <div className="mt-3 px-4 py-3 text-sm text-slate-600 leading-relaxed text-center whitespace-pre-line">
+                <div className="mt-3 px-4 py-3 text-sm text-[#666666] leading-relaxed text-center whitespace-pre-line">
                 {chatBillingHint}
              </div>
             )}
@@ -1120,8 +1120,8 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
       onClick={() => isSelectMode ? onSelect() : onClick()}
       className={cn(
         "group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all",
-        isActive && !isSelectMode ? "bg-blue-50 border border-blue-200" : "hover:bg-slate-50",
-        isSelected && "bg-red-50 border border-red-200"
+        isActive && !isSelectMode ? "bg-amber-500/10 border border-amber-500/20" : "hover:bg-[#1a1a1a]",
+        isSelected && "bg-red-500/10 border border-red-500/20"
       )}
     >
       {/* Checkbox in select mode */}
@@ -1130,7 +1130,7 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
           {isSelected ? (
             <CheckSquare className="h-4 w-4 text-red-500" />
           ) : (
-            <Square className="h-4 w-4 text-slate-300" />
+            <Square className="h-4 w-4 text-[#444444]" />
           )}
         </div>
       )}
@@ -1140,12 +1140,12 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
         <div className="flex items-center justify-between gap-2">
           <span className={cn(
             "text-sm truncate block",
-            isActive && !isSelectMode ? "text-blue-700 font-medium" : "text-slate-700"
+            isActive && !isSelectMode ? "text-amber-500 font-medium" : "text-[#a3a3a3]"
           )}>
             {conversation.title || '新对话'}
           </span>
         </div>
-        <span className="text-xs text-slate-400">{timeStr}</span>
+        <span className="text-xs text-[#444444]">{timeStr}</span>
       </div>
 
       {/* Delete button - always visible when not in select mode */}
@@ -1157,7 +1157,7 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
             e.stopPropagation(); 
             onDelete(); 
           }}
-          className="h-7 w-7 shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="h-7 w-7 shrink-0 text-[#444444] hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
@@ -1203,7 +1203,7 @@ function MessageBubble({ message, isStreaming, user }) {
         <div className="max-w-[80%] space-y-2">
           {/* 用户文字消息 */}
           {displayContent && (
-            <div className="bg-blue-600 text-white rounded-2xl rounded-tr-md px-4 py-3">
+            <div className="bg-amber-500 text-black rounded-2xl rounded-tr-md px-4 py-3">
               <p className="whitespace-pre-wrap leading-relaxed">{displayContent}</p>
             </div>
           )}
@@ -1217,7 +1217,7 @@ function MessageBubble({ message, isStreaming, user }) {
             </div>
           )}
           
-          <div className="text-xs text-slate-400 text-right mt-1">{time}</div>
+          <div className="text-xs text-[#444444] text-right mt-1">{time}</div>
         </div>
       </div>
     );
@@ -1227,12 +1227,12 @@ function MessageBubble({ message, isStreaming, user }) {
   if (!displayContent) {
     return (
       <div className="flex gap-4 py-4">
-        <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-          <Bot className="h-5 w-5 text-blue-600" />
+        <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+          <Bot className="h-5 w-5 text-amber-500" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-slate-400 italic">AI 响应内容为空</div>
-          <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
+          <div className="text-[#666666] italic">AI 响应内容为空</div>
+          <div className="flex items-center gap-4 mt-3 text-xs text-[#444444]">
             <span>{time}</span>
           </div>
         </div>
@@ -1242,70 +1242,68 @@ function MessageBubble({ message, isStreaming, user }) {
 
   return (
     <div className="flex gap-4 py-4">
-      <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-        <Bot className="h-5 w-5 text-blue-600" />
+      <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+        <Bot className="h-5 w-5 text-amber-500" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="prose prose-slate prose-sm max-w-none">
+        <div className="prose prose-invert prose-sm max-w-none">
           <ReactMarkdown
             components={{
-              p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed text-slate-700">{children}</p>,
+              p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed text-[#a3a3a3]">{children}</p>,
               ul: ({ children }) => <ul className="list-disc pl-4 mb-3 space-y-1">{children}</ul>,
               ol: ({ children }) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
-              li: ({ children }) => <li className="leading-relaxed text-slate-700">{children}</li>,
-              strong: ({ children }) => <strong className="font-semibold text-slate-800">{children}</strong>,
+              li: ({ children }) => <li className="leading-relaxed text-[#a3a3a3]">{children}</li>,
+              strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
               pre: ({ children }) => (
-                <pre className="bg-slate-100 text-slate-800 p-4 rounded-lg overflow-x-auto my-3 border border-slate-200 whitespace-pre-wrap">
+                <pre className="bg-[#1a1a1a] text-[#a3a3a3] p-4 rounded-lg overflow-x-auto my-3 border border-[#2a2a2a] whitespace-pre-wrap">
                   {children}
                 </pre>
               ),
               code: ({ inline, className, children, ...props }) => {
-                // 如果是在 pre 标签内（代码块），使用简单样式
                 if (!inline && className) {
-                  return <code className="text-sm font-mono text-slate-800">{children}</code>;
+                  return <code className="text-sm font-mono text-[#a3a3a3]">{children}</code>;
                 }
-                // 行内代码
                 return (
-                  <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-blue-600">{children}</code>
+                  <code className="bg-[#1a1a1a] px-1.5 py-0.5 rounded text-sm font-mono text-amber-500">{children}</code>
                 );
               },
-              h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0 text-slate-800">{children}</h1>,
-              h2: ({ children }) => <h2 className="text-lg font-semibold mb-2 mt-3 first:mt-0 text-slate-800">{children}</h2>,
-              h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-3 first:mt-0 text-slate-800">{children}</h3>,
+              h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0 text-white">{children}</h1>,
+              h2: ({ children }) => <h2 className="text-lg font-semibold mb-2 mt-3 first:mt-0 text-white">{children}</h2>,
+              h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-3 first:mt-0 text-white">{children}</h3>,
             }}
           >
             {displayContent}
           </ReactMarkdown>
           {isStreaming && (
-            <span className="inline-block w-2 h-5 bg-blue-400 animate-pulse ml-1 rounded-sm" />
+            <span className="inline-block w-2 h-5 bg-amber-500 animate-pulse ml-1 rounded-sm" />
           )}
         </div>
 
         {/* Message Footer */}
-        <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
+        <div className="flex items-center gap-4 mt-3 text-xs text-[#444444]">
           <span>{time}</span>
           {message.credits_used && (
             <span title={message.input_tokens ? `输入: ${message.input_tokens} tokens, 输出: ${message.output_tokens} tokens` : ''}>
               消耗 {message.credits_used} 积分
-              {message.input_tokens && <span className="text-slate-300 ml-1">({message.input_tokens}+{message.output_tokens} tokens)</span>}
+              {message.input_tokens && <span className="text-[#333333] ml-1">({message.input_tokens}+{message.output_tokens} tokens)</span>}
             </span>
           )}
           <div className="flex items-center gap-1 ml-auto">
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-slate-400 hover:text-slate-600"
+              className="h-7 w-7 text-[#444444] hover:text-white"
               onClick={handleCopy}
             >
               <Copy className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-[#444444] hover:text-white">
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-[#444444] hover:text-white">
               <ThumbsUp className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-[#444444] hover:text-white">
               <ThumbsDown className="h-3.5 w-3.5" />
             </Button>
           </div>
