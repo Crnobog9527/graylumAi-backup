@@ -3,8 +3,12 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from "@/components/ui/button";
 import { PlayCircle, Target, Search, Compass, FileText, Settings, TrendingUp } from 'lucide-react';
+
+/**
+ * 六步指南组件
+ * 使用设计系统: card, card-clickable, btn-primary, btn-secondary, text-gradient
+ */
 
 const steps = [
   {
@@ -62,68 +66,134 @@ export default function SixStepsGuide() {
 
   return (
     <div className="mb-16">
-      {/* Header */}
+      {/* Header - 标题区域 */}
       <div className="text-center mb-12">
         {/* 微标签 */}
-        <div className="inline-flex items-center gap-2 mb-6 bg-[#111111] px-4 py-2 rounded-full border border-[#222222]">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-[#888888] font-medium">GROWTH STRATEGY</span>
+        <div
+          className="badge badge-default inline-flex items-center gap-2 mb-6"
+          style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-primary)',
+            borderRadius: 'var(--radius-full)',
+            padding: 'var(--space-sm) var(--space-md)'
+          }}
+        >
+          <span
+            className="uppercase tracking-widest font-medium"
+            style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}
+          >
+            GROWTH STRATEGY
+          </span>
         </div>
-        
-        <h2 className="text-4xl md:text-5xl font-semibold text-white mb-4 tracking-tight leading-[1.1]">
+
+        {/* 主标题 */}
+        <h2
+          className="heading-1 mb-4"
+          style={{
+            fontSize: 'clamp(2rem, 5vw, 3rem)',
+            lineHeight: '1.1'
+          }}
+        >
           从零到百万粉丝
           <br />
-          <span className="text-[#FFD02F]">6步打造爆款账号</span>
+          <span className="text-gradient">6步打造爆款账号</span>
         </h2>
-        
-        <p className="text-[#888888] mx-auto max-w-2xl text-base leading-relaxed font-light">
+
+        {/* 副标题 */}
+        <p
+          className="mx-auto max-w-2xl"
+          style={{
+            color: 'var(--text-secondary)',
+            fontSize: 'var(--text-body)',
+            lineHeight: 'var(--leading-relaxed)'
+          }}
+        >
           深度学习全网超过1000万粉丝不同赛道账号的商业策略，只需 10 分钟，立即适配最佳赛道以及差异化内容！
         </p>
       </div>
-      
-      {/* Bento Grid */}
+
+      {/* Bento Grid - 步骤卡片网格 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
         {steps.map((step, index) => {
           const IconComponent = step.icon;
           return (
             <div
               key={index}
-              className="group bg-[#111111] p-8 rounded-3xl border border-[#222222] transition-all duration-300 hover:border-[#444444] hover:scale-[1.01] hover:bg-[#1A1A1A]"
+              className="card card-clickable group p-8"
+              style={{
+                borderRadius: 'var(--radius-2xl)',
+                animation: `fadeInUp 0.6s ease forwards`,
+                animationDelay: `${index * 0.1}s`,
+                opacity: 0
+              }}
             >
               {/* 步骤编号和图标 */}
               <div className="flex items-center justify-between mb-6">
-                <div className="w-12 h-12 rounded-full bg-[#0A0A0A] border border-[#222222] flex items-center justify-center text-[#FFD02F] font-bold text-sm group-hover:border-[#FFD02F] transition-colors">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300"
+                  style={{
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-primary)',
+                    color: 'var(--color-primary)'
+                  }}
+                >
                   {step.num}
                 </div>
-                <IconComponent className="h-5 w-5 text-[#444444] group-hover:text-[#FFD02F] transition-colors" />
+                <IconComponent
+                  className="h-5 w-5 transition-colors duration-300"
+                  style={{ color: 'var(--text-disabled)' }}
+                />
               </div>
-              
-              <h3 className="text-white font-bold text-lg mb-3 tracking-tight">{step.title}</h3>
-              <p className="text-[#888888] text-sm leading-relaxed font-light">
+
+              {/* 卡片标题 */}
+              <h3
+                className="heading-4 mb-3"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {step.title}
+              </h3>
+
+              {/* 卡片描述 */}
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: 'var(--text-small)',
+                  lineHeight: 'var(--leading-relaxed)'
+                }}
+              >
                 {step.desc}
               </p>
             </div>
           );
         })}
       </div>
-      
-      {/* CTA Buttons */}
+
+      {/* CTA Buttons - 行动按钮 */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
         <Link to={getButtonLink()}>
-          <Button
-            className="bg-[#FFD02F] hover:bg-[#F0C000] text-black font-bold h-14 px-10 text-base rounded-full transition-all duration-300 shadow-[0_0_30px_rgba(255,208,47,0.3)] hover:shadow-[0_0_40px_rgba(255,208,47,0.4)]"
+          <button
+            className="btn btn-primary btn-lg"
+            style={{
+              borderRadius: 'var(--radius-full)',
+              boxShadow: 'var(--shadow-glow)',
+              minWidth: '180px'
+            }}
           >
             <PlayCircle className="h-5 w-5 mr-2" />
             开始分析
-          </Button>
+          </button>
         </Link>
-        
+
         <Link to={createPageUrl('Chat')}>
-          <Button
-            variant="outline"
-            className="bg-[#1A1A1A] hover:bg-[#252525] border-[#333333] text-white font-medium h-14 px-10 text-base rounded-full transition-all duration-300"
+          <button
+            className="btn btn-secondary btn-lg"
+            style={{
+              borderRadius: 'var(--radius-full)',
+              minWidth: '180px'
+            }}
           >
             自由对话
-          </Button>
+          </button>
         </Link>
       </div>
     </div>
