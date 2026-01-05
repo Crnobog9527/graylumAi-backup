@@ -42,6 +42,7 @@ export default function Marketplace() {
   const [sortOrder, setSortOrder] = useState('newest');
   const [page, setPage] = useState(1);
   const itemsPerPage = 12;
+  const [detailModule, setDetailModule] = useState(null);
 
   const { data: modules = [] } = useQuery({
     queryKey: ['modules'],
