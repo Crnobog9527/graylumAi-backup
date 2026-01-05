@@ -25,6 +25,16 @@ const iconMap = {
 export default function ModuleDetailDialog({ module, open, onOpenChange }) {
   const navigate = useNavigate();
   const Icon = iconMap[module?.icon] || Bot;
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyInputs = () => {
+    if (module?.required_inputs?.length > 0) {
+      const text = module.required_inputs.join('\n');
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   if (!module) return null;
 
