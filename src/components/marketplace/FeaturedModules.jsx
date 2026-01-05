@@ -8,7 +8,7 @@ import { ArrowRight, Star } from 'lucide-react';
 import ModuleDetailDialog from '../modules/ModuleDetailDialog';
 
 export default function FeaturedModules() {
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, featured: null });
+  const [detailDialog, setDetailDialog] = useState({ open: false, module: null });
   const navigate = useNavigate();
 
   const { data: featuredModules = [] } = useQuery({
@@ -25,27 +25,21 @@ export default function FeaturedModules() {
     return null;
   }
 
-  const getLink = (featured) => {
-    if (featured.link_module_id) {
-      return `${createPageUrl('Chat')}?module_id=${featured.link_module_id}&auto_start=true`;
-    }
-    if (featured.link_url) {
-      return featured.link_url;
-    }
-    return createPageUrl('Chat');
-  };
-
   const handleClick = (featured) => {
-    const linkedModule = featured.link_module_id 
-      ? promptModules.find(m => m.id === featured.link_module_id)
-      : null;
-    setConfirmDialog({ open: true, featured, linkedModule });
-  };
-
-  const handleConfirm = () => {
-    const { featured } = confirmDialog;
-    navigate(getLink(featured));
-    setConfirmDialog({ open: false, featured: null });
+    // 如果有关联模块，显示关联模块的详情弹窗
+    if (featured.link_module_id) {
+      const linkedModule = promptModules.find(m => m.id === featured.link_module_id);
+      if (linkedModule) {
+        setDetailDialog({ open: true, module: linkedModule });
+        return;
+      }
+    }
+    // 如果没有关联模块，直接跳转
+    if (featured.link_url) {
+      navigate(featured.link_url);
+    } else {
+      navigate(createPageUrl('Chat'));
+    }
   };
 
   const getBadgeStyle = (type) => {
