@@ -44,7 +44,7 @@ export default function Marketplace() {
 
   const { data: modules = [] } = useQuery({
     queryKey: ['modules'],
-    queryFn: () => base44.entities.PromptModule.list('-sort_order', 100)
+    queryFn: () => base44.entities.PromptModule.filter({ is_active: true }, 'sort_order', 100)
   });
 
   const { data: models = [] } = useQuery({
