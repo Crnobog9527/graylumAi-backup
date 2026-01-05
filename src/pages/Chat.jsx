@@ -812,7 +812,7 @@ export default function Chat() {
       </div>
 
       {/* Main Chat Area */}
-      <div className={cn("flex-1 flex flex-col", showDebugPanel && "mr-80")} style={{ background: 'var(--bg-primary)' }}>
+      <div className={cn("flex-1 flex flex-col", showDebugPanel && "mr-80")} style={{ background: 'linear-gradient(180deg, rgba(18,18,20,1) 0%, rgba(25,25,30,1) 50%, rgba(20,20,25,1) 100%)' }}>
         {/* Chat Header */}
         <div className="h-14 flex items-center justify-between px-6" style={{ borderBottom: '1px solid var(--border-primary)' }}>
           <div className="flex items-center gap-3">
