@@ -1,7 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
-import '@/index.css'
+import '@/theme.css'        // 设计系统 - 全局变量和基础样式
+import '@/components.css'   // 组件库 - 可复用的组件样式
+import '@/index.css'        // 应用样式 - Tailwind 和组件样式
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   // <React.StrictMode>

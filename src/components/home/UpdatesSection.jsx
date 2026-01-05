@@ -4,6 +4,11 @@ import { base44 } from '@/api/base44Client';
 import { Sparkles, Volume2, Wrench, Megaphone, Gift, Bell, AlertTriangle, Info, Star, ArrowUpRight } from 'lucide-react';
 import { format } from 'date-fns';
 
+/**
+ * 更新公告组件
+ * 使用设计系统: card, card-clickable, badge, skeleton
+ */
+
 // 图标映射
 const iconMap = {
   Sparkles,
@@ -17,13 +22,13 @@ const iconMap = {
   Star,
 };
 
-// 标签颜色映射 - 深色主题
+// 标签颜色映射 - 使用设计系统变量
 const tagColorMap = {
-  blue: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
-  orange: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-  green: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-  red: 'bg-red-500/20 text-red-400 border border-red-500/30',
-  purple: 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+  blue: { bg: 'var(--info-bg)', color: 'var(--info)', border: 'var(--info)' },
+  orange: { bg: 'var(--warning-bg)', color: 'var(--warning)', border: 'var(--warning)' },
+  green: { bg: 'var(--success-bg)', color: 'var(--success)', border: 'var(--success)' },
+  red: { bg: 'var(--error-bg)', color: 'var(--error)', border: 'var(--error)' },
+  purple: { bg: 'rgba(139, 92, 246, 0.1)', color: '#A78BFA', border: '#A78BFA' },
 };
 
 export default function UpdatesSection() {
@@ -39,20 +44,38 @@ export default function UpdatesSection() {
   if (isLoading) {
     return (
       <div className="mb-8">
-        {/* 标题 */}
+        {/* 标题骨架 */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="inline-flex items-center gap-2 bg-[#111111] px-4 py-2 rounded-full border border-[#222222]">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-[#888888] font-medium">ANNOUNCEMENTS</span>
+          <div
+            className="badge badge-default inline-flex items-center gap-2"
+            style={{
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-primary)',
+              borderRadius: 'var(--radius-full)',
+              padding: 'var(--space-sm) var(--space-md)'
+            }}
+          >
+            <span
+              className="uppercase tracking-widest font-medium"
+              style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}
+            >
+              ANNOUNCEMENTS
+            </span>
           </div>
         </div>
-        
+
+        {/* 骨架屏卡片 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[1, 2, 3].map(i => (
-            <div key={i} className="bg-[#111111] p-8 rounded-3xl border border-[#222222] animate-pulse">
-              <div className="h-10 w-10 bg-[#1A1A1A] rounded-xl mb-6" />
-              <div className="h-5 bg-[#1A1A1A] rounded mb-3 w-3/4" />
-              <div className="h-4 bg-[#0A0A0A] rounded mb-2" />
-              <div className="h-4 bg-[#0A0A0A] rounded w-2/3" />
+            <div
+              key={i}
+              className="card p-8"
+              style={{ borderRadius: 'var(--radius-2xl)' }}
+            >
+              <div className="skeleton skeleton-avatar mb-6" style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-lg)' }} />
+              <div className="skeleton skeleton-title mb-3" />
+              <div className="skeleton skeleton-text mb-2" />
+              <div className="skeleton skeleton-text" style={{ width: '66%' }} />
             </div>
           ))}
         </div>
@@ -68,20 +91,33 @@ export default function UpdatesSection() {
     <div className="mb-8">
       {/* 标题区域 */}
       <div className="flex items-center justify-between mb-8">
-        <div className="inline-flex items-center gap-2 bg-[#111111] px-4 py-2 rounded-full border border-[#222222]">
-          <Bell className="h-3 w-3 text-[#FFD02F]" />
-          <span className="text-[10px] uppercase tracking-[0.2em] text-[#888888] font-medium">ANNOUNCEMENTS</span>
+        <div
+          className="badge badge-default inline-flex items-center gap-2"
+          style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-primary)',
+            borderRadius: 'var(--radius-full)',
+            padding: 'var(--space-sm) var(--space-md)'
+          }}
+        >
+          <Bell className="h-3 w-3" style={{ color: 'var(--color-primary)' }} />
+          <span
+            className="uppercase tracking-widest font-medium"
+            style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}
+          >
+            ANNOUNCEMENTS
+          </span>
         </div>
-        
-        <h2 className="text-xl font-semibold text-white tracking-tight">平台公告</h2>
+
+        <h2 className="heading-3" style={{ margin: 0 }}>平台公告</h2>
       </div>
-      
-      {/* Bento Grid */}
+
+      {/* Bento Grid - 公告卡片网格 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {announcements.slice(0, 3).map((item) => {
+        {announcements.slice(0, 3).map((item, index) => {
           const IconComponent = iconMap[item.icon] || Megaphone;
-          const tagColor = tagColorMap[item.tag_color] || tagColorMap.blue;
-          
+          const tagStyle = tagColorMap[item.tag_color] || tagColorMap.blue;
+
           let dateDisplay = '';
           if (item.expire_date) {
             dateDisplay = `活动截止: ${format(new Date(item.expire_date), 'yyyy-MM-dd')}`;
@@ -92,36 +128,77 @@ export default function UpdatesSection() {
           }
 
           return (
-            <div 
-              key={item.id} 
-              className="group bg-[#111111] p-8 rounded-3xl border border-[#222222] flex flex-col h-full transition-all duration-300 hover:border-[#444444] hover:scale-[1.01] hover:bg-[#1A1A1A]"
+            <div
+              key={item.id}
+              className="card card-clickable group p-8 flex flex-col h-full"
+              style={{
+                borderRadius: 'var(--radius-2xl)',
+                animation: `fadeInUp 0.6s ease forwards`,
+                animationDelay: `${index * 0.1}s`,
+                opacity: 0
+              }}
             >
               {/* 头部 - 图标和标签 */}
               <div className="flex items-center justify-between mb-6">
-                <div className="w-12 h-12 rounded-xl bg-[#0A0A0A] border border-[#222222] flex items-center justify-center group-hover:border-[#FFD02F] transition-colors">
-                  <IconComponent className="h-5 w-5 text-[#FFD02F]" />
+                <div
+                  className="w-12 h-12 flex items-center justify-center transition-all duration-300"
+                  style={{
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-primary)',
+                    borderRadius: 'var(--radius-lg)'
+                  }}
+                >
+                  <IconComponent className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
                 </div>
                 {item.tag && (
-                  <span className={`text-[10px] uppercase tracking-wider px-3 py-1 rounded-full font-medium ${tagColor}`}>
+                  <span
+                    className="uppercase tracking-wider font-medium"
+                    style={{
+                      fontSize: 'var(--text-xs)',
+                      padding: 'var(--space-xs) var(--space-sm)',
+                      borderRadius: 'var(--radius-full)',
+                      background: tagStyle.bg,
+                      color: tagStyle.color,
+                      border: `1px solid ${tagStyle.border}30`
+                    }}
+                  >
                     {item.tag}
                   </span>
                 )}
               </div>
-              
+
               {/* 标题 */}
-              <h3 className="font-bold text-white text-lg mb-3 tracking-tight group-hover:text-[#FFD02F] transition-colors">
+              <h3
+                className="heading-4 mb-3 transition-colors duration-300"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 {item.title}
               </h3>
-              
+
               {/* 描述 */}
-              <p className="text-sm text-[#888888] mb-6 flex-1 leading-relaxed font-light">
+              <p
+                className="mb-6 flex-1"
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: 'var(--text-small)',
+                  lineHeight: 'var(--leading-relaxed)'
+                }}
+              >
                 {item.description}
               </p>
-              
+
               {/* 底部 - 日期和箭头 */}
-              <div className="flex items-center justify-between pt-4 border-t border-[#1A1A1A]">
-                <span className="text-xs text-[#666666]">{dateDisplay}</span>
-                <ArrowUpRight className="h-4 w-4 text-[#444444] group-hover:text-[#FFD02F] transition-colors" />
+              <div
+                className="flex items-center justify-between pt-4"
+                style={{ borderTop: '1px solid var(--border-primary)' }}
+              >
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-disabled)' }}>
+                  {dateDisplay}
+                </span>
+                <ArrowUpRight
+                  className="h-4 w-4 transition-colors duration-300"
+                  style={{ color: 'var(--text-disabled)' }}
+                />
               </div>
             </div>
           );
