@@ -12,8 +12,9 @@ import {
 import { 
   Video, PenTool, Sparkles, Briefcase, BarChart3, Lightbulb, 
   Target, Image as ImageIcon, Languages, Code, Megaphone, 
-  BookOpen, Music, Bot, CheckCircle2, HelpCircle, Monitor, ArrowRight
+  BookOpen, Music, Bot, CheckCircle2, HelpCircle, Monitor, ArrowRight, Copy, Check
 } from 'lucide-react';
+import { useState } from 'react';
 
 const iconMap = {
   Video, PenTool, Sparkles, Briefcase, BarChart3, Lightbulb,
