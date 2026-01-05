@@ -93,7 +93,7 @@ export default function Home() {
         }}
       />
 
-      {/* 7. 噪点纹理层 */}
+      {/* 8. 噪点纹理层 */}
       <div
         className="absolute inset-0 opacity-[0.015] pointer-events-none"
         style={{
