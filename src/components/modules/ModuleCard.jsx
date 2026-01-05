@@ -19,7 +19,7 @@ import {
   Target, Image as ImageIcon, Languages, Code, Megaphone, 
   BookOpen, Music, Bot
 } from 'lucide-react';
-import ModuleDetailDialog from './ModuleDetailDialog';
+
 
 const iconMap = {
   Video, PenTool, Sparkles, Briefcase, BarChart3, Lightbulb,
