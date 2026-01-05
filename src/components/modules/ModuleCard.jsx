@@ -129,7 +129,10 @@ export default function ModuleCard({ module, models = [], className }) {
         </div>
 
         <Button 
-          onClick={() => setShowConfirm(true)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowConfirm(true);
+          }}
           className="w-full font-semibold h-10 rounded-xl transition-all duration-300 hover:scale-[1.03] hover:shadow-lg relative overflow-hidden"
           style={{
             background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
