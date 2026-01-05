@@ -402,9 +402,13 @@ function AdminPromptsContent() {
                     value={(formData.features || []).join('\n')}
                     onChange={(e) => setFormData({ 
                       ...formData, 
-                      features: e.target.value.split('\n').filter(s => s.trim()) 
+                      features: e.target.value.split('\n')
                     })}
-                    placeholder="一键生成专业口播稿&#10;支持多种视频时长&#10;自动优化节奏和表达"
+                    onBlur={(e) => setFormData({
+                      ...formData,
+                      features: e.target.value.split('\n').filter(s => s.trim())
+                    })}
+                    placeholder={`一键生成专业口播稿\n支持多种视频时长\n自动优化节奏和表达`}
                     rows={4}
                   />
                   <p className="text-xs text-slate-500">
@@ -418,9 +422,13 @@ function AdminPromptsContent() {
                     value={(formData.required_inputs || []).join('\n')}
                     onChange={(e) => setFormData({ 
                       ...formData, 
-                      required_inputs: e.target.value.split('\n').filter(s => s.trim()) 
+                      required_inputs: e.target.value.split('\n')
                     })}
-                    placeholder="视频主题是什么？&#10;目标时长多少分钟？&#10;希望的语言风格？"
+                    onBlur={(e) => setFormData({
+                      ...formData,
+                      required_inputs: e.target.value.split('\n').filter(s => s.trim())
+                    })}
+                    placeholder={`视频主题是什么？\n目标时长多少分钟？\n希望的语言风格？`}
                     rows={4}
                   />
                   <p className="text-xs text-slate-500">
