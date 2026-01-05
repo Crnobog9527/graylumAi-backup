@@ -77,84 +77,84 @@ export default function Marketplace() {
       style={{ background: 'var(--bg-primary)' }}
     >
       {/* ============================================
-          动态背景系统 - 多层叠加效果（与首页一致）
+          动态背景系统 - 功能市场专属设计
           ============================================ */}
 
-      {/* 1. 基础渐变层 */}
+      {/* 1. 深邃渐变基底 */}
       <div
         className="absolute inset-0"
         style={{
-          background: `linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%)`
+          background: `radial-gradient(ellipse 120% 80% at 50% 0%, rgba(30,25,40,1) 0%, var(--bg-primary) 50%, rgba(15,15,20,1) 100%)`
         }}
       />
 
-      {/* 2. 右上角金色/橙色光晕 - 漂移动画 */}
+      {/* 2. 顶部中央 - 主金色光源（聚焦市场标题） */}
       <div
-        className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full opacity-60 blur-[120px]"
+        className="absolute -top-20 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full opacity-50 blur-[140px]"
         style={{
-          background: `linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 50%, var(--success) 100%)`,
-          animation: 'driftTopRight 25s ease-in-out infinite, breathe 8s ease-in-out infinite',
+          background: `radial-gradient(circle, var(--color-primary) 0%, rgba(255,180,0,0.3) 40%, transparent 70%)`,
+          animation: 'pulseGlow 12s ease-in-out infinite',
         }}
       />
 
-      {/* 3. 左侧蓝紫色光晕 - 漂移动画 */}
+      {/* 3. 左下角 - 紫色/蓝色渐变光晕 */}
       <div
-        className="absolute top-1/3 -left-48 w-[500px] h-[500px] rounded-full opacity-30 blur-[100px]"
+        className="absolute bottom-0 -left-32 w-[600px] h-[600px] rounded-full opacity-35 blur-[130px]"
         style={{
-          background: `linear-gradient(90deg, rgba(139, 92, 246, 0.5) 0%, var(--info) 100%)`,
-          animation: 'driftLeft 30s ease-in-out infinite, breathe 12s ease-in-out infinite 2s',
+          background: `linear-gradient(45deg, rgba(99,102,241,0.6) 0%, rgba(139,92,246,0.4) 50%, transparent 100%)`,
+          animation: 'driftDiagonal 28s ease-in-out infinite',
         }}
       />
 
-      {/* 4. 底部暖色光晕 - 漂移动画 */}
+      {/* 4. 右下角 - 青绿色光晕 */}
       <div
-        className="absolute -bottom-32 left-1/3 w-[700px] h-[400px] rounded-full opacity-40 blur-[120px]"
+        className="absolute -bottom-20 -right-20 w-[500px] h-[500px] rounded-full opacity-30 blur-[120px]"
         style={{
-          background: `linear-gradient(0deg, var(--color-secondary) 0%, transparent 100%)`,
-          animation: 'driftBottom 22s ease-in-out infinite, breathe 10s ease-in-out infinite 4s',
+          background: `radial-gradient(circle, rgba(34,197,94,0.5) 0%, rgba(20,184,166,0.3) 50%, transparent 80%)`,
+          animation: 'driftCorner 24s ease-in-out infinite reverse',
         }}
       />
 
-      {/* 5. 中心微光效果 - 脉冲扩散 */}
+      {/* 5. 中部偏右 - 微弱橙色点缀 */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full opacity-20 blur-[150px]"
+        className="absolute top-1/2 right-1/4 w-[400px] h-[400px] rounded-full opacity-20 blur-[100px]"
         style={{
-          background: `linear-gradient(90deg, var(--success) 0%, transparent 50%, var(--info) 100%)`,
-          animation: 'pulse 15s ease-in-out infinite',
+          background: `radial-gradient(circle, var(--color-secondary) 0%, transparent 60%)`,
+          animation: 'floatSoft 20s ease-in-out infinite',
         }}
       />
 
-      {/* 6. 网格纹理层 - 缓慢平移 */}
+      {/* 6. 斜向网格纹理 */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0 opacity-[0.025]"
         style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
-          backgroundSize: '50px 50px',
-          animation: 'gridMove 60s linear infinite',
+          backgroundImage: `linear-gradient(30deg, rgba(255,215,0,0.1) 1px, transparent 1px), linear-gradient(-30deg, rgba(255,215,0,0.1) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px',
+          animation: 'gridDrift 80s linear infinite',
         }}
       />
 
-      {/* 7. 光线扫描效果 */}
+      {/* 7. 水平光带扫描 */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'linear-gradient(105deg, transparent 40%, rgba(255,215,0,0.03) 50%, transparent 60%)',
-          animation: 'lightSweep 15s ease-in-out infinite',
+          background: 'linear-gradient(180deg, transparent 0%, rgba(255,215,0,0.02) 50%, transparent 100%)',
+          animation: 'scanVertical 20s ease-in-out infinite',
         }}
       />
 
       {/* 8. 噪点纹理层 */}
       <div
-        className="absolute inset-0 opacity-[0.015] pointer-events-none"
+        className="absolute inset-0 opacity-[0.02] pointer-events-none"
         style={{
-          backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+          backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
         }}
       />
 
-      {/* 9. 浮动光点 */}
+      {/* 9. 星尘浮动光点 - 更稀疏更精致 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(12)].map((_, i) => {
-          const size = 1 + Math.random() * 2;
+        {[...Array(8)].map((_, i) => {
+          const size = 1.5 + Math.random() * 1.5;
           return (
             <div
               key={i}
@@ -162,65 +162,58 @@ export default function Marketplace() {
               style={{
                 width: `${size}px`,
                 height: `${size}px`,
-                background: 'var(--color-primary)',
-                opacity: 0.15 + Math.random() * 0.25,
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animation: `floatAdvanced ${12 + Math.random() * 18}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 8}s`,
+                background: i % 2 === 0 ? 'var(--color-primary)' : 'rgba(139,92,246,0.8)',
+                boxShadow: `0 0 ${size * 4}px ${i % 2 === 0 ? 'var(--color-primary)' : 'rgba(139,92,246,0.6)'}`,
+                opacity: 0.3 + Math.random() * 0.4,
+                left: `${10 + Math.random() * 80}%`,
+                top: `${10 + Math.random() * 80}%`,
+                animation: `twinkle ${8 + Math.random() * 12}s ease-in-out infinite`,
+                animationDelay: `${Math.random() * 6}s`,
               }}
             />
           );
         })}
       </div>
 
-      {/* 10. 暗角遮罩 */}
+      {/* 10. 边缘渐隐遮罩 */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 20%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.4) 75%, rgba(0,0,0,0.7) 100%)',
+          background: 'radial-gradient(ellipse 90% 80% at 50% 30%, transparent 30%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.5) 85%, rgba(0,0,0,0.7) 100%)',
         }}
       />
 
-      {/* 动画样式定义 */}
+      {/* 动画样式定义 - 功能市场专属 */}
       <style>{`
-        @keyframes driftTopRight {
-          0%, 100% { transform: translate(0, 0); }
-          25% { transform: translate(-30px, 20px); }
-          50% { transform: translate(-50px, 40px); }
-          75% { transform: translate(-20px, 25px); }
+        @keyframes pulseGlow {
+          0%, 100% { opacity: 0.4; transform: translateX(-50%) scale(1); }
+          50% { opacity: 0.6; transform: translateX(-50%) scale(1.08); }
         }
-        @keyframes driftLeft {
-          0%, 100% { transform: translate(-48px, 0); }
-          33% { transform: translate(-30px, 20px); }
-          66% { transform: translate(-60px, -20px); }
+        @keyframes driftDiagonal {
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          33% { transform: translate(40px, -30px) rotate(5deg); }
+          66% { transform: translate(-20px, 20px) rotate(-3deg); }
         }
-        @keyframes driftBottom {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(50px, 0) scale(1.1); }
+        @keyframes driftCorner {
+          0%, 100% { transform: translate(0, 0); opacity: 0.3; }
+          50% { transform: translate(-40px, -30px); opacity: 0.4; }
         }
-        @keyframes breathe {
-          0%, 100% { opacity: 0.4; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(1.05); }
+        @keyframes floatSoft {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+          50% { transform: translate(-30px, 20px) scale(1.1); opacity: 0.3; }
         }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.15; transform: translate(-50%, -50%) scale(1); }
-          50% { opacity: 0.25; transform: translate(-50%, -50%) scale(1.1); }
-        }
-        @keyframes gridMove {
+        @keyframes gridDrift {
           0% { background-position: 0 0; }
-          100% { background-position: 50px 50px; }
+          100% { background-position: 60px 60px; }
         }
-        @keyframes lightSweep {
-          0%, 90%, 100% { transform: translateX(-100%); opacity: 0; }
-          45% { transform: translateX(100%); opacity: 1; }
-          50% { transform: translateX(100%); opacity: 0; }
+        @keyframes scanVertical {
+          0%, 100% { transform: translateY(-100%); opacity: 0; }
+          40%, 60% { transform: translateY(0); opacity: 1; }
+          50% { opacity: 0.8; }
         }
-        @keyframes floatAdvanced {
-          0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.2; }
-          25% { transform: translateY(-30px) translateX(15px) scale(1.2); opacity: 0.5; }
-          50% { transform: translateY(-60px) translateX(-10px) scale(0.8); opacity: 0.3; }
-          75% { transform: translateY(-30px) translateX(8px) scale(1.1); opacity: 0.6; }
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.2; transform: scale(0.8); }
+          50% { opacity: 0.8; transform: scale(1.2); }
         }
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(20px); }
@@ -245,7 +238,7 @@ export default function Marketplace() {
           animation: fadeIn 0.6s ease forwards;
         }
         .animate-pulse {
-          animation: pulse 2s ease-in-out infinite;
+          animation: twinkle 2s ease-in-out infinite;
         }
         
         /* 滚动条美化 */
