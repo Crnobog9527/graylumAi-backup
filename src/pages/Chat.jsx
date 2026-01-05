@@ -605,8 +605,59 @@ export default function Chat() {
 
   return (
     <div className="h-[calc(100vh-4rem)] flex" style={{ background: 'var(--bg-primary)' }}>
+      {/* 动画样式 */}
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInLeft {
+          from { opacity: 0; transform: translateX(-10px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes pulseGlow {
+          0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.15); }
+          50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.25); }
+        }
+        @keyframes borderGlow {
+          0%, 100% { border-color: rgba(255, 215, 0, 0.2); }
+          50% { border-color: rgba(255, 215, 0, 0.4); }
+        }
+        .chat-input-box {
+          transition: all 0.3s ease;
+        }
+        .chat-input-box:focus-within {
+          border-color: rgba(255, 215, 0, 0.5) !important;
+          box-shadow: 0 0 20px rgba(255, 215, 0, 0.15), inset 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .message-bubble {
+          animation: fadeInUp 0.4s ease forwards;
+        }
+        .conversation-item {
+          transition: all 0.2s ease;
+        }
+        .conversation-item:hover {
+          background: rgba(255, 215, 0, 0.05) !important;
+          transform: translateX(4px);
+        }
+        .send-btn {
+          transition: all 0.3s ease;
+        }
+        .send-btn:hover:not(:disabled) {
+          transform: scale(1.05);
+          box-shadow: 0 6px 25px rgba(255, 215, 0, 0.4);
+        }
+        .send-btn:active:not(:disabled) {
+          transform: scale(0.98);
+        }
+      `}</style>
+      
       {/* Left Sidebar - Conversation List */}
-      <div className="w-64 flex flex-col shrink-0" style={{ background: 'var(--bg-secondary)', borderRight: '1px solid var(--border-primary)' }}>
+      <div className="w-64 flex flex-col shrink-0 md:flex" style={{ background: 'var(--bg-secondary)', borderRight: '1px solid var(--border-primary)' }}>
         {/* New Chat Button */}
         <div className="p-4">
           <Button
@@ -935,7 +986,14 @@ export default function Chat() {
             )}
 
             {/* Input Box */}
-            <div className="relative rounded-xl" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}>
+            <div 
+              className="relative rounded-2xl chat-input-box" 
+              style={{ 
+                background: 'linear-gradient(145deg, rgba(30,30,30,0.9) 0%, rgba(20,20,20,0.95) 100%)',
+                border: '1px solid rgba(255, 215, 0, 0.15)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.05)'
+              }}
+            >
               <div className="flex items-end p-3">
                 <input
                   ref={fileInputRef}
@@ -976,7 +1034,7 @@ export default function Chat() {
                     data-send-button
                     onClick={() => handleSendMessage(false)}
                     disabled={(!inputMessage.trim() && fileContents.length === 0) || isStreaming || uploadedFiles.some(f => f.status === 'extracting')}
-                    className="h-9 px-4 gap-2 transition-all duration-300"
+                    className="h-9 px-5 gap-2 send-btn rounded-xl font-medium"
                     style={{ 
                       background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
                       color: 'var(--bg-primary)',
@@ -1144,7 +1202,7 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
   return (
     <div
       onClick={() => isSelectMode ? onSelect() : onClick()}
-      className="group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
+      className="group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer conversation-item"
       style={{
         background: isActive && !isSelectMode 
           ? 'rgba(255, 215, 0, 0.1)' 
@@ -1234,15 +1292,16 @@ function MessageBubble({ message, isStreaming, user }) {
 
   if (isUser) {
     return (
-      <div className="flex justify-end py-4">
+      <div className="flex justify-end py-4 message-bubble">
         <div className="max-w-[80%] space-y-2">
           {/* 用户文字消息 */}
           {displayContent && (
             <div 
-              className="rounded-2xl rounded-tr-md px-4 py-3"
+              className="rounded-2xl rounded-tr-md px-4 py-3 transition-all duration-300 hover:shadow-lg"
               style={{ 
                 background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                color: 'var(--bg-primary)'
+                color: 'var(--bg-primary)',
+                boxShadow: '0 4px 15px rgba(255, 215, 0, 0.2)'
               }}
             >
               <p className="whitespace-pre-wrap leading-relaxed font-medium">{displayContent}</p>
@@ -1282,8 +1341,8 @@ function MessageBubble({ message, isStreaming, user }) {
   }
 
   return (
-    <div className="flex gap-4 py-4">
-      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
+    <div className="flex gap-4 py-4 message-bubble">
+      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-300" style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
         <Bot className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
       </div>
       <div className="flex-1 min-w-0">
