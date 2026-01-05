@@ -59,7 +59,7 @@ export default function ModuleCard({ module, models = [], className, onShowDetai
         border: '1px solid rgba(255,255,255,0.06)',
         boxShadow: '0 4px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.03)'
       }}
-      onClick={() => setShowDetail(true)}
+      onClick={() => onShowDetail && onShowDetail()}
     >
       {/* 悬停时的发光边框效果 */}
       <div 
