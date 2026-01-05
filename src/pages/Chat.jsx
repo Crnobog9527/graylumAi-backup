@@ -818,16 +818,16 @@ export default function Chat() {
       {/* Main Chat Area */}
       <div className={cn("flex-1 flex flex-col relative overflow-hidden", showDebugPanel && "mr-80")} style={{ background: 'linear-gradient(180deg, rgba(18,18,20,1) 0%, rgba(25,25,30,1) 50%, rgba(20,20,25,1) 100%)' }}>
         {/* 微妙背景动效 */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
           <div 
-            className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 rounded-full opacity-[0.1] blur-[100px]"
+            className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 rounded-full opacity-[0.08] blur-[100px]"
             style={{ 
               background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
               animation: 'float 20s ease-in-out infinite'
             }}
           />
           <div 
-            className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.02] blur-[120px]"
+            className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.05] blur-[120px]"
             style={{ 
               background: 'radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)',
               animation: 'float 25s ease-in-out infinite reverse'
@@ -835,7 +835,7 @@ export default function Chat() {
           />
         </div>
         {/* Chat Header */}
-        <div className="h-14 flex items-center justify-between px-6" style={{ borderBottom: '1px solid var(--border-primary)' }}>
+        <div className="h-14 flex items-center justify-between px-6 relative" style={{ borderBottom: '1px solid var(--border-primary)', zIndex: 1 }}>
           <div className="flex items-center gap-3">
             {isEditingTitle && currentConversation ? (
               <div className="flex items-center gap-2">
@@ -922,7 +922,7 @@ export default function Chat() {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden relative" style={{ zIndex: 1 }}>
           <ScrollArea className="h-full">
             <div className="max-w-3xl mx-auto py-6 px-4">
               {messages.length === 0 ? (
@@ -969,7 +969,7 @@ export default function Chat() {
         )}
 
         {/* Input Area */}
-        <div className="p-4" style={{ borderTop: '1px solid var(--border-primary)', background: 'var(--bg-secondary)' }}>
+        <div className="p-4 relative" style={{ borderTop: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', zIndex: 1 }}>
           <div className="max-w-3xl mx-auto">
             {/* Uploaded Files Preview */}
             {uploadedFiles.length > 0 && (
