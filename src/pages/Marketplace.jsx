@@ -90,34 +90,34 @@ export default function Marketplace() {
 
       {/* 2. 顶部中央 - 主金色光源（聚焦市场标题） */}
       <div
-        className="absolute -top-20 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full opacity-50 blur-[140px]"
+        className="absolute -top-20 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full opacity-70 blur-[120px]"
         style={{
-          background: `radial-gradient(circle, var(--color-primary) 0%, rgba(255,180,0,0.3) 40%, transparent 70%)`,
+          background: `radial-gradient(circle, var(--color-primary) 0%, rgba(255,180,0,0.5) 40%, transparent 70%)`,
           animation: 'pulseGlow 12s ease-in-out infinite',
         }}
       />
 
       {/* 3. 左下角 - 紫色/蓝色渐变光晕 */}
       <div
-        className="absolute bottom-0 -left-32 w-[600px] h-[600px] rounded-full opacity-35 blur-[130px]"
+        className="absolute bottom-0 -left-32 w-[600px] h-[600px] rounded-full opacity-50 blur-[110px]"
         style={{
-          background: `linear-gradient(45deg, rgba(99,102,241,0.6) 0%, rgba(139,92,246,0.4) 50%, transparent 100%)`,
+          background: `linear-gradient(45deg, rgba(99,102,241,0.8) 0%, rgba(139,92,246,0.6) 50%, transparent 100%)`,
           animation: 'driftDiagonal 28s ease-in-out infinite',
         }}
       />
 
       {/* 4. 右下角 - 青绿色光晕 */}
       <div
-        className="absolute -bottom-20 -right-20 w-[500px] h-[500px] rounded-full opacity-30 blur-[120px]"
+        className="absolute -bottom-20 -right-20 w-[500px] h-[500px] rounded-full opacity-45 blur-[100px]"
         style={{
-          background: `radial-gradient(circle, rgba(34,197,94,0.5) 0%, rgba(20,184,166,0.3) 50%, transparent 80%)`,
+          background: `radial-gradient(circle, rgba(34,197,94,0.7) 0%, rgba(20,184,166,0.5) 50%, transparent 80%)`,
           animation: 'driftCorner 24s ease-in-out infinite reverse',
         }}
       />
 
-      {/* 5. 中部偏右 - 微弱橙色点缀 */}
+      {/* 5. 中部偏右 - 橙色点缀 */}
       <div
-        className="absolute top-1/2 right-1/4 w-[400px] h-[400px] rounded-full opacity-20 blur-[100px]"
+        className="absolute top-1/2 right-1/4 w-[400px] h-[400px] rounded-full opacity-35 blur-[90px]"
         style={{
           background: `radial-gradient(circle, var(--color-secondary) 0%, transparent 60%)`,
           animation: 'floatSoft 20s ease-in-out infinite',
@@ -126,9 +126,9 @@ export default function Marketplace() {
 
       {/* 6. 斜向网格纹理 */}
       <div
-        className="absolute inset-0 opacity-[0.025]"
+        className="absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: `linear-gradient(30deg, rgba(255,215,0,0.1) 1px, transparent 1px), linear-gradient(-30deg, rgba(255,215,0,0.1) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(30deg, rgba(255,215,0,0.15) 1px, transparent 1px), linear-gradient(-30deg, rgba(255,215,0,0.15) 1px, transparent 1px)`,
           backgroundSize: '60px 60px',
           animation: 'gridDrift 80s linear infinite',
         }}
@@ -138,23 +138,23 @@ export default function Marketplace() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'linear-gradient(180deg, transparent 0%, rgba(255,215,0,0.02) 50%, transparent 100%)',
+          background: 'linear-gradient(180deg, transparent 0%, rgba(255,215,0,0.05) 50%, transparent 100%)',
           animation: 'scanVertical 20s ease-in-out infinite',
         }}
       />
 
       {/* 8. 噪点纹理层 */}
       <div
-        className="absolute inset-0 opacity-[0.02] pointer-events-none"
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
           backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
         }}
       />
 
-      {/* 9. 星尘浮动光点 - 更稀疏更精致 */}
+      {/* 9. 星尘浮动光点 - 更明显 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(8)].map((_, i) => {
-          const size = 1.5 + Math.random() * 1.5;
+        {[...Array(15)].map((_, i) => {
+          const size = 2 + Math.random() * 2;
           return (
             <div
               key={i}
@@ -162,24 +162,24 @@ export default function Marketplace() {
               style={{
                 width: `${size}px`,
                 height: `${size}px`,
-                background: i % 2 === 0 ? 'var(--color-primary)' : 'rgba(139,92,246,0.8)',
-                boxShadow: `0 0 ${size * 4}px ${i % 2 === 0 ? 'var(--color-primary)' : 'rgba(139,92,246,0.6)'}`,
-                opacity: 0.3 + Math.random() * 0.4,
-                left: `${10 + Math.random() * 80}%`,
-                top: `${10 + Math.random() * 80}%`,
-                animation: `twinkle ${8 + Math.random() * 12}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 6}s`,
+                background: i % 3 === 0 ? 'var(--color-primary)' : i % 3 === 1 ? 'rgba(139,92,246,1)' : 'rgba(34,197,94,1)',
+                boxShadow: `0 0 ${size * 6}px ${i % 3 === 0 ? 'var(--color-primary)' : i % 3 === 1 ? 'rgba(139,92,246,0.8)' : 'rgba(34,197,94,0.8)'}`,
+                opacity: 0.6 + Math.random() * 0.4,
+                left: `${5 + Math.random() * 90}%`,
+                top: `${5 + Math.random() * 90}%`,
+                animation: `twinkle ${6 + Math.random() * 8}s ease-in-out infinite`,
+                animationDelay: `${Math.random() * 5}s`,
               }}
             />
           );
         })}
       </div>
 
-      {/* 10. 边缘渐隐遮罩 */}
+      {/* 10. 边缘渐隐遮罩 - 减弱遮罩让光晕更明显 */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse 90% 80% at 50% 30%, transparent 30%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.5) 85%, rgba(0,0,0,0.7) 100%)',
+          background: 'radial-gradient(ellipse 100% 90% at 50% 30%, transparent 40%, rgba(0,0,0,0.15) 65%, rgba(0,0,0,0.35) 85%, rgba(0,0,0,0.5) 100%)',
         }}
       />
 
