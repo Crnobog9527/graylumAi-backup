@@ -392,6 +392,43 @@ function AdminPromptsContent() {
                 </p>
               </div>
 
+              {/* 详情弹窗展示内容 */}
+              <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+                <h4 className="font-semibold text-slate-700 text-sm">详情弹窗展示内容</h4>
+                
+                <div className="space-y-2">
+                  <Label>模块特点（每行一个）</Label>
+                  <Textarea
+                    value={(formData.features || []).join('\n')}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      features: e.target.value.split('\n').filter(s => s.trim()) 
+                    })}
+                    placeholder="一键生成专业口播稿&#10;支持多种视频时长&#10;自动优化节奏和表达"
+                    rows={4}
+                  />
+                  <p className="text-xs text-slate-500">
+                    用户点击卡片后在详情弹窗中展示的功能特点列表
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>用户需准备的问题（每行一个）</Label>
+                  <Textarea
+                    value={(formData.required_inputs || []).join('\n')}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      required_inputs: e.target.value.split('\n').filter(s => s.trim()) 
+                    })}
+                    placeholder="视频主题是什么？&#10;目标时长多少分钟？&#10;希望的语言风格？"
+                    rows={4}
+                  />
+                  <p className="text-xs text-slate-500">
+                    提示用户在使用前需要准备回答的问题
+                  </p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t('icon')}</Label>
