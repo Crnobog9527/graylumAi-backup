@@ -50,7 +50,7 @@ export default function ModuleCard({ module, models = [], className }) {
   return (
     <div 
       className={cn(
-        "rounded-2xl p-5 flex flex-col h-full group transition-all duration-500 hover:translate-y-[-6px]",
+        "relative rounded-2xl p-5 flex flex-col h-full group transition-all duration-500 hover:translate-y-[-6px]",
         className
       )}
       style={{
