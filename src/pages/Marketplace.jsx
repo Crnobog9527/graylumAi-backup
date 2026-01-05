@@ -11,6 +11,7 @@ import {
 "@/components/ui/dropdown-menu";
 import FeaturedModules from '@/components/marketplace/FeaturedModules';
 import ModuleCard from '@/components/modules/ModuleCard';
+import ModuleDetailDialog from '@/components/modules/ModuleDetailDialog';
 
 const categories = [
 { id: 'all', label: '全部功能' },
