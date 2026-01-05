@@ -38,34 +38,37 @@ export default function Home() {
 
       {/* 2. 右上角金色/橙色光晕 - 品牌色呼应 */}
       <div
-        className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full opacity-60 blur-[120px] animate-pulse"
+        className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[80px]"
         style={{
-          background: `linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 50%, var(--success) 100%)`,
-          animationDuration: '8s'
+          background: `radial-gradient(circle, rgba(255, 215, 0, 0.25) 0%, rgba(255, 165, 0, 0.15) 40%, transparent 70%)`,
+          transform: 'translate(30%, -30%)'
         }}
       />
 
       {/* 3. 左侧蓝紫色光晕 */}
       <div
-        className="absolute top-1/3 -left-48 w-[500px] h-[500px] rounded-full opacity-30 blur-[100px]"
+        className="absolute top-1/4 left-0 w-[400px] h-[400px] rounded-full blur-[80px]"
         style={{
-          background: `linear-gradient(90deg, rgba(139, 92, 246, 0.5) 0%, var(--info) 100%)`
+          background: `radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 50%, transparent 70%)`,
+          transform: 'translateX(-30%)'
         }}
       />
 
       {/* 4. 底部暖色光晕 */}
       <div
-        className="absolute -bottom-32 left-1/3 w-[700px] h-[400px] rounded-full opacity-40 blur-[120px]"
+        className="absolute bottom-0 left-1/4 w-[600px] h-[300px] rounded-full blur-[80px]"
         style={{
-          background: `linear-gradient(0deg, var(--color-secondary) 0%, transparent 100%)`
+          background: `radial-gradient(ellipse, rgba(255, 165, 0, 0.15) 0%, transparent 70%)`,
+          transform: 'translateY(40%)'
         }}
       />
 
       {/* 5. 中心微光效果 */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full opacity-20 blur-[150px]"
+        className="absolute top-1/2 left-1/2 w-[600px] h-[600px] rounded-full blur-[100px]"
         style={{
-          background: `linear-gradient(90deg, var(--success) 0%, transparent 50%, var(--info) 100%)`
+          background: `radial-gradient(circle, rgba(255, 215, 0, 0.08) 0%, transparent 60%)`,
+          transform: 'translate(-50%, -50%)'
         }}
       />
 
