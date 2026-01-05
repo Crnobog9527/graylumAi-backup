@@ -56,14 +56,7 @@ export default function ModuleDetailDialog({ module, open, onOpenChange }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
         className="max-w-2xl max-h-[85vh] overflow-y-auto p-0"
-        onPointerDownOutside={(e) => {
-          e.stopPropagation();
-          onOpenChange(false);
-        }}
-        onInteractOutside={(e) => {
-          e.stopPropagation();
-          onOpenChange(false);
-        }}
+
         style={{ 
           background: 'linear-gradient(135deg, rgba(25,25,30,0.98) 0%, rgba(15,15,20,0.99) 100%)',
           border: '1px solid rgba(255,215,0,0.15)',
