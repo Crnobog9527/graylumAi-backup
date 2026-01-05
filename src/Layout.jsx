@@ -102,8 +102,14 @@ export default function Layout({ children, currentPageName }) {
   // 加载中显示加载状态
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--bg-primary)' }}
+      >
+        <div
+          className="animate-spin rounded-full h-8 w-8 border-b-2"
+          style={{ borderColor: 'var(--color-primary)' }}
+        ></div>
       </div>
     );
   }
@@ -112,9 +118,12 @@ export default function Layout({ children, currentPageName }) {
   if (!user) {
     return null;
   }
-  
+
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div
+      className="min-h-screen font-sans"
+      style={{ background: 'var(--bg-primary)' }}
+    >
       <AppHeader user={user} />
       <main className="animate-in fade-in duration-500">
         {children}
