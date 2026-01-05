@@ -479,6 +479,13 @@ export default function Marketplace() {
             </span>
           </div>
         }
+
+        {/* 详情弹窗 - 放在页面级别避免事件冒泡问题 */}
+        <ModuleDetailDialog 
+          module={detailModule} 
+          open={!!detailModule} 
+          onOpenChange={(open) => !open && setDetailModule(null)} 
+        />
       </div>
     </div>);
 
