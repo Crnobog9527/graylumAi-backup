@@ -79,17 +79,24 @@ export default function Marketplace() {
       {/* 背景动效 */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div 
-          className="absolute -top-1/4 -right-1/4 w-[600px] h-[600px] rounded-full opacity-[0.04] blur-[120px]"
+          className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full blur-[120px]"
           style={{ 
-            background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, transparent 70%)',
             animation: 'floatSlow 25s ease-in-out infinite'
           }}
         />
         <div 
-          className="absolute -bottom-1/4 -left-1/4 w-[500px] h-[500px] rounded-full opacity-[0.03] blur-[100px]"
+          className="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full blur-[100px]"
           style={{ 
-            background: 'radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(255, 180, 0, 0.1) 0%, transparent 70%)',
             animation: 'floatSlow 30s ease-in-out infinite reverse'
+          }}
+        />
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-[150px]"
+          style={{ 
+            background: 'radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, transparent 60%)',
+            animation: 'floatSlow 35s ease-in-out infinite'
           }}
         />
       </div>
