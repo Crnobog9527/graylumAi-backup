@@ -49,13 +49,26 @@ export default function AppHeader({ user }) {
       <div className="container mx-auto h-full px-4 flex items-center justify-between">
         {/* Logo & Nav */}
         <div className="flex items-center gap-8">
-          <Link to={createPageUrl('Home')} className="flex items-center group">
-            <img 
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692afcdbb00f0dc8d8ad66eb/225fd6b2d_image.png"
-              alt="Graylum AI"
-              className="h-9 transition-all duration-300 group-hover:scale-105"
-              style={{ filter: 'brightness(1.05)' }}
-            />
+          <Link to={createPageUrl('Home')} className="flex items-center gap-2.5 group">
+            <div
+              className="p-2 rounded-xl transition-all duration-300 group-hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                boxShadow: '0 0 20px rgba(255, 215, 0, 0.3)',
+              }}
+            >
+              <Bot className="h-10 w-10" style={{ color: 'var(--bg-primary)' }} />
+            </div>
+            <span
+              className="font-bold text-lg transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, #fff 50%, var(--color-primary) 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              Graylum AI
+            </span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
