@@ -221,64 +221,89 @@ function AdminPromptsContent() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {modules.map((module) => (
-            <Card key={module.id} className="relative overflow-hidden">
-              <div className={`absolute top-0 left-0 w-1 h-full bg-${module.color || 'violet'}-500`} />
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg bg-${module.color || 'violet'}-100`}>
-                      <Wand2 className={`h-5 w-5 text-${module.color || 'violet'}-600`} />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-800">{module.title}</h3>
-                      <Badge variant="secondary" className="text-xs mt-1">
-                        {module.category}
-                      </Badge>
-                    </div>
-                  </div>
-                  <Badge variant={module.is_active ? "default" : "secondary"}>
-                    {module.is_active ? t('active') : t('inactive')}
-                  </Badge>
-                </div>
-                <p className="text-sm text-slate-500 mb-4 line-clamp-2">{module.description}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {module.model_id && (
-                      <Badge variant="outline" className="text-xs gap-1">
-                        <Bot className="h-3 w-3" />
-                        {models.find(m => m.id === module.model_id)?.name || '指定模型'}
-                      </Badge>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="modules">
+            {(provided) => (
+              <div 
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+              >
+                {modules.map((module, index) => (
+                  <Draggable key={module.id} draggableId={module.id} index={index}>
+                    {(provided, snapshot) => (
+                      <Card 
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className={`relative overflow-hidden ${snapshot.isDragging ? 'shadow-lg ring-2 ring-violet-400' : ''}`}
+                      >
+                        <div className={`absolute top-0 left-0 w-1 h-full bg-${module.color || 'violet'}-500`} />
+                        <CardContent className="p-5">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div 
+                                {...provided.dragHandleProps}
+                                className="cursor-grab active:cursor-grabbing p-1 -ml-1 rounded hover:bg-slate-100"
+                              >
+                                <GripVertical className="h-5 w-5 text-slate-400" />
+                              </div>
+                              <div className={`p-2 rounded-lg bg-${module.color || 'violet'}-100`}>
+                                <Wand2 className={`h-5 w-5 text-${module.color || 'violet'}-600`} />
+                              </div>
+                              <div>
+                                <h3 className="font-semibold text-slate-800">{module.title}</h3>
+                                <Badge variant="secondary" className="text-xs mt-1">
+                                  {module.category}
+                                </Badge>
+                              </div>
+                            </div>
+                            <Badge variant={module.is_active ? "default" : "secondary"}>
+                              {module.is_active ? t('active') : t('inactive')}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-slate-500 mb-4 line-clamp-2">{module.description}</p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {module.model_id && (
+                                <Badge variant="outline" className="text-xs gap-1">
+                                  <Bot className="h-3 w-3" />
+                                  {models.find(m => m.id === module.model_id)?.name || '指定模型'}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(module)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => handleDelete(module)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+                {modules.length === 0 && (
+                  <div className="col-span-full text-center py-12 text-slate-500">
+                    {t('noPromptsYet')}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(module)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={() => handleDelete(module)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {modules.length === 0 && (
-            <div className="col-span-full text-center py-12 text-slate-500">
-              {t('noPromptsYet')}
-            </div>
-          )}
-        </div>
+                )}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
 
         {/* Add/Edit Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
