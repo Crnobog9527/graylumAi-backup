@@ -820,7 +820,7 @@ export default function Chat() {
         {/* 微妙背景动效 */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div 
-            className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 rounded-full opacity-[0.03] blur-[100px]"
+            className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 rounded-full opacity-[0.1] blur-[100px]"
             style={{ 
               background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
               animation: 'float 20s ease-in-out infinite'
