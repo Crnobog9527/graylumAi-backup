@@ -52,7 +52,7 @@ export default function ModuleCard({ module, models = [], className }) {
   return (
     <div 
       className={cn(
-        "relative rounded-2xl p-5 flex flex-col h-full group transition-all duration-500 hover:translate-y-[-6px]",
+        "relative rounded-2xl p-5 flex flex-col h-full group transition-all duration-500 hover:translate-y-[-6px] cursor-pointer",
         className
       )}
       style={{
@@ -60,6 +60,7 @@ export default function ModuleCard({ module, models = [], className }) {
         border: '1px solid rgba(255,255,255,0.06)',
         boxShadow: '0 4px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.03)'
       }}
+      onClick={() => setShowDetail(true)}
     >
       {/* 悬停时的发光边框效果 */}
       <div 
