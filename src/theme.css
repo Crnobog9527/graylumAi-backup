@@ -188,8 +188,6 @@
 *::before,
 *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 /* 页面根元素 */
@@ -200,78 +198,22 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 页面主体 */
-body {
-  font-family: var(--font-primary);
-  font-size: var(--text-body);
-  font-weight: var(--font-normal);
-  line-height: var(--leading-normal);
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  min-height: 100vh;
-}
+/*
+   注意: 以下样式只应用于设计系统组件，不影响现有 UI 组件
+   导航栏、对话框等使用 Tailwind 和 shadcn/ui 的组件保持原有样式
+*/
 
-/* 链接默认样式 */
-a {
-  color: var(--color-primary);
-  text-decoration: none;
-  transition: var(--transition-fast);
-}
-
-a:hover {
-  color: var(--color-secondary);
-}
-
-/* 图片响应式 */
-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* 按钮重置 */
-button {
-  font-family: inherit;
-  font-size: inherit;
-  cursor: pointer;
-  border: none;
-  background: none;
-}
-
-/* 输入框重置 */
-input,
-textarea,
-select {
-  font-family: inherit;
-  font-size: inherit;
-  color: inherit;
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  padding: var(--space-sm) var(--space-md);
-  transition: var(--transition-fast);
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-  outline: none;
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px var(--color-primary-20);
-}
-
-/* 列表重置 */
-ul, ol {
+/* 列表重置 - 只在设计系统组件中使用 */
+.ds-list {
   list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* 代码字体 */
 code,
 pre {
   font-family: var(--font-mono);
-  font-size: var(--text-small);
-  background-color: var(--bg-tertiary);
-  border-radius: var(--radius-sm);
 }
 
 code {
