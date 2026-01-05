@@ -654,6 +654,10 @@ export default function Chat() {
         .send-btn:active:not(:disabled) {
           transform: scale(0.98);
         }
+        @keyframes float {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(30px, -20px) scale(1.1); }
+        }
       `}</style>
       
       {/* Left Sidebar - Conversation List */}
@@ -812,7 +816,24 @@ export default function Chat() {
       </div>
 
       {/* Main Chat Area */}
-      <div className={cn("flex-1 flex flex-col", showDebugPanel && "mr-80")} style={{ background: 'linear-gradient(180deg, rgba(18,18,20,1) 0%, rgba(25,25,30,1) 50%, rgba(20,20,25,1) 100%)' }}>
+      <div className={cn("flex-1 flex flex-col relative overflow-hidden", showDebugPanel && "mr-80")} style={{ background: 'linear-gradient(180deg, rgba(18,18,20,1) 0%, rgba(25,25,30,1) 50%, rgba(20,20,25,1) 100%)' }}>
+        {/* 微妙背景动效 */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div 
+            className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 rounded-full opacity-[0.03] blur-[100px]"
+            style={{ 
+              background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
+              animation: 'float 20s ease-in-out infinite'
+            }}
+          />
+          <div 
+            className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.02] blur-[120px]"
+            style={{ 
+              background: 'radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)',
+              animation: 'float 25s ease-in-out infinite reverse'
+            }}
+          />
+        </div>
         {/* Chat Header */}
         <div className="h-14 flex items-center justify-between px-6" style={{ borderBottom: '1px solid var(--border-primary)' }}>
           <div className="flex items-center gap-3">
