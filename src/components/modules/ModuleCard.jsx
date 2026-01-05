@@ -26,38 +26,20 @@ const iconMap = {
   BookOpen, Music, Bot
 };
 
-const colorConfig = {
-  violet: { bg: 'bg-violet-50', icon: 'bg-violet-100 text-violet-600', text: 'text-violet-600' },
-  blue: { bg: 'bg-blue-50', icon: 'bg-blue-100 text-blue-600', text: 'text-blue-600' },
-  emerald: { bg: 'bg-emerald-50', icon: 'bg-emerald-100 text-emerald-600', text: 'text-emerald-600' },
-  orange: { bg: 'bg-orange-50', icon: 'bg-orange-100 text-orange-600', text: 'text-orange-600' },
-  pink: { bg: 'bg-pink-50', icon: 'bg-pink-100 text-pink-600', text: 'text-pink-600' },
-  amber: { bg: 'bg-amber-50', icon: 'bg-amber-100 text-amber-600', text: 'text-amber-600' },
-  cyan: { bg: 'bg-cyan-50', icon: 'bg-cyan-100 text-cyan-600', text: 'text-cyan-600' },
-  indigo: { bg: 'bg-indigo-50', icon: 'bg-indigo-100 text-indigo-600', text: 'text-indigo-600' },
-  sky: { bg: 'bg-sky-50', icon: 'bg-sky-100 text-sky-600', text: 'text-sky-600' },
-  slate: { bg: 'bg-slate-50', icon: 'bg-slate-100 text-slate-600', text: 'text-slate-600' },
-};
-
 export default function ModuleCard({ module, models = [], className }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
   const Icon = iconMap[module.icon] || Bot;
-  const color = colorConfig[module.color] || colorConfig.blue;
 
-  // Assuming we navigate to Chat page with module_id parameter
   const targetUrl = `${createPageUrl('Chat')}?module_id=${module.id}&auto_start=true`;
 
-  // 计算真实积分消耗
   const getCreditsPerUse = () => {
-    // 如果模块指定了专用模型，使用该模型的积分
     if (module.model_id) {
       const assignedModel = models.find(m => m.id === module.model_id);
       if (assignedModel) {
         return assignedModel.credits_per_message * (module.credits_multiplier || 1);
       }
     }
-    // 否则使用第一个可用模型的积分作为基准
     const defaultModel = models[0];
     const baseCredits = defaultModel?.credits_per_message || 1;
     return baseCredits * (module.credits_multiplier || 1);
@@ -66,65 +48,104 @@ export default function ModuleCard({ module, models = [], className }) {
   const creditsPerUse = getCreditsPerUse();
 
   return (
-    <div className={cn(
-      "bg-white rounded-xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full group",
-      className
-    )}>
+    <div 
+      className={cn(
+        "rounded-2xl p-6 flex flex-col h-full group transition-all duration-300 hover:translate-y-[-4px]",
+        className
+      )}
+      style={{
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border-primary)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+      }}
+    >
       <div className="flex items-start justify-between mb-4">
-        <div className={cn("p-3 rounded-xl transition-colors group-hover:scale-105 duration-300", color.icon)}>
-          <Icon className="h-6 w-6" />
+        <div 
+          className="p-3 rounded-xl transition-all duration-300 group-hover:scale-110"
+          style={{ 
+            background: 'rgba(255, 215, 0, 0.1)',
+            border: '1px solid rgba(255, 215, 0, 0.2)'
+          }}
+        >
+          <Icon className="h-6 w-6" style={{ color: 'var(--color-primary)' }} />
         </div>
         {module.category === 'video' && (
-          <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">
+          <span 
+            className="text-xs px-2 py-0.5 rounded-full font-medium"
+            style={{ background: 'var(--success-bg)', color: 'var(--success)' }}
+          >
             新功能
           </span>
         )}
       </div>
       
-      <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
+      <h3 
+        className="text-lg font-bold mb-2 transition-colors duration-300 group-hover:text-[var(--color-primary)]"
+        style={{ color: 'var(--text-primary)' }}
+      >
         {module.title}
       </h3>
       
-      <p className="text-slate-500 text-sm leading-relaxed mb-4 line-clamp-2 flex-1">
+      <p 
+        className="text-sm leading-relaxed mb-4 line-clamp-2 flex-1"
+        style={{ color: 'var(--text-secondary)' }}
+      >
         {module.description}
       </p>
       
-      <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
-        <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-          <span className={cn("font-medium", color.text)}>
+      <div 
+        className="flex items-center justify-between mt-auto pt-4"
+        style={{ borderTop: '1px solid var(--border-primary)' }}
+      >
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="font-medium" style={{ color: 'var(--color-primary)' }}>
             {module.platform || '通用'}
           </span>
         </div>
         
-        <span className="text-xs text-slate-400">
+        <span className="text-xs" style={{ color: 'var(--text-disabled)' }}>
           {(module.usage_count || 0).toLocaleString()}次使用
         </span>
       </div>
 
       <Button 
         onClick={() => setShowConfirm(true)}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-10 mt-4"
+        className="w-full font-medium h-10 mt-4 rounded-xl transition-all duration-300 hover:scale-[1.02]"
+        style={{
+          background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+          color: 'var(--bg-primary)',
+          boxShadow: '0 4px 15px rgba(255, 215, 0, 0.25)'
+        }}
       >
         立即使用
       </Button>
 
       {/* 确认弹窗 */}
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-primary)' }}>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认使用「{module.title}」</AlertDialogTitle>
+            <AlertDialogTitle style={{ color: 'var(--text-primary)' }}>
+              确认使用「{module.title}」
+            </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>{module.description}</p>
-              <p className="text-amber-600 font-medium">
+              <p style={{ color: 'var(--text-secondary)' }}>{module.description}</p>
+              <p className="font-medium" style={{ color: 'var(--warning)' }}>
                 点击"确认"以后，将按实际Token消耗计费
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogCancel 
+              style={{ 
+                background: 'var(--bg-primary)', 
+                borderColor: 'var(--border-primary)',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              取消
+            </AlertDialogCancel>
             <AlertDialogAction 
               onClick={async () => {
-                // 增加使用次数
                 try {
                   await base44.entities.PromptModule.update(module.id, {
                     usage_count: (module.usage_count || 0) + 1
@@ -134,7 +155,10 @@ export default function ModuleCard({ module, models = [], className }) {
                 }
                 navigate(targetUrl);
               }}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              style={{
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                color: 'var(--bg-primary)'
+              }}
             >
               确认
             </AlertDialogAction>
