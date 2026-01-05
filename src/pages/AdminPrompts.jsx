@@ -171,6 +171,8 @@ function AdminPromptsContent() {
       color: module.color || 'violet',
       model_id: module.model_id || '',
       platform: module.platform || '',
+      features: module.features || [],
+      required_inputs: module.required_inputs || [],
       usage_count: module.usage_count || 0,
       is_active: module.is_active !== false,
       sort_order: module.sort_order || 0,
