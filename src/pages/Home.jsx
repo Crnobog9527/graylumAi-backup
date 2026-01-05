@@ -38,30 +38,31 @@ export default function Home() {
 
       {/* 2. 右上角金色/橙色光晕 - 漂移动画 */}
       <div
-        className="absolute w-[600px] h-[600px] rounded-full opacity-60 blur-[120px]"
+        className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full opacity-60 blur-[120px]"
         style={{
           background: `linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 50%, var(--success) 100%)`,
           animation: 'driftTopRight 25s ease-in-out infinite, breathe 8s ease-in-out infinite',
+          willChange: 'transform, opacity',
         }}
       />
 
       {/* 3. 左侧蓝紫色光晕 - 漂移动画 */}
       <div
-        className="absolute w-[500px] h-[500px] rounded-full opacity-30 blur-[100px]"
+        className="absolute top-1/3 -left-48 w-[500px] h-[500px] rounded-full opacity-30 blur-[100px]"
         style={{
           background: `linear-gradient(90deg, rgba(139, 92, 246, 0.5) 0%, var(--info) 100%)`,
-          animation: 'driftLeft 30s ease-in-out infinite, breathe 12s ease-in-out infinite',
-          animationDelay: '2s',
+          animation: 'driftLeft 30s ease-in-out infinite, breathe 12s ease-in-out infinite 2s',
+          willChange: 'transform, opacity',
         }}
       />
 
       {/* 4. 底部暖色光晕 - 漂移动画 */}
       <div
-        className="absolute w-[700px] h-[400px] rounded-full opacity-40 blur-[120px]"
+        className="absolute -bottom-32 left-1/3 w-[700px] h-[400px] rounded-full opacity-40 blur-[120px]"
         style={{
           background: `linear-gradient(0deg, var(--color-secondary) 0%, transparent 100%)`,
-          animation: 'driftBottom 20s ease-in-out infinite, breathe 10s ease-in-out infinite',
-          animationDelay: '5s',
+          animation: 'driftBottom 22s ease-in-out infinite, breathe 10s ease-in-out infinite 4s',
+          willChange: 'transform, opacity',
         }}
       />
 
@@ -71,6 +72,7 @@ export default function Home() {
         style={{
           background: `linear-gradient(90deg, var(--success) 0%, transparent 50%, var(--info) 100%)`,
           animation: 'pulse 15s ease-in-out infinite',
+          willChange: 'transform, opacity',
         }}
       />
 
