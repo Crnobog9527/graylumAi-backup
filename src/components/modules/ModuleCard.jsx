@@ -19,6 +19,7 @@ import {
   Target, Image as ImageIcon, Languages, Code, Megaphone, 
   BookOpen, Music, Bot
 } from 'lucide-react';
+import ModuleDetailDialog from './ModuleDetailDialog';
 
 const iconMap = {
   Video, PenTool, Sparkles, Briefcase, BarChart3, Lightbulb,
@@ -28,6 +29,7 @@ const iconMap = {
 
 export default function ModuleCard({ module, models = [], className }) {
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
   const navigate = useNavigate();
   const Icon = iconMap[module.icon] || Bot;
 
