@@ -1,11 +1,14 @@
 import React from 'react';
-import { Crown, Zap } from 'lucide-react';
+import { Crown, Zap, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
 /**
- * 欢迎横幅组件
- * 使用设计系统: card, btn-primary, badge-primary
+ * 欢迎横幅组件 - Premium Tech Editorial 版本
+ *
+ * 使用设计系统:
+ * - user-header, user-info, user-status, status-indicator
+ * - user-greeting, user-badge, points-button
  */
 export default function WelcomeBanner({ user }) {
   if (!user) return null;
@@ -22,76 +25,78 @@ export default function WelcomeBanner({ user }) {
     ? new Date(user.membership_expiry_date).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
     : null;
 
+  const isPremium = user.membership_level === 'pro' || user.membership_level === 'gold';
+
   return (
     <div
-      className="card card-featured p-8 md:p-10 mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6"
+      className="relative overflow-hidden mb-8"
       style={{
-        background: 'var(--bg-secondary)',
+        background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.8) 0%, rgba(30, 30, 30, 0.6) 100%)',
         borderRadius: 'var(--radius-2xl)',
+        border: isPremium ? '1px solid rgba(255, 215, 0, 0.2)' : '1px solid rgba(255, 255, 255, 0.05)',
+        backdropFilter: 'blur(20px)',
         animation: 'fadeInUp 0.6s ease forwards'
       }}
     >
-      <div>
-        {/* 在线状态标签 */}
-        <div className="flex items-center gap-2 mb-4">
-          <span
-            className="w-2 h-2 rounded-full animate-pulse"
-            style={{ backgroundColor: 'var(--success)' }}
-          />
-          <span
-            className="text-xs uppercase tracking-widest font-medium"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
-            Online
-          </span>
-        </div>
-
-        {/* 欢迎标题 */}
-        <h1
-          className="heading-1 mb-3"
+      {/* 背景装饰 */}
+      {isPremium && (
+        <div
+          className="absolute inset-0 pointer-events-none"
           style={{
-            fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
-            marginBottom: 'var(--space-sm)'
+            background: 'radial-gradient(circle at 100% 0%, rgba(255, 215, 0, 0.08) 0%, transparent 50%)',
           }}
-        >
-          欢迎回来，{user.full_name || user.email?.split('@')[0] || '用户'}
-        </h1>
+        />
+      )}
 
-        {/* 会员信息 */}
-        <div className="flex items-center gap-3">
-          <div
-            className="badge badge-primary flex items-center gap-2 px-3 py-1.5"
-            style={{ borderRadius: 'var(--radius-full)' }}
-          >
-            <Crown className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
-            <span className="font-medium" style={{ color: 'var(--color-primary)' }}>
-              {membershipLevel}
-            </span>
+      <div className="relative p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="user-info flex-col items-start gap-4">
+          {/* 在线状态 */}
+          <div className="user-status">
+            <span className="status-indicator" />
+            <span>Online</span>
           </div>
-          {membershipExpiry && (
-            <span style={{ color: 'var(--text-disabled)', fontSize: 'var(--text-small)' }}>
-              有效期至 {membershipExpiry}
-            </span>
-          )}
-        </div>
-      </div>
 
-      {/* 充值按钮 */}
-      <Link to={createPageUrl('Credits')}>
-        <button
-          className="btn btn-primary"
-          style={{
-            height: '48px',
-            paddingLeft: 'var(--space-xl)',
-            paddingRight: 'var(--space-xl)',
-            borderRadius: 'var(--radius-full)',
-            boxShadow: 'var(--shadow-glow)'
-          }}
-        >
-          <Zap className="h-4 w-4 mr-2" />
-          充值积分
-        </button>
-      </Link>
+          {/* 欢迎标题 */}
+          <h1 className="user-greeting">
+            欢迎回来，
+            <span>{user.full_name || user.email?.split('@')[0] || '用户'}</span>
+          </h1>
+
+          {/* 会员信息行 */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* 会员徽章 */}
+            <div className="user-badge">
+              <Crown className="w-3.5 h-3.5" />
+              <span>{membershipLevel}</span>
+            </div>
+
+            {/* 有效期 */}
+            {membershipExpiry && (
+              <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>
+                有效期至 {membershipExpiry}
+              </span>
+            )}
+
+            {/* Premium 闪光标识 */}
+            {isPremium && (
+              <div className="flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--font-medium)' }}>
+                  Premium
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 充值按钮 */}
+        <Link to={createPageUrl('Credits')}>
+          <button className="points-button flex items-center gap-2">
+            <Zap className="w-4 h-4" />
+            <span>充值积分</span>
+          </button>
+        </Link>
+      </div>
     </div>
   );
 }

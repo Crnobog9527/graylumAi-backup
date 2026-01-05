@@ -1190,6 +1190,577 @@
 
 
 /* ============================================
+   第十二部分：Premium Tech Editorial 设计系统
+   高端科技编辑风格 - 为首页优化专用
+   ============================================ */
+
+
+/* ------------------------------------------
+   12.1 背景层系统 (Background Layers)
+   用于创建大气氛围效果
+   ------------------------------------------ */
+
+/* 基础发光渐变 */
+.bg-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 215, 0, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 215, 0, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(255, 165, 0, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -2;
+}
+
+/* 微妙网格图案 */
+.bg-grid {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(rgba(255, 215, 0, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 215, 0, 0.02) 1px, transparent 1px);
+  background-size: 80px 80px;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* 噪点纹理 */
+.bg-noise {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: -1;
+}
+
+
+/* ------------------------------------------
+   12.2 Hero 区域 (Hero Section)
+   页面顶部的核心展示区域
+   ------------------------------------------ */
+
+.hero-section {
+  padding: 6rem 2rem 4rem;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Hero 顶部徽章 */
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 50px;
+  font-size: var(--text-small);
+  color: var(--color-primary);
+  margin-bottom: 2rem;
+  font-weight: var(--font-medium);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  animation: fadeIn 0.6s ease-out 0.1s both;
+}
+
+/* Hero 主标题 */
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 6vw + 1rem, 4.5rem);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+/* Hero 标题高亮 - 金色渐变动画 */
+.hero-title-highlight {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Hero 副标题 */
+.hero-subtitle {
+  font-family: var(--font-body);
+  font-size: var(--text-lg);
+  color: rgba(255, 255, 255, 0.7);
+  line-height: var(--leading-normal);
+  max-width: 50ch;
+  margin: 0 auto;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+/* Hero 按钮组 */
+.hero-cta-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  flex-wrap: wrap;
+  animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+@media (max-width: 640px) {
+  .hero-section {
+    padding: 4rem 1rem 3rem;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+
+
+/* ------------------------------------------
+   12.3 Premium 按钮 (Premium CTAs)
+   高端设计的主要行动按钮
+   ------------------------------------------ */
+
+/* 主要 CTA - 金色渐变 */
+.primary-cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2.5rem;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  color: var(--text-inverse);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  font-weight: var(--font-bold);
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+  text-decoration: none;
+}
+
+.primary-cta::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.primary-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(255, 215, 0, 0.5);
+}
+
+.primary-cta:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.primary-cta:active {
+  transform: translateY(0);
+}
+
+/* 脉冲发光动画 - 可选 */
+.primary-cta.animate-pulse {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* 次要 CTA - 透明边框 */
+.secondary-cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2.5rem;
+  background: transparent;
+  color: var(--color-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  font-weight: var(--font-semibold);
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.secondary-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  background: rgba(255, 215, 0, 0.1);
+  transition: width 0.3s ease;
+  z-index: 0;
+}
+
+.secondary-cta:hover {
+  border-color: var(--color-primary);
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.secondary-cta:hover::before {
+  width: 100%;
+}
+
+.secondary-cta span,
+.secondary-cta svg {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .primary-cta,
+  .secondary-cta {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
+/* ------------------------------------------
+   12.4 Premium 步骤卡片 (Step Cards)
+   六步指南专用的高端卡片设计
+   ------------------------------------------ */
+
+/* 步骤卡片基础 */
+.step-card {
+  position: relative;
+  padding: 2rem;
+  background: rgba(20, 20, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+/* 顶部金色光线 */
+.step-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 215, 0, 0.5) 50%,
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+/* 光线扫过效果 */
+.step-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 215, 0, 0.1),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.step-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(255, 215, 0, 0.3);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 215, 0, 0.1);
+}
+
+.step-card:hover::before {
+  opacity: 1;
+}
+
+.step-card:hover::after {
+  animation: shine 0.8s ease-in-out;
+}
+
+/* 特色卡片 - 第一步 */
+.step-card-featured {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.08) 0%, rgba(255, 215, 0, 0.02) 100%);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+/* 步骤编号 */
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.step-card:hover .step-number {
+  background: rgba(255, 215, 0, 0.2);
+  transform: scale(1.1);
+}
+
+/* 步骤图标 */
+.step-icon {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 215, 0, 0.4);
+  transition: all 0.3s ease;
+}
+
+.step-card:hover .step-icon {
+  color: rgba(255, 215, 0, 0.8);
+  transform: translateX(4px);
+}
+
+/* 步骤标题 */
+.step-title {
+  font-family: var(--font-body);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  line-height: var(--leading-snug);
+}
+
+/* 步骤描述 */
+.step-description {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  color: rgba(255, 255, 255, 0.6);
+  line-height: var(--leading-normal);
+}
+
+
+/* ------------------------------------------
+   12.5 非对称网格布局 (Asymmetric Grid)
+   六步指南的特殊网格系统
+   ------------------------------------------ */
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+}
+
+/* 特色卡片 - 横跨8列，占2行 */
+.steps-grid .step-card:nth-child(1) {
+  grid-column: 1 / 9;
+  grid-row: 1 / 3;
+}
+
+/* 标准卡片布局 */
+.steps-grid .step-card:nth-child(2) {
+  grid-column: 9 / 13;
+  grid-row: 1;
+}
+
+.steps-grid .step-card:nth-child(3) {
+  grid-column: 9 / 13;
+  grid-row: 2;
+}
+
+.steps-grid .step-card:nth-child(4) {
+  grid-column: 1 / 5;
+  grid-row: 3;
+}
+
+.steps-grid .step-card:nth-child(5) {
+  grid-column: 5 / 9;
+  grid-row: 3;
+}
+
+.steps-grid .step-card:nth-child(6) {
+  grid-column: 9 / 13;
+  grid-row: 3;
+}
+
+/* 平板响应式 */
+@media (max-width: 1024px) {
+  .steps-grid {
+    grid-template-columns: repeat(6, 1fr);
+    padding: 3rem 1.5rem;
+  }
+
+  .steps-grid .step-card:nth-child(1) {
+    grid-column: 1 / 7;
+    grid-row: auto;
+  }
+
+  .steps-grid .step-card:nth-child(2),
+  .steps-grid .step-card:nth-child(3) {
+    grid-column: span 3;
+    grid-row: auto;
+  }
+
+  .steps-grid .step-card:nth-child(4),
+  .steps-grid .step-card:nth-child(5),
+  .steps-grid .step-card:nth-child(6) {
+    grid-column: span 2;
+    grid-row: auto;
+  }
+}
+
+/* 移动端响应式 */
+@media (max-width: 640px) {
+  .steps-grid {
+    grid-template-columns: 1fr;
+    padding: 2rem 1rem;
+  }
+
+  .steps-grid .step-card {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+}
+
+
+/* ------------------------------------------
+   12.6 动画入场效果 (Entrance Animations)
+   页面加载时的渐进式动画
+   ------------------------------------------ */
+
+/* 卡片入场动画 */
+.step-card {
+  animation: scaleIn 0.6s ease-out both;
+}
+
+/* 渐进式延迟 */
+.steps-grid .step-card:nth-child(1) { animation-delay: 0.1s; }
+.steps-grid .step-card:nth-child(2) { animation-delay: 0.2s; }
+.steps-grid .step-card:nth-child(3) { animation-delay: 0.3s; }
+.steps-grid .step-card:nth-child(4) { animation-delay: 0.4s; }
+.steps-grid .step-card:nth-child(5) { animation-delay: 0.5s; }
+.steps-grid .step-card:nth-child(6) { animation-delay: 0.6s; }
+
+
+/* ------------------------------------------
+   12.7 用户信息头部 (User Header)
+   用户问候区域的样式
+   ------------------------------------------ */
+
+.user-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.user-greeting {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+}
+
+.user-greeting span {
+  color: var(--color-primary);
+}
+
+.user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 6px;
+  font-size: var(--text-xs);
+  color: var(--color-primary);
+  font-weight: var(--font-semibold);
+}
+
+.points-button {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  color: var(--text-inverse);
+  font-weight: var(--font-bold);
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.points-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 215, 0, 0.4);
+}
+
+
+/* ============================================
    使用示例
    ============================================
 
