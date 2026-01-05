@@ -52,6 +52,8 @@
 | `75d72fc` | 2026-01-05 | docs: 创建设计系统优化进度日志 |
 | `bb2b487` | 2026-01-05 | docs: 创建页面修改验证检查清单 |
 | `d6d4ae0` | 2026-01-05 | feat(home): 优化首页应用设计系统 |
+| `c6b7762` | 2026-01-05 | fix: 移除影响导航栏的全局样式重置 |
+| `530adc5` | 2026-01-05 | fix: 修复工具类与 Tailwind 类名冲突 (添加 ds- 前缀) |
 
 ---
 
@@ -143,6 +145,9 @@
   - WelcomeBanner.jsx - 欢迎横幅组件
   - SixStepsGuide.jsx - 六步指南组件
   - UpdatesSection.jsx - 更新公告组件
+- [x] **修复导航栏问题**
+  - 移除 theme.css 中影响现有组件的全局样式重置
+  - 修复 components.css 工具类与 Tailwind 冲突 (`.hidden` → `.ds-hidden` 等)
 
 ---
 
