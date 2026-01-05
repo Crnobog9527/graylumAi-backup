@@ -597,21 +597,26 @@ export default function Chat() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--color-primary)' }}></div>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex bg-slate-100">
+    <div className="h-[calc(100vh-4rem)] flex" style={{ background: 'var(--bg-primary)' }}>
       {/* Left Sidebar - Conversation List */}
-      <div className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0">
+      <div className="w-64 flex flex-col shrink-0" style={{ background: 'var(--bg-secondary)', borderRight: '1px solid var(--border-primary)' }}>
         {/* New Chat Button */}
         <div className="p-4">
           <Button
             onClick={() => handleStartNewChat()}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2 h-11 rounded-lg font-medium"
+            className="w-full gap-2 h-11 rounded-xl font-medium transition-all duration-300"
+            style={{ 
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+              color: 'var(--bg-primary)',
+              boxShadow: '0 4px 20px rgba(255, 215, 0, 0.3)'
+            }}
           >
             <Plus className="h-5 w-5" />
             新建对话
@@ -619,8 +624,8 @@ export default function Chat() {
         </div>
 
         {/* All Conversations Header with Manage Button - Outside ScrollArea */}
-        <div className="flex items-center justify-between px-5 py-2 border-b border-slate-100">
-          <span className="text-sm text-slate-500">全部对话</span>
+        <div className="flex items-center justify-between px-5 py-2" style={{ borderBottom: '1px solid var(--border-primary)' }}>
+          <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>全部对话</span>
           <Button
             variant="ghost"
             size="sm"
@@ -630,7 +635,8 @@ export default function Chat() {
                 setSelectedConversations([]);
               }
             }}
-            className="h-7 px-2 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            className="h-7 px-2 text-xs font-medium hover:opacity-80"
+            style={{ color: 'var(--color-primary)' }}
           >
             <Settings2 className="h-3.5 w-3.5 mr-1" />
             {isSelectMode ? '完成' : '管理'}
@@ -644,12 +650,13 @@ export default function Chat() {
               
               {/* 批量操作栏 */}
               {isSelectMode && (
-                <div className="flex items-center gap-2 px-2 py-2 mb-2 bg-slate-50 rounded-lg">
+                <div className="flex items-center gap-2 px-2 py-2 mb-2 rounded-lg" style={{ background: 'var(--bg-primary)' }}>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={toggleSelectAll}
                     className="h-7 px-2 text-xs"
+                    style={{ color: 'var(--text-secondary)' }}
                   >
                     {selectedConversations.length === conversations.length ? '取消全选' : '全选'}
                   </Button>
@@ -659,6 +666,7 @@ export default function Chat() {
                     onClick={handleBatchDelete}
                     disabled={selectedConversations.length === 0}
                     className="h-7 w-7 p-0"
+                    style={{ background: 'var(--error)', color: 'white' }}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
@@ -668,7 +676,7 @@ export default function Chat() {
               {/* Today */}
               {groupedConversations.today.length > 0 && (
                 <div className="mb-3">
-                  <div className="px-2 py-1 text-xs text-slate-400">今天</div>
+                  <div className="px-2 py-1 text-xs" style={{ color: 'var(--text-disabled)' }}>今天</div>
                   {groupedConversations.today.map(conv => (
                     <ConversationItem
                       key={conv.id}
@@ -687,7 +695,7 @@ export default function Chat() {
               {/* Yesterday */}
               {groupedConversations.yesterday.length > 0 && (
                 <div className="mb-3">
-                  <div className="px-2 py-1 text-xs text-slate-400">昨天</div>
+                  <div className="px-2 py-1 text-xs" style={{ color: 'var(--text-disabled)' }}>昨天</div>
                   {groupedConversations.yesterday.map(conv => (
                     <ConversationItem
                       key={conv.id}
@@ -706,7 +714,7 @@ export default function Chat() {
               {/* This Week */}
               {groupedConversations.thisWeek.length > 0 && (
                 <div className="mb-3">
-                  <div className="px-2 py-1 text-xs text-slate-400">本周</div>
+                  <div className="px-2 py-1 text-xs" style={{ color: 'var(--text-disabled)' }}>本周</div>
                   {groupedConversations.thisWeek.map(conv => (
                     <ConversationItem
                       key={conv.id}
@@ -725,7 +733,7 @@ export default function Chat() {
               {/* Older */}
               {groupedConversations.older.length > 0 && (
                 <div className="mb-3">
-                  <div className="px-2 py-1 text-xs text-slate-400">更早</div>
+                  <div className="px-2 py-1 text-xs" style={{ color: 'var(--text-disabled)' }}>更早</div>
                   {groupedConversations.older.map(conv => (
                     <ConversationItem
                       key={conv.id}
@@ -743,7 +751,7 @@ export default function Chat() {
 
               {/* Empty state */}
               {conversations.length === 0 && (
-                <div className="text-center py-8 text-slate-400 text-sm">
+                <div className="text-center py-8 text-sm" style={{ color: 'var(--text-disabled)' }}>
                   暂无对话记录
                 </div>
               )}
@@ -753,9 +761,9 @@ export default function Chat() {
       </div>
 
       {/* Main Chat Area */}
-      <div className={cn("flex-1 flex flex-col bg-white", showDebugPanel && "mr-80")}>
+      <div className={cn("flex-1 flex flex-col", showDebugPanel && "mr-80")} style={{ background: 'var(--bg-primary)' }}>
         {/* Chat Header */}
-        <div className="h-14 border-b border-slate-200 flex items-center justify-between px-6">
+        <div className="h-14 flex items-center justify-between px-6" style={{ borderBottom: '1px solid var(--border-primary)' }}>
           <div className="flex items-center gap-3">
             {isEditingTitle && currentConversation ? (
               <div className="flex items-center gap-2">
@@ -771,13 +779,19 @@ export default function Chat() {
                     }
                   }}
                   autoFocus
-                  className="text-lg font-medium text-slate-800 border border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="text-lg font-medium rounded px-2 py-1 focus:outline-none focus:ring-2"
+                  style={{ 
+                    background: 'var(--bg-secondary)', 
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--color-primary)',
+                    boxShadow: '0 0 0 2px rgba(255, 215, 0, 0.2)'
+                  }}
                 />
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={handleSaveTitle}
-                  className="text-blue-600 hover:text-blue-700"
+                  style={{ color: 'var(--color-primary)' }}
                 >
                   保存
                 </Button>
@@ -785,20 +799,21 @@ export default function Chat() {
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setIsEditingTitle(false)}
-                  className="text-slate-400 hover:text-slate-600"
+                  style={{ color: 'var(--text-tertiary)' }}
                 >
                   取消
                 </Button>
               </div>
             ) : (
               <>
-                <h1 className="text-lg font-medium text-slate-800">
+                <h1 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>
                   {currentConversation?.title || '新对话'}
                 </h1>
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                  className="h-8 w-8 hover:opacity-80"
+                  style={{ color: 'var(--text-tertiary)' }}
                   onClick={() => {
                     if (currentConversation) {
                       setEditingTitleValue(currentConversation.title || '');
@@ -820,10 +835,12 @@ export default function Chat() {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowDebugPanel(!showDebugPanel)}
-                  className={cn(
-                    "h-9 px-3 gap-2",
-                    showDebugPanel && "bg-violet-50 border-violet-300 text-violet-700"
-                  )}
+                  className={cn("h-9 px-3 gap-2")}
+                  style={{ 
+                    background: showDebugPanel ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
+                    borderColor: showDebugPanel ? '#A78BFA' : 'var(--border-primary)',
+                    color: showDebugPanel ? '#A78BFA' : 'var(--text-secondary)'
+                  }}
                 >
                   <Settings2 className="h-4 w-4" />
                   调试
@@ -838,11 +855,11 @@ export default function Chat() {
             <div className="max-w-3xl mx-auto py-6 px-4">
               {messages.length === 0 ? (
                 <div className="text-center py-20">
-                  <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <MessageSquare className="h-8 w-8 text-blue-600" />
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
+                    <MessageSquare className="h-8 w-8" style={{ color: 'var(--color-primary)' }} />
                   </div>
-                  <h2 className="text-xl font-medium text-slate-800 mb-2">开始新对话</h2>
-                  <p className="text-slate-500">请输入您的问题，AI将为您解答</p>
+                  <h2 className="text-xl font-medium mb-2" style={{ color: 'var(--text-primary)' }}>开始新对话</h2>
+                  <p style={{ color: 'var(--text-secondary)' }}>请输入您的问题，AI将为您解答</p>
                 </div>
               ) : (
                 messages.map((message, index) => (
@@ -856,14 +873,14 @@ export default function Chat() {
               )}
               {isStreaming && messages[messages.length - 1]?.role === 'user' && (
                 <div className="flex gap-4 py-4">
-                  <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                    <Bot className="h-5 w-5 text-blue-600" />
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
+                    <Bot className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
                   </div>
-                  <div className="flex items-center gap-2 text-slate-500">
+                  <div className="flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
                     <span className="flex gap-1">
-                      <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: 'var(--color-primary)', animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: 'var(--color-primary)', animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: 'var(--color-primary)', animationDelay: '300ms' }} />
                     </span>
                     <span className="text-sm">AI正在思考中...</span>
                   </div>
@@ -880,7 +897,7 @@ export default function Chat() {
         )}
 
         {/* Input Area */}
-        <div className="border-t border-slate-200 p-4 bg-slate-50">
+        <div className="p-4" style={{ borderTop: '1px solid var(--border-primary)', background: 'var(--bg-secondary)' }}>
           <div className="max-w-3xl mx-auto">
             {/* Uploaded Files Preview */}
             {uploadedFiles.length > 0 && (
@@ -888,25 +905,26 @@ export default function Chat() {
                 {uploadedFiles.map((file, index) => {
                   const content = fileContents[index];
                   return (
-                    <div key={index} className="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1.5 text-sm">
+                    <div key={index} className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}>
                       {file.type?.startsWith('image/') ? (
-                        <Image className="h-4 w-4 text-blue-500" />
+                        <Image className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
                       ) : (
-                        <FileText className="h-4 w-4 text-blue-500" />
+                        <FileText className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
                       )}
-                      <span className="text-slate-600 max-w-[150px] truncate">{file.name}</span>
+                      <span className="max-w-[150px] truncate" style={{ color: 'var(--text-secondary)' }}>{file.name}</span>
                       {file.status === 'extracting' && (
-                        <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin" style={{ color: 'var(--color-primary)' }} />
                       )}
                       {file.status === 'ready' && (
-                        <span className="text-xs text-green-600">✓</span>
+                        <span className="text-xs" style={{ color: 'var(--success)' }}>✓</span>
                       )}
                       {file.status === 'error' && (
-                        <span className="text-xs text-red-600" title={file.error}>⚠</span>
+                        <span className="text-xs" style={{ color: 'var(--error)' }} title={file.error}>⚠</span>
                       )}
                       <button
                         onClick={() => removeUploadedFile(index)}
-                        className="text-slate-400 hover:text-red-500"
+                        className="hover:opacity-80"
+                        style={{ color: 'var(--text-tertiary)' }}
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -917,7 +935,7 @@ export default function Chat() {
             )}
 
             {/* Input Box */}
-            <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm">
+            <div className="relative rounded-xl" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}>
               <div className="flex items-end p-3">
                 <input
                   ref={fileInputRef}
@@ -930,7 +948,8 @@ export default function Chat() {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-9 w-9 text-slate-400 hover:text-slate-600 shrink-0"
+                  className="h-9 w-9 shrink-0 hover:opacity-80"
+                  style={{ color: 'var(--text-tertiary)' }}
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
                 >
@@ -947,16 +966,22 @@ export default function Chat() {
                   onKeyDown={handleKeyDown}
                   placeholder="请输入您的问题..."
                   disabled={isStreaming}
-                  className="flex-1 min-h-[44px] max-h-[120px] resize-none border-0 focus-visible:ring-0 py-2 px-2 text-base placeholder:text-slate-400 bg-transparent"
+                  className="flex-1 min-h-[44px] max-h-[120px] resize-none border-0 focus-visible:ring-0 py-2 px-2 text-base bg-transparent"
+                  style={{ color: 'var(--text-primary)', '--tw-placeholder-opacity': 1 }}
                   rows={1}
                 />
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-slate-400">{inputMessage.length}/{maxInputCharacters}</span>
+                  <span className="text-xs" style={{ color: 'var(--text-disabled)' }}>{inputMessage.length}/{maxInputCharacters}</span>
                   <Button
                     data-send-button
                     onClick={() => handleSendMessage(false)}
                     disabled={(!inputMessage.trim() && fileContents.length === 0) || isStreaming || uploadedFiles.some(f => f.status === 'extracting')}
-                    className="bg-blue-600 hover:bg-blue-700 h-9 px-4 gap-2"
+                    className="h-9 px-4 gap-2 transition-all duration-300"
+                    style={{ 
+                      background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                      color: 'var(--bg-primary)',
+                      boxShadow: '0 4px 15px rgba(255, 215, 0, 0.25)'
+                    }}
                   >
                     {isStreaming ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -973,7 +998,7 @@ export default function Chat() {
 
                 {/* 聊天提示文案 */}
                 {chatBillingHint && (
-                <div className="mt-3 px-4 py-3 text-sm text-slate-600 leading-relaxed text-center whitespace-pre-line">
+                <div className="mt-3 px-4 py-3 text-sm leading-relaxed text-center whitespace-pre-line" style={{ color: 'var(--text-tertiary)' }}>
                 {chatBillingHint}
              </div>
             )}
@@ -1005,10 +1030,10 @@ export default function Chat() {
       
       {/* Debug Panel (Admin Only) */}
       {user.role === 'admin' && showDebugPanel && (
-        <div className="w-80 border-l border-slate-200 bg-slate-50 fixed right-0 top-16 bottom-0 overflow-y-auto">
+        <div className="w-80 fixed right-0 top-16 bottom-0 overflow-y-auto" style={{ background: 'var(--bg-secondary)', borderLeft: '1px solid var(--border-primary)' }}>
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+              <h3 className="font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                 <Settings2 className="h-4 w-4" />
                 开发者调试面板
               </h3>
@@ -1016,7 +1041,8 @@ export default function Chat() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setDebugInfo([])}
-                className="h-7 w-7 text-slate-400"
+                className="h-7 w-7"
+                style={{ color: 'var(--text-tertiary)' }}
                 title="清空日志"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -1024,35 +1050,35 @@ export default function Chat() {
             </div>
             
             {debugInfo.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-8">暂无调试信息</p>
+              <p className="text-sm text-center py-8" style={{ color: 'var(--text-disabled)' }}>暂无调试信息</p>
             ) : (
               <div className="space-y-3">
                 {debugInfo.slice().reverse().map((info, idx) => (
-                  <div key={idx} className="bg-white rounded-lg p-3 border border-slate-200 text-xs space-y-2">
+                  <div key={idx} className="rounded-lg p-3 text-xs space-y-2" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">
+                      <span style={{ color: 'var(--text-disabled)' }}>
                         {format(new Date(info.timestamp), 'HH:mm:ss')}
                       </span>
                       <div className="flex items-center gap-1">
                         {info.compression_used && (
-                          <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+                          <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--success-bg)', color: 'var(--success)' }}>
                             压缩
                           </span>
                         )}
-                        <span className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">
+                        <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>
                           {info.total_messages}条
                         </span>
                       </div>
                     </div>
                     
-                    <div className="text-slate-600 font-medium truncate">
+                    <div className="font-medium truncate" style={{ color: 'var(--text-secondary)' }}>
                       {info.message}
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                    <div className="grid grid-cols-2 gap-2 pt-2" style={{ borderTop: '1px solid var(--border-primary)' }}>
                       <div>
-                        <span className="text-slate-400">模型:</span>
-                        <div className="font-medium text-slate-700 mt-0.5">
+                        <span style={{ color: 'var(--text-disabled)' }}>模型:</span>
+                        <div className="font-medium mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                           {info.model_tier === 'haiku' && '⚡ Haiku'}
                           {info.model_tier === 'sonnet' && '🎯 Sonnet'}
                           {info.model_tier === 'opus' && '💎 Opus'}
@@ -1060,35 +1086,35 @@ export default function Chat() {
                         </div>
                       </div>
                       <div>
-                        <span className="text-slate-400">任务类型:</span>
-                        <div className="font-medium text-slate-700 mt-0.5 truncate" title={info.task_type}>
+                        <span style={{ color: 'var(--text-disabled)' }}>任务类型:</span>
+                        <div className="font-medium mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }} title={info.task_type}>
                           {info.task_type || 'N/A'}
                         </div>
                       </div>
                       <div>
-                        <span className="text-slate-400">输入Tokens:</span>
-                        <div className="font-medium text-slate-700 mt-0.5">
+                        <span style={{ color: 'var(--text-disabled)' }}>输入Tokens:</span>
+                        <div className="font-medium mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                           {info.input_tokens?.toLocaleString() || 'N/A'}
                         </div>
                       </div>
                       <div>
-                        <span className="text-slate-400">输出Tokens:</span>
-                        <div className="font-medium text-slate-700 mt-0.5">
+                        <span style={{ color: 'var(--text-disabled)' }}>输出Tokens:</span>
+                        <div className="font-medium mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                           {info.output_tokens?.toLocaleString() || 'N/A'}
                         </div>
                       </div>
                       <div className="col-span-2">
-                        <span className="text-slate-400">上下文模式:</span>
-                        <div className="font-medium text-slate-700 mt-0.5">
+                        <span style={{ color: 'var(--text-disabled)' }}>上下文模式:</span>
+                        <div className="font-medium mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                           {info.context_type || '完整历史'}
                         </div>
                       </div>
                       
                       {/* 压缩信息 */}
                       {info.compression_info && (
-                        <div className="col-span-2 pt-2 border-t border-slate-100">
-                          <span className="text-slate-400">压缩详情:</span>
-                          <div className="mt-1 space-y-0.5 text-green-700">
+                        <div className="col-span-2 pt-2" style={{ borderTop: '1px solid var(--border-primary)' }}>
+                          <span style={{ color: 'var(--text-disabled)' }}>压缩详情:</span>
+                          <div className="mt-1 space-y-0.5" style={{ color: 'var(--success)' }}>
                             <div>压缩前: {info.compression_info.before_tokens.toLocaleString()} tokens</div>
                             <div>压缩后: {info.compression_info.after_tokens.toLocaleString()} tokens</div>
                             <div className="font-semibold">
@@ -1118,19 +1144,27 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
   return (
     <div
       onClick={() => isSelectMode ? onSelect() : onClick()}
-      className={cn(
-        "group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all",
-        isActive && !isSelectMode ? "bg-blue-50 border border-blue-200" : "hover:bg-slate-50",
-        isSelected && "bg-red-50 border border-red-200"
-      )}
+      className="group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
+      style={{
+        background: isActive && !isSelectMode 
+          ? 'rgba(255, 215, 0, 0.1)' 
+          : isSelected 
+            ? 'rgba(239, 68, 68, 0.1)' 
+            : 'transparent',
+        border: isActive && !isSelectMode 
+          ? '1px solid rgba(255, 215, 0, 0.3)' 
+          : isSelected 
+            ? '1px solid rgba(239, 68, 68, 0.3)' 
+            : '1px solid transparent',
+      }}
     >
       {/* Checkbox in select mode */}
       {isSelectMode && (
         <div className="shrink-0">
           {isSelected ? (
-            <CheckSquare className="h-4 w-4 text-red-500" />
+            <CheckSquare className="h-4 w-4" style={{ color: 'var(--error)' }} />
           ) : (
-            <Square className="h-4 w-4 text-slate-300" />
+            <Square className="h-4 w-4" style={{ color: 'var(--text-disabled)' }} />
           )}
         </div>
       )}
@@ -1138,14 +1172,14 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className={cn(
-            "text-sm truncate block",
-            isActive && !isSelectMode ? "text-blue-700 font-medium" : "text-slate-700"
-          )}>
+          <span 
+            className="text-sm truncate block font-medium"
+            style={{ color: isActive && !isSelectMode ? 'var(--color-primary)' : 'var(--text-secondary)' }}
+          >
             {conversation.title || '新对话'}
           </span>
         </div>
-        <span className="text-xs text-slate-400">{timeStr}</span>
+        <span className="text-xs" style={{ color: 'var(--text-disabled)' }}>{timeStr}</span>
       </div>
 
       {/* Delete button - always visible when not in select mode */}
@@ -1157,7 +1191,8 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
             e.stopPropagation(); 
             onDelete(); 
           }}
-          className="h-7 w-7 shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:opacity-80"
+          style={{ color: 'var(--text-tertiary)' }}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
@@ -1203,8 +1238,14 @@ function MessageBubble({ message, isStreaming, user }) {
         <div className="max-w-[80%] space-y-2">
           {/* 用户文字消息 */}
           {displayContent && (
-            <div className="bg-blue-600 text-white rounded-2xl rounded-tr-md px-4 py-3">
-              <p className="whitespace-pre-wrap leading-relaxed">{displayContent}</p>
+            <div 
+              className="rounded-2xl rounded-tr-md px-4 py-3"
+              style={{ 
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                color: 'var(--bg-primary)'
+              }}
+            >
+              <p className="whitespace-pre-wrap leading-relaxed font-medium">{displayContent}</p>
             </div>
           )}
           
@@ -1217,7 +1258,7 @@ function MessageBubble({ message, isStreaming, user }) {
             </div>
           )}
           
-          <div className="text-xs text-slate-400 text-right mt-1">{time}</div>
+          <div className="text-xs text-right mt-1" style={{ color: 'var(--text-disabled)' }}>{time}</div>
         </div>
       </div>
     );
@@ -1227,12 +1268,12 @@ function MessageBubble({ message, isStreaming, user }) {
   if (!displayContent) {
     return (
       <div className="flex gap-4 py-4">
-        <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-          <Bot className="h-5 w-5 text-blue-600" />
+        <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
+          <Bot className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-slate-400 italic">AI 响应内容为空</div>
-          <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
+          <div className="italic" style={{ color: 'var(--text-disabled)' }}>AI 响应内容为空</div>
+          <div className="flex items-center gap-4 mt-3 text-xs" style={{ color: 'var(--text-disabled)' }}>
             <span>{time}</span>
           </div>
         </div>
@@ -1242,70 +1283,71 @@ function MessageBubble({ message, isStreaming, user }) {
 
   return (
     <div className="flex gap-4 py-4">
-      <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-        <Bot className="h-5 w-5 text-blue-600" />
+      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
+        <Bot className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="prose prose-slate prose-sm max-w-none">
+        <div className="prose prose-sm max-w-none prose-invert">
           <ReactMarkdown
             components={{
-              p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed text-slate-700">{children}</p>,
+              p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{children}</p>,
               ul: ({ children }) => <ul className="list-disc pl-4 mb-3 space-y-1">{children}</ul>,
               ol: ({ children }) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
-              li: ({ children }) => <li className="leading-relaxed text-slate-700">{children}</li>,
-              strong: ({ children }) => <strong className="font-semibold text-slate-800">{children}</strong>,
+              li: ({ children }) => <li className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{children}</li>,
+              strong: ({ children }) => <strong className="font-semibold" style={{ color: 'var(--text-primary)' }}>{children}</strong>,
               pre: ({ children }) => (
-                <pre className="bg-slate-100 text-slate-800 p-4 rounded-lg overflow-x-auto my-3 border border-slate-200 whitespace-pre-wrap">
+                <pre className="p-4 rounded-lg overflow-x-auto my-3 whitespace-pre-wrap" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}>
                   {children}
                 </pre>
               ),
               code: ({ inline, className, children, ...props }) => {
                 // 如果是在 pre 标签内（代码块），使用简单样式
                 if (!inline && className) {
-                  return <code className="text-sm font-mono text-slate-800">{children}</code>;
+                  return <code className="text-sm font-mono" style={{ color: 'var(--text-secondary)' }}>{children}</code>;
                 }
                 // 行内代码
                 return (
-                  <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-blue-600">{children}</code>
+                  <code className="px-1.5 py-0.5 rounded text-sm font-mono" style={{ background: 'var(--bg-secondary)', color: 'var(--color-primary)' }}>{children}</code>
                 );
               },
-              h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0 text-slate-800">{children}</h1>,
-              h2: ({ children }) => <h2 className="text-lg font-semibold mb-2 mt-3 first:mt-0 text-slate-800">{children}</h2>,
-              h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-3 first:mt-0 text-slate-800">{children}</h3>,
+              h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0" style={{ color: 'var(--text-primary)' }}>{children}</h1>,
+              h2: ({ children }) => <h2 className="text-lg font-semibold mb-2 mt-3 first:mt-0" style={{ color: 'var(--text-primary)' }}>{children}</h2>,
+              h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-3 first:mt-0" style={{ color: 'var(--text-primary)' }}>{children}</h3>,
             }}
           >
             {displayContent}
           </ReactMarkdown>
           {isStreaming && (
-            <span className="inline-block w-2 h-5 bg-blue-400 animate-pulse ml-1 rounded-sm" />
+            <span className="inline-block w-2 h-5 animate-pulse ml-1 rounded-sm" style={{ background: 'var(--color-primary)' }} />
           )}
         </div>
 
         {/* Message Footer */}
-        <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
+        <div className="flex items-center gap-4 mt-3 text-xs" style={{ color: 'var(--text-disabled)' }}>
           <span>{time}</span>
           {message.credits_used && (
             <span title={message.input_tokens ? `输入: ${message.input_tokens} tokens, 输出: ${message.output_tokens} tokens` : ''}>
               消耗 {message.credits_used} 积分
-              {message.input_tokens && <span className="text-slate-300 ml-1">({message.input_tokens}+{message.output_tokens} tokens)</span>}
+              {message.input_tokens && <span className="ml-1" style={{ color: 'var(--text-disabled)' }}>({message.input_tokens}+{message.output_tokens} tokens)</span>}
             </span>
           )}
           <div className="flex items-center gap-1 ml-auto">
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-slate-400 hover:text-slate-600"
+              className="h-7 w-7 hover:opacity-80"
+              style={{ color: 'var(--text-tertiary)' }}
               onClick={handleCopy}
             >
               <Copy className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+            <Button variant="ghost" size="icon" className="h-7 w-7 hover:opacity-80" style={{ color: 'var(--text-tertiary)' }}>
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+            <Button variant="ghost" size="icon" className="h-7 w-7 hover:opacity-80" style={{ color: 'var(--text-tertiary)' }}>
               <ThumbsUp className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+            <Button variant="ghost" size="icon" className="h-7 w-7 hover:opacity-80" style={{ color: 'var(--text-tertiary)' }}>
               <ThumbsDown className="h-3.5 w-3.5" />
             </Button>
           </div>
