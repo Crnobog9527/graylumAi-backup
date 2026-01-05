@@ -827,7 +827,7 @@ export default function Chat() {
             }}
           />
           <div 
-            className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.05] blur-[120px]"
+            className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.35] blur-[120px]"
             style={{ 
               background: 'radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)',
               animation: 'float 25s ease-in-out infinite reverse'
