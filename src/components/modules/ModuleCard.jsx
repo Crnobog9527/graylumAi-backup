@@ -27,9 +27,8 @@ const iconMap = {
   BookOpen, Music, Bot
 };
 
-export default function ModuleCard({ module, models = [], className }) {
+export default function ModuleCard({ module, models = [], className, onShowDetail }) {
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
   const navigate = useNavigate();
   const Icon = iconMap[module.icon] || Bot;
 
