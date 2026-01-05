@@ -883,7 +883,19 @@ function AdminAnnouncementsContent() {
                   <Label>关联功能模块</Label>
                   <Select
                     value={featuredForm.link_module_id}
-                    onValueChange={(v) => setFeaturedForm({ ...featuredForm, link_module_id: v })}
+                    onValueChange={(v) => {
+                      const selectedModule = promptModules.find(m => m.id === v);
+                      if (selectedModule) {
+                        setFeaturedForm({ 
+                          ...featuredForm, 
+                          link_module_id: v,
+                          title: selectedModule.title || '',
+                          description: selectedModule.description || ''
+                        });
+                      } else {
+                        setFeaturedForm({ ...featuredForm, link_module_id: v });
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="选择关联模块" />
