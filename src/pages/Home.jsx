@@ -138,47 +138,7 @@ export default function Home() {
         }}
       />
 
-      {/* 10. 柔和光晕效果 - 中心聚光 */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-        {/* 最外层 - 大范围柔和渐变 */}
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: '1200px',
-            height: '800px',
-            left: '-600px',
-            top: '-400px',
-            background: 'radial-gradient(ellipse 50% 50% at 50% 50%, rgba(80,80,80,0.25) 0%, rgba(60,60,60,0.15) 30%, rgba(40,40,40,0.08) 50%, transparent 70%)',
-            animation: 'softPulse 12s ease-in-out infinite',
-          }}
-        />
-        
-        {/* 中层 - 聚焦光晕 */}
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: '800px',
-            height: '500px',
-            left: '-400px',
-            top: '-250px',
-            background: 'radial-gradient(ellipse 45% 45% at 50% 50%, rgba(100,100,100,0.2) 0%, rgba(70,70,70,0.1) 40%, transparent 65%)',
-            animation: 'softPulse 10s ease-in-out infinite 2s',
-          }}
-        />
-        
-        {/* 内层 - 核心高光 */}
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: '500px',
-            height: '300px',
-            left: '-250px',
-            top: '-150px',
-            background: 'radial-gradient(ellipse 40% 40% at 50% 50%, rgba(120,120,120,0.15) 0%, rgba(80,80,80,0.08) 50%, transparent 70%)',
-            animation: 'softPulse 8s ease-in-out infinite 1s',
-          }}
-        />
-      </div>
+
 
       {/* ============================================
           动画样式定义
@@ -250,11 +210,7 @@ export default function Home() {
           }
         }
 
-        /* 柔和脉冲 */
-        @keyframes softPulse {
-          0%, 100% { opacity: 0.8; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.03); }
-        }
+
 
         /* 入场动画 - 从下往上淡入 */
         @keyframes fadeInUp {
