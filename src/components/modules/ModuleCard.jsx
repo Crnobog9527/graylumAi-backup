@@ -144,6 +144,13 @@ export default function ModuleCard({ module, models = [], className }) {
         </Button>
       </div>
 
+      {/* 详情弹窗 */}
+      <ModuleDetailDialog 
+        module={module} 
+        open={showDetail} 
+        onOpenChange={setShowDetail} 
+      />
+
       {/* 确认弹窗 */}
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-primary)' }}>
