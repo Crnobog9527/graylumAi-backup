@@ -130,8 +130,17 @@ export default function Home() {
         })}
       </div>
 
-      {/* 9. 黑洞吸积盘效果 - 大尺寸覆盖模块区域 */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+      {/* 9. 暗角遮罩 - 模拟光线被吸入效果 */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 20%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.4) 75%, rgba(0,0,0,0.7) 100%)',
+          zIndex: 1,
+        }}
+      />
+
+      {/* 10. 黑洞吸积盘效果 - 大尺寸覆盖模块区域 */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" style={{ zIndex: 2 }}>
         {/* 外层光晕 */}
         <div
           className="absolute rounded-full"
@@ -140,7 +149,7 @@ export default function Home() {
             height: '1000px',
             left: '-500px',
             top: '-500px',
-            background: 'radial-gradient(circle, transparent 25%, rgba(255,215,0,0.06) 45%, transparent 65%)',
+            background: 'radial-gradient(circle, transparent 20%, rgba(255,215,0,0.12) 40%, rgba(255,180,50,0.06) 55%, transparent 70%)',
             animation: 'accretionPulse 10s ease-in-out infinite',
             willChange: 'transform, opacity',
           }}
@@ -154,8 +163,8 @@ export default function Home() {
             left: '-450px',
             top: '-130px',
             borderRadius: '50%',
-            background: 'linear-gradient(90deg, transparent 5%, rgba(255,180,50,0.15) 20%, rgba(255,215,0,0.25) 50%, rgba(255,180,50,0.15) 80%, transparent 95%)',
-            boxShadow: '0 0 80px rgba(255,215,0,0.15), 0 0 150px rgba(255,150,50,0.08)',
+            background: 'linear-gradient(90deg, transparent 3%, rgba(255,180,50,0.35) 15%, rgba(255,215,0,0.6) 50%, rgba(255,180,50,0.35) 85%, transparent 97%)',
+            boxShadow: '0 0 100px rgba(255,215,0,0.35), 0 0 200px rgba(255,150,50,0.2), 0 0 300px rgba(255,200,100,0.1)',
             animation: 'diskRotate 30s linear infinite, diskTremble 4s ease-in-out infinite',
             willChange: 'transform',
           }}
@@ -168,8 +177,8 @@ export default function Home() {
             height: '180px',
             left: '-90px',
             top: '-90px',
-            background: 'radial-gradient(circle, #0a0a0a 0%, #151515 50%, transparent 100%)',
-            boxShadow: 'inset 0 0 50px rgba(0,0,0,0.9), 0 0 60px rgba(0,0,0,0.4)',
+            background: 'radial-gradient(circle, #050505 0%, #0a0a0a 40%, #151515 70%, transparent 100%)',
+            boxShadow: 'inset 0 0 60px rgba(0,0,0,0.95), 0 0 80px rgba(0,0,0,0.6)',
           }}
         />
         {/* 事件视界光环 */}
@@ -180,8 +189,8 @@ export default function Home() {
             height: '220px',
             left: '-110px',
             top: '-110px',
-            border: '1px solid rgba(255,215,0,0.25)',
-            boxShadow: '0 0 30px rgba(255,215,0,0.15), inset 0 0 20px rgba(255,215,0,0.08)',
+            border: '2px solid rgba(255,215,0,0.5)',
+            boxShadow: '0 0 50px rgba(255,215,0,0.4), 0 0 100px rgba(255,200,100,0.25), inset 0 0 30px rgba(255,215,0,0.2)',
             animation: 'horizonGlow 5s ease-in-out infinite',
             willChange: 'opacity',
           }}
@@ -280,8 +289,8 @@ export default function Home() {
 
         /* 事件视界发光 */
         @keyframes horizonGlow {
-          0%, 100% { opacity: 0.4; box-shadow: 0 0 15px rgba(255,215,0,0.2), inset 0 0 10px rgba(255,215,0,0.1); }
-          50% { opacity: 0.7; box-shadow: 0 0 25px rgba(255,215,0,0.4), inset 0 0 15px rgba(255,215,0,0.2); }
+          0%, 100% { opacity: 0.7; box-shadow: 0 0 50px rgba(255,215,0,0.4), 0 0 100px rgba(255,200,100,0.25), inset 0 0 30px rgba(255,215,0,0.2); }
+          50% { opacity: 1; box-shadow: 0 0 70px rgba(255,215,0,0.6), 0 0 140px rgba(255,200,100,0.35), inset 0 0 40px rgba(255,215,0,0.3); }
         }
 
         /* 入场动画 - 从下往上淡入 */
