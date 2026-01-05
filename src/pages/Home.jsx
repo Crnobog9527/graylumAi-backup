@@ -138,96 +138,44 @@ export default function Home() {
         }}
       />
 
-      {/* 10. 黑洞吸积盘效果 - 星际穿越风格 */}
+      {/* 10. 柔和光晕效果 - 中心聚光 */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-        {/* 背景光晕 - 蓝白色辉光 */}
+        {/* 最外层 - 大范围柔和渐变 */}
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: '1200px',
+            height: '800px',
+            left: '-600px',
+            top: '-400px',
+            background: 'radial-gradient(ellipse 50% 50% at 50% 50%, rgba(80,80,80,0.25) 0%, rgba(60,60,60,0.15) 30%, rgba(40,40,40,0.08) 50%, transparent 70%)',
+            animation: 'softPulse 12s ease-in-out infinite',
+          }}
+        />
+        
+        {/* 中层 - 聚焦光晕 */}
         <div
           className="absolute rounded-full"
           style={{
             width: '800px',
-            height: '800px',
+            height: '500px',
             left: '-400px',
-            top: '-400px',
-            background: 'radial-gradient(circle, rgba(200,220,255,0.15) 0%, rgba(150,180,255,0.08) 30%, transparent 60%)',
-            animation: 'accretionPulse 8s ease-in-out infinite',
+            top: '-250px',
+            background: 'radial-gradient(ellipse 45% 45% at 50% 50%, rgba(100,100,100,0.2) 0%, rgba(70,70,70,0.1) 40%, transparent 65%)',
+            animation: 'softPulse 10s ease-in-out infinite 2s',
           }}
         />
         
-        {/* 弯曲光环 - 上方弧线（光线绕过黑洞后方） */}
+        {/* 内层 - 核心高光 */}
         <div
-          className="absolute"
+          className="absolute rounded-full"
           style={{
             width: '500px',
-            height: '500px',
+            height: '300px',
             left: '-250px',
-            top: '-250px',
-            borderRadius: '50%',
-            border: '4px solid transparent',
-            borderTopColor: 'rgba(255,250,240,0.9)',
-            borderLeftColor: 'rgba(255,240,200,0.4)',
-            borderRightColor: 'rgba(255,240,200,0.4)',
-            boxShadow: '0 -30px 60px rgba(255,250,240,0.4), 0 -15px 30px rgba(255,220,150,0.3)',
-            animation: 'diskSpin 40s linear infinite',
-          }}
-        />
-        
-        {/* 水平吸积盘 - 穿过黑洞中间 */}
-        <div
-          className="absolute"
-          style={{
-            width: '700px',
-            height: '60px',
-            left: '-350px',
-            top: '-30px',
-            background: 'linear-gradient(90deg, transparent 0%, rgba(255,200,100,0.6) 15%, rgba(255,230,180,0.9) 30%, rgba(255,150,80,0.4) 50%, rgba(255,230,180,0.9) 70%, rgba(255,200,100,0.6) 85%, transparent 100%)',
-            borderRadius: '50%',
-            boxShadow: '0 0 40px rgba(255,200,100,0.5), 0 0 80px rgba(255,180,100,0.3)',
-            animation: 'diskGlow 6s ease-in-out infinite',
-          }}
-        />
-        
-        {/* 黑洞核心 - 纯黑圆形 */}
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: '180px',
-            height: '180px',
-            left: '-90px',
-            top: '-90px',
-            background: 'radial-gradient(circle, #000 0%, #000 70%, #050505 90%, transparent 100%)',
-            boxShadow: 'inset 0 0 50px rgba(0,0,0,1)',
-          }}
-        />
-        
-        {/* 事件视界光环 - 紧贴黑洞边缘的亮环 */}
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: '200px',
-            height: '200px',
-            left: '-100px',
-            top: '-100px',
-            border: '3px solid rgba(255,250,240,0.8)',
-            boxShadow: '0 0 20px rgba(255,250,240,0.6), 0 0 40px rgba(255,230,200,0.4), 0 0 60px rgba(255,200,150,0.3), inset 0 0 15px rgba(255,250,240,0.2)',
-            animation: 'horizonGlow 4s ease-in-out infinite',
-          }}
-        />
-        
-        {/* 底部弯曲光环 - 下方弧线 */}
-        <div
-          className="absolute"
-          style={{
-            width: '450px',
-            height: '450px',
-            left: '-225px',
-            top: '-225px',
-            borderRadius: '50%',
-            border: '3px solid transparent',
-            borderBottomColor: 'rgba(255,220,180,0.7)',
-            borderLeftColor: 'rgba(255,200,150,0.3)',
-            borderRightColor: 'rgba(255,200,150,0.3)',
-            boxShadow: '0 25px 50px rgba(255,200,150,0.3)',
-            animation: 'diskSpin 40s linear infinite',
+            top: '-150px',
+            background: 'radial-gradient(ellipse 40% 40% at 50% 50%, rgba(120,120,120,0.15) 0%, rgba(80,80,80,0.08) 50%, transparent 70%)',
+            animation: 'softPulse 8s ease-in-out infinite 1s',
           }}
         />
       </div>
@@ -302,28 +250,10 @@ export default function Home() {
           }
         }
 
-        /* 吸积盘旋转 */
-        @keyframes diskSpin {
-          0% { transform: rotateZ(0deg); }
-          100% { transform: rotateZ(360deg); }
-        }
-
-        /* 吸积盘发光 */
-        @keyframes diskGlow {
-          0%, 100% { opacity: 0.9; filter: brightness(1); }
-          50% { opacity: 1; filter: brightness(1.2); }
-        }
-
-        /* 吸积盘脉冲 */
-        @keyframes accretionPulse {
-          0%, 100% { opacity: 0.6; transform: scale(1); }
-          50% { opacity: 0.9; transform: scale(1.08); }
-        }
-
-        /* 事件视界发光 */
-        @keyframes horizonGlow {
-          0%, 100% { opacity: 0.7; box-shadow: 0 0 50px rgba(255,215,0,0.4), 0 0 100px rgba(255,200,100,0.25), inset 0 0 30px rgba(255,215,0,0.2); }
-          50% { opacity: 1; box-shadow: 0 0 70px rgba(255,215,0,0.6), 0 0 140px rgba(255,200,100,0.35), inset 0 0 40px rgba(255,215,0,0.3); }
+        /* 柔和脉冲 */
+        @keyframes softPulse {
+          0%, 100% { opacity: 0.8; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.03); }
         }
 
         /* 入场动画 - 从下往上淡入 */
