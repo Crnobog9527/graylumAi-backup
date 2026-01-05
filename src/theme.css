@@ -69,20 +69,35 @@
 
 
   /* ------------------------------------------
-     2. 字体系统 (Typography)
+     2. 字体系统 (Typography) - Premium Tech Editorial
      ------------------------------------------ */
 
-  /* 字体族 */
+  /* 字体族 - 分层字体系统 */
+  --font-display: 'Noto Serif SC', 'Source Han Serif SC', serif;        /* 中文标题 - 优雅衬线 */
+  --font-display-en: 'Playfair Display', Georgia, serif;                /* 英文强调 - 经典衬线 */
+  --font-body: 'Noto Sans SC', 'Source Han Sans SC', sans-serif;        /* 中文正文 - 清晰易读 */
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;    /* UI 元素 - 现代无衬线 */
   --font-primary: 'Inter', 'Microsoft YaHei', 'PingFang SC', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
 
-  /* 字体大小 - 标题 */
+  /* 字体大小 - 扩展标题尺度 (用于 Hero 区域) */
+  --text-8xl: 6rem;              /* 96px - Hero 特大 */
+  --text-7xl: 4.5rem;            /* 72px - Hero 大 */
+  --text-6xl: 3.75rem;           /* 60px - Hero 中 */
+  --text-5xl: 3rem;              /* 48px - Hero 小 */
+  --text-4xl: 2.25rem;           /* 36px - 页面标题 */
+  --text-3xl: 1.875rem;          /* 30px - 章节标题 */
+  --text-2xl: 1.5rem;            /* 24px - 卡片标题 */
+  --text-xl: 1.25rem;            /* 20px - 副标题 */
+
+  /* 字体大小 - 标题 (保持兼容) */
   --text-h1: 2rem;               /* 32px - 页面主标题 */
   --text-h2: 1.5rem;             /* 24px - 章节标题 */
   --text-h3: 1.25rem;            /* 20px - 小节标题 */
   --text-h4: 1.125rem;           /* 18px - 卡片标题 */
 
   /* 字体大小 - 正文 */
+  --text-lg: 1.125rem;           /* 18px - 大正文 */
   --text-body: 1rem;             /* 16px - 正文内容 */
   --text-small: 0.875rem;        /* 14px - 辅助文字 */
   --text-xs: 0.75rem;            /* 12px - 标签、徽章 */
@@ -94,9 +109,17 @@
   --font-bold: 700;              /* 粗体 */
 
   /* 行高 */
-  --leading-tight: 1.25;         /* 紧凑 - 标题 */
+  --leading-none: 1;             /* 无行距 - 大标题 */
+  --leading-tight: 1.1;          /* 紧凑 - Hero 标题 */
+  --leading-snug: 1.25;          /* 略紧 - 标题 */
   --leading-normal: 1.6;         /* 正常 - 正文 */
   --leading-relaxed: 1.75;       /* 宽松 - 长文本 */
+
+  /* 字间距 */
+  --tracking-tighter: -0.05em;   /* 更紧 - 大标题 */
+  --tracking-tight: -0.02em;     /* 紧凑 - 标题 */
+  --tracking-normal: 0;          /* 正常 */
+  --tracking-wide: 0.05em;       /* 宽松 - 徽章/标签 */
 
 
   /* ------------------------------------------
@@ -149,6 +172,7 @@
   --transition-normal: 0.3s ease;         /* 正常 - 大多数交互 */
   --transition-slow: 0.5s ease;           /* 慢速 - 页面切换 */
   --transition-bounce: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);  /* 弹性效果 */
+  --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);            /* 平滑曲线 */
 
 
   /* ------------------------------------------
@@ -281,6 +305,92 @@ pre {
 /* 鼠标点击时隐藏焦点轮廓 */
 :focus:not(:focus-visible) {
   outline: none;
+}
+
+
+/* ============================================
+   第六部分：动画关键帧 (Animation Keyframes)
+   ============================================ */
+
+/* 渐入上移 - 页面元素入场 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 渐入 - 简单淡入 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 缩放入场 - 卡片入场 */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 金色闪烁 - 文字渐变动画 */
+@keyframes shimmer {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* 脉冲发光 - 主按钮强调 */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 10px 40px rgba(255, 215, 0, 0.5);
+  }
+}
+
+/* 光线扫过 - 卡片悬停 */
+@keyframes shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+/* 状态指示灯闪烁 */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* 漂浮动画 - 装饰元素 */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* 旋转动画 - 加载状态 */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 无障碍：减少动画 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 

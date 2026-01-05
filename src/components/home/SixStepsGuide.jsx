@@ -3,19 +3,35 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { PlayCircle, Target, Search, Compass, FileText, Settings, TrendingUp } from 'lucide-react';
+import {
+  PlayCircle,
+  Target,
+  Search,
+  Compass,
+  FileText,
+  Settings,
+  TrendingUp,
+  ArrowRight,
+  Sparkles
+} from 'lucide-react';
 
 /**
- * 六步指南组件
- * 使用设计系统: card, card-clickable, btn-primary, btn-secondary, text-gradient
+ * 六步指南组件 - Premium Tech Editorial 版本
+ *
+ * 使用设计系统:
+ * - hero-section, hero-badge, hero-title, hero-title-highlight
+ * - steps-grid (非对称12列网格)
+ * - step-card, step-card-featured, step-number, step-title, step-description
+ * - primary-cta, secondary-cta
  */
 
 const steps = [
   {
     num: '01',
     title: '账号定位分析',
-    desc: '分析目标受众，确定账号定位和差异化策略',
-    icon: Target
+    desc: '分析目标受众，确定账号定位和差异化策略。明确"我是谁"、"为谁服务"、"提供什么价值"，为后续内容规划奠定基础。',
+    icon: Target,
+    featured: true  // 第一个卡片为特色卡片
   },
   {
     num: '02',
@@ -25,14 +41,14 @@ const steps = [
   },
   {
     num: '03',
-    title: '账号定位分析',
-    desc: '确定你的内容领域、目标受众和个人特色，明确"我是谁"、"为谁服务"、"提供什么价值"',
+    title: '内容差异化',
+    desc: '确定你的内容领域、目标受众和个人特色，打造独特记忆点。',
     icon: Compass
   },
   {
     num: '04',
     title: '制定内容策略',
-    desc: '规划内容方向和选题库，确定内容形式，制定差异化路线。让你的内容既有持续性，又有独特记忆点。',
+    desc: '规划内容方向和选题库，确定内容形式，制定差异化路线。',
     icon: FileText
   },
   {
@@ -65,137 +81,84 @@ export default function SixStepsGuide() {
   };
 
   return (
-    <div className="mb-16">
-      {/* Header - 标题区域 */}
-      <div className="text-center mb-12">
-        {/* 微标签 */}
-        <div
-          className="badge badge-default inline-flex items-center gap-2 mb-6"
-          style={{
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-primary)',
-            borderRadius: 'var(--radius-full)',
-            padding: 'var(--space-sm) var(--space-md)'
-          }}
-        >
-          <span
-            className="uppercase tracking-widest font-medium"
-            style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}
-          >
-            GROWTH STRATEGY
-          </span>
+    <section className="relative py-8 md:py-12">
+      {/* Hero Section - 标题区域 */}
+      <div className="hero-section">
+        {/* 顶部徽章 */}
+        <div className="hero-badge">
+          <Sparkles className="w-4 h-4" />
+          <span>Growth Strategy</span>
         </div>
 
         {/* 主标题 */}
-        <h2
-          className="heading-1 mb-4"
-          style={{
-            fontSize: 'clamp(2rem, 5vw, 3rem)',
-            lineHeight: '1.1'
-          }}
-        >
+        <h2 className="hero-title">
           从零到百万粉丝
           <br />
-          <span className="text-gradient">6步打造爆款账号</span>
+          <span className="hero-title-highlight">6步打造爆款账号</span>
         </h2>
 
         {/* 副标题 */}
-        <p
-          className="mx-auto max-w-2xl"
-          style={{
-            color: 'var(--text-secondary)',
-            fontSize: 'var(--text-body)',
-            lineHeight: 'var(--leading-relaxed)'
-          }}
-        >
-          深度学习全网超过1000万粉丝不同赛道账号的商业策略，只需 10 分钟，立即适配最佳赛道以及差异化内容！
+        <p className="hero-subtitle">
+          深度学习全网超过1000万粉丝不同赛道账号的商业策略，
+          只需 10 分钟，立即适配最佳赛道以及差异化内容！
         </p>
       </div>
 
-      {/* Bento Grid - 步骤卡片网格 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+      {/* Steps Grid - 非对称网格布局 */}
+      <div className="steps-grid">
         {steps.map((step, index) => {
           const IconComponent = step.icon;
+          const isFeatured = step.featured;
+
           return (
             <div
               key={index}
-              className="card card-clickable group p-8"
-              style={{
-                borderRadius: 'var(--radius-2xl)',
-                animation: `fadeInUp 0.6s ease forwards`,
-                animationDelay: `${index * 0.1}s`,
-                opacity: 0
-              }}
+              className={`step-card ${isFeatured ? 'step-card-featured' : ''}`}
             >
-              {/* 步骤编号和图标 */}
-              <div className="flex items-center justify-between mb-6">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300"
-                  style={{
-                    background: 'var(--bg-primary)',
-                    border: '1px solid var(--border-primary)',
-                    color: 'var(--color-primary)'
-                  }}
-                >
-                  {step.num}
-                </div>
-                <IconComponent
-                  className="h-5 w-5 transition-colors duration-300"
-                  style={{ color: 'var(--text-disabled)' }}
-                />
+              {/* 步骤编号 */}
+              <div className="step-number">
+                {step.num}
               </div>
 
-              {/* 卡片标题 */}
-              <h3
-                className="heading-4 mb-3"
-                style={{ color: 'var(--text-primary)' }}
-              >
+              {/* 右上角图标 */}
+              <IconComponent className="step-icon" />
+
+              {/* 步骤标题 */}
+              <h3 className="step-title">
                 {step.title}
               </h3>
 
-              {/* 卡片描述 */}
-              <p
-                style={{
-                  color: 'var(--text-secondary)',
-                  fontSize: 'var(--text-small)',
-                  lineHeight: 'var(--leading-relaxed)'
-                }}
-              >
+              {/* 步骤描述 */}
+              <p className="step-description">
                 {step.desc}
               </p>
+
+              {/* 特色卡片额外内容 */}
+              {isFeatured && (
+                <div className="mt-6 pt-6" style={{ borderTop: '1px solid rgba(255, 215, 0, 0.1)' }}>
+                  <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-primary)' }}>
+                    <span>这是最关键的第一步</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* CTA Buttons - 行动按钮 */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <Link to={getButtonLink()}>
-          <button
-            className="btn btn-primary btn-lg"
-            style={{
-              borderRadius: 'var(--radius-full)',
-              boxShadow: 'var(--shadow-glow)',
-              minWidth: '180px'
-            }}
-          >
-            <PlayCircle className="h-5 w-5 mr-2" />
-            开始分析
-          </button>
+      {/* CTA Buttons - 行动按钮组 */}
+      <div className="hero-cta-group" style={{ paddingBottom: '2rem' }}>
+        <Link to={getButtonLink()} className="primary-cta animate-pulse">
+          <PlayCircle className="w-5 h-5" />
+          <span>开始分析</span>
         </Link>
 
-        <Link to={createPageUrl('Chat')}>
-          <button
-            className="btn btn-secondary btn-lg"
-            style={{
-              borderRadius: 'var(--radius-full)',
-              minWidth: '180px'
-            }}
-          >
-            自由对话
-          </button>
+        <Link to={createPageUrl('Chat')} className="secondary-cta">
+          <span>自由对话</span>
+          <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
-    </div>
+    </section>
   );
 }
