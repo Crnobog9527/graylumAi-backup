@@ -194,12 +194,14 @@ export default function ModuleCard({ module, models = [], className }) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* 详情弹窗 */}
-      <ModuleDetailDialog 
-        module={module} 
-        open={showDetail} 
-        onOpenChange={setShowDetail} 
-      />
+      {/* 详情弹窗 - 放在外面避免事件冒泡问题 */}
+      {showDetail && (
+        <ModuleDetailDialog 
+          module={module} 
+          open={showDetail} 
+          onOpenChange={setShowDetail} 
+        />
+      )}
     </div>
   );
 }
