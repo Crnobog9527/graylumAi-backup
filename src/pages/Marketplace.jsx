@@ -386,7 +386,7 @@ export default function Marketplace() {
             className="module-card-animate"
             style={{ animationDelay: `${index * 0.06}s`, opacity: 0 }}>
 
-              <ModuleCard module={module} models={models} />
+              <ModuleCard module={module} models={models} onShowDetail={() => setDetailModule(module)} />
             </div>
           )}
         </div>
