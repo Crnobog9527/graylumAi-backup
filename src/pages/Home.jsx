@@ -130,24 +130,62 @@ export default function Home() {
         })}
       </div>
 
-      {/* 9. 中心脉冲波纹 */}
+      {/* 9. 黑洞吸积盘效果 */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-        {[...Array(3)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full border"
-            style={{
-              width: '200px',
-              height: '200px',
-              left: '-100px',
-              top: '-100px',
-              borderColor: 'var(--color-primary)',
-              opacity: 0,
-              animation: 'ripple 12s ease-out infinite',
-              animationDelay: `${i * 4}s`,
-            }}
-          />
-        ))}
+        {/* 外层光晕 */}
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: '320px',
+            height: '320px',
+            left: '-160px',
+            top: '-160px',
+            background: 'radial-gradient(circle, transparent 30%, rgba(255,215,0,0.08) 50%, transparent 70%)',
+            animation: 'accretionPulse 8s ease-in-out infinite',
+            willChange: 'transform, opacity',
+          }}
+        />
+        {/* 吸积盘 - 椭圆光环 */}
+        <div
+          className="absolute"
+          style={{
+            width: '280px',
+            height: '80px',
+            left: '-140px',
+            top: '-40px',
+            borderRadius: '50%',
+            background: 'linear-gradient(90deg, transparent 5%, rgba(255,180,50,0.3) 20%, rgba(255,215,0,0.5) 50%, rgba(255,180,50,0.3) 80%, transparent 95%)',
+            boxShadow: '0 0 40px rgba(255,215,0,0.2), 0 0 80px rgba(255,150,50,0.1)',
+            animation: 'diskRotate 20s linear infinite, diskTremble 3s ease-in-out infinite',
+            willChange: 'transform',
+          }}
+        />
+        {/* 黑洞核心 */}
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: '60px',
+            height: '60px',
+            left: '-30px',
+            top: '-30px',
+            background: 'radial-gradient(circle, #0a0a0a 0%, #1a1a1a 60%, transparent 100%)',
+            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8), 0 0 30px rgba(0,0,0,0.5)',
+          }}
+        />
+        {/* 事件视界光环 */}
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: '75px',
+            height: '75px',
+            left: '-37.5px',
+            top: '-37.5px',
+            border: '1px solid rgba(255,215,0,0.3)',
+            boxShadow: '0 0 15px rgba(255,215,0,0.2), inset 0 0 10px rgba(255,215,0,0.1)',
+            animation: 'horizonGlow 4s ease-in-out infinite',
+            willChange: 'opacity',
+          }}
+        />
       </div>
 
       {/* ============================================
@@ -220,16 +258,30 @@ export default function Home() {
           }
         }
 
-        /* 中心波纹扩散 */
-        @keyframes ripple {
-          0% {
-            transform: scale(0.5);
-            opacity: 0.4;
-          }
-          100% {
-            transform: scale(4);
-            opacity: 0;
-          }
+        /* 吸积盘旋转 */
+        @keyframes diskRotate {
+          0% { transform: rotateX(75deg) rotateZ(0deg); }
+          100% { transform: rotateX(75deg) rotateZ(360deg); }
+        }
+
+        /* 吸积盘颤动 */
+        @keyframes diskTremble {
+          0%, 100% { transform: rotateX(75deg) scale(1); }
+          25% { transform: rotateX(73deg) scale(1.02); }
+          50% { transform: rotateX(77deg) scale(0.98); }
+          75% { transform: rotateX(74deg) scale(1.01); }
+        }
+
+        /* 吸积盘脉冲 */
+        @keyframes accretionPulse {
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50% { opacity: 0.9; transform: scale(1.08); }
+        }
+
+        /* 事件视界发光 */
+        @keyframes horizonGlow {
+          0%, 100% { opacity: 0.4; box-shadow: 0 0 15px rgba(255,215,0,0.2), inset 0 0 10px rgba(255,215,0,0.1); }
+          50% { opacity: 0.7; box-shadow: 0 0 25px rgba(255,215,0,0.4), inset 0 0 15px rgba(255,215,0,0.2); }
         }
 
         /* 入场动画 - 从下往上淡入 */
