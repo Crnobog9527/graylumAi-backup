@@ -130,18 +130,18 @@ export default function Home() {
         })}
       </div>
 
-      {/* 9. 黑洞吸积盘效果 */}
+      {/* 9. 黑洞吸积盘效果 - 大尺寸覆盖模块区域 */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
         {/* 外层光晕 */}
         <div
           className="absolute rounded-full"
           style={{
-            width: '320px',
-            height: '320px',
-            left: '-160px',
-            top: '-160px',
-            background: 'radial-gradient(circle, transparent 30%, rgba(255,215,0,0.08) 50%, transparent 70%)',
-            animation: 'accretionPulse 8s ease-in-out infinite',
+            width: '1000px',
+            height: '1000px',
+            left: '-500px',
+            top: '-500px',
+            background: 'radial-gradient(circle, transparent 25%, rgba(255,215,0,0.06) 45%, transparent 65%)',
+            animation: 'accretionPulse 10s ease-in-out infinite',
             willChange: 'transform, opacity',
           }}
         />
@@ -149,14 +149,14 @@ export default function Home() {
         <div
           className="absolute"
           style={{
-            width: '280px',
-            height: '80px',
-            left: '-140px',
-            top: '-40px',
+            width: '900px',
+            height: '260px',
+            left: '-450px',
+            top: '-130px',
             borderRadius: '50%',
-            background: 'linear-gradient(90deg, transparent 5%, rgba(255,180,50,0.3) 20%, rgba(255,215,0,0.5) 50%, rgba(255,180,50,0.3) 80%, transparent 95%)',
-            boxShadow: '0 0 40px rgba(255,215,0,0.2), 0 0 80px rgba(255,150,50,0.1)',
-            animation: 'diskRotate 20s linear infinite, diskTremble 3s ease-in-out infinite',
+            background: 'linear-gradient(90deg, transparent 5%, rgba(255,180,50,0.15) 20%, rgba(255,215,0,0.25) 50%, rgba(255,180,50,0.15) 80%, transparent 95%)',
+            boxShadow: '0 0 80px rgba(255,215,0,0.15), 0 0 150px rgba(255,150,50,0.08)',
+            animation: 'diskRotate 30s linear infinite, diskTremble 4s ease-in-out infinite',
             willChange: 'transform',
           }}
         />
@@ -164,25 +164,25 @@ export default function Home() {
         <div
           className="absolute rounded-full"
           style={{
-            width: '60px',
-            height: '60px',
-            left: '-30px',
-            top: '-30px',
-            background: 'radial-gradient(circle, #0a0a0a 0%, #1a1a1a 60%, transparent 100%)',
-            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8), 0 0 30px rgba(0,0,0,0.5)',
+            width: '180px',
+            height: '180px',
+            left: '-90px',
+            top: '-90px',
+            background: 'radial-gradient(circle, #0a0a0a 0%, #151515 50%, transparent 100%)',
+            boxShadow: 'inset 0 0 50px rgba(0,0,0,0.9), 0 0 60px rgba(0,0,0,0.4)',
           }}
         />
         {/* 事件视界光环 */}
         <div
           className="absolute rounded-full"
           style={{
-            width: '75px',
-            height: '75px',
-            left: '-37.5px',
-            top: '-37.5px',
-            border: '1px solid rgba(255,215,0,0.3)',
-            boxShadow: '0 0 15px rgba(255,215,0,0.2), inset 0 0 10px rgba(255,215,0,0.1)',
-            animation: 'horizonGlow 4s ease-in-out infinite',
+            width: '220px',
+            height: '220px',
+            left: '-110px',
+            top: '-110px',
+            border: '1px solid rgba(255,215,0,0.25)',
+            boxShadow: '0 0 30px rgba(255,215,0,0.15), inset 0 0 20px rgba(255,215,0,0.08)',
+            animation: 'horizonGlow 5s ease-in-out infinite',
             willChange: 'opacity',
           }}
         />
