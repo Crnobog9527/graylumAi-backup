@@ -83,6 +83,8 @@ const initialFormData = {
   color: 'violet',
   model_id: '',
   platform: '',
+  features: [],
+  required_inputs: [],
   usage_count: 0,
   is_active: true,
   sort_order: 0,
