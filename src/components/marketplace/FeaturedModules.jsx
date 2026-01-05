@@ -71,29 +71,35 @@ export default function FeaturedModules() {
   };
 
   return (
-    <div className="mb-10">
+    <div className="mb-12">
       {/* 标题区域 */}
-      <div className="flex items-center gap-3 mb-6">
-        <div
-          className="inline-flex items-center gap-2"
-          style={{
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-primary)',
-            borderRadius: 'var(--radius-full)',
-            padding: 'var(--space-sm) var(--space-md)'
-          }}
-        >
-          <Star className="h-3 w-3" style={{ color: 'var(--color-primary)' }} />
-          <span
-            className="uppercase tracking-widest font-medium"
-            style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <div
+            className="inline-flex items-center gap-2"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,180,0,0.05) 100%)',
+              border: '1px solid rgba(255,215,0,0.2)',
+              borderRadius: 'var(--radius-full)',
+              padding: '8px 16px',
+              backdropFilter: 'blur(10px)'
+            }}
           >
-            FEATURED
-          </span>
+            <Star className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
+            <span
+              className="uppercase tracking-widest font-semibold"
+              style={{ fontSize: '11px', color: 'var(--color-primary)' }}
+            >
+              FEATURED
+            </span>
+          </div>
+          <h2 style={{ color: 'var(--text-primary)', fontSize: '1.5rem', fontWeight: 700 }}>
+            精选推荐
+          </h2>
         </div>
-        <h2 style={{ color: 'var(--text-primary)', fontSize: 'var(--text-lg)', fontWeight: 600 }}>
-          精选推荐
-        </h2>
+        <div className="hidden md:flex items-center gap-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          <span>✨ 编辑精选，品质保证</span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -102,69 +108,75 @@ export default function FeaturedModules() {
           return (
             <div 
               key={featured.id} 
-              className="group rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-2xl"
+              className="group rounded-3xl overflow-hidden transition-all duration-500 hover:translate-y-[-4px]"
               style={{
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border-primary)',
-                animation: `fadeInUp 0.6s ease forwards`,
-                animationDelay: `${index * 0.1}s`,
+                background: 'linear-gradient(135deg, rgba(30,30,35,0.9) 0%, rgba(20,20,25,0.95) 100%)',
+                border: '1px solid rgba(255,215,0,0.15)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+                animation: `slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards`,
+                animationDelay: `${index * 0.15}s`,
                 opacity: 0
               }}
             >
               <style>{`
-                @keyframes fadeInUp {
-                  from { opacity: 0; transform: translateY(20px); }
+                @keyframes slideUp {
+                  from { opacity: 0; transform: translateY(30px); }
                   to { opacity: 1; transform: translateY(0); }
                 }
               `}</style>
               
               {/* 顶部：图标 + 标题 + 标签 */}
               <div className="p-6 pb-4">
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-4 mb-4">
                   <div 
-                    className="p-3 rounded-xl shrink-0 transition-all duration-300 group-hover:scale-110"
+                    className="p-4 rounded-2xl shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3"
                     style={{ 
-                      background: 'rgba(255, 215, 0, 0.1)',
-                      border: '1px solid rgba(255, 215, 0, 0.2)'
+                      background: 'linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(255,180,0,0.08) 100%)',
+                      border: '1px solid rgba(255, 215, 0, 0.25)',
+                      boxShadow: '0 4px 20px rgba(255,215,0,0.1)'
                     }}
                   >
-                    <span className="text-2xl">{featured.icon}</span>
+                    <span className="text-3xl">{featured.icon}</span>
                   </div>
-                  <h3 
-                    className="text-xl font-bold transition-colors duration-300"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {featured.title}
-                  </h3>
-                  {featured.badge_text && (
-                    <span 
-                      className="text-xs px-2.5 py-1 rounded-full font-medium"
-                      style={{
-                        background: badgeStyle.bg,
-                        color: badgeStyle.color,
-                        border: `1px solid ${badgeStyle.border}30`
-                      }}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 
+                        className="text-xl font-bold transition-colors duration-300 group-hover:text-[var(--color-primary)]"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        {featured.title}
+                      </h3>
+                      {featured.badge_text && (
+                        <span 
+                          className="text-xs px-3 py-1 rounded-full font-semibold"
+                          style={{
+                            background: badgeStyle.bg,
+                            color: badgeStyle.color,
+                            border: `1px solid ${badgeStyle.border}40`
+                          }}
+                        >
+                          {featured.badge_text}
+                        </span>
+                      )}
+                    </div>
+                    <p 
+                      className="text-sm leading-relaxed line-clamp-2"
+                      style={{ color: 'var(--text-secondary)' }}
                     >
-                      {featured.badge_text}
-                    </span>
-                  )}
+                      {featured.description}
+                    </p>
+                  </div>
                 </div>
-                <p 
-                  className="text-sm leading-relaxed"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  {featured.description}
-                </p>
               </div>
               
               {/* 中间：横幅大图 */}
               {featured.image_url && (
                 <div className="px-6">
-                  <div className="rounded-xl overflow-hidden">
+                  <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.05)' }}>
                     <img 
                       src={featured.image_url} 
                       alt={featured.title}
-                      className="w-full h-36 object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-40 object-cover transition-all duration-700 group-hover:scale-110"
                     />
                   </div>
                 </div>
@@ -172,32 +184,32 @@ export default function FeaturedModules() {
               
               {/* 底部：积分/使用人数 + 按钮 */}
               <div 
-                className="p-6 pt-4 flex items-center justify-between"
-                style={{ borderTop: '1px solid var(--border-primary)', marginTop: '1rem' }}
+                className="p-6 pt-5 flex items-center justify-between"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '1rem' }}
               >
                 <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>
                   {featured.credits_display && (
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
                       💎 {featured.credits_display}
                     </span>
                   )}
                   {featured.usage_count != null && featured.usage_count > 0 && (
-                    <span className="flex items-center gap-1">
-                      👤 {featured.usage_count.toLocaleString()}人使用
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                      🔥 {featured.usage_count.toLocaleString()}人使用
                     </span>
                   )}
                 </div>
                 <Button 
                   onClick={() => handleClick(featured)}
-                  className="rounded-xl px-5 h-10 font-medium transition-all duration-300 hover:scale-105"
+                  className="rounded-xl px-6 h-11 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg"
                   style={{
                     background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
                     color: 'var(--bg-primary)',
-                    boxShadow: '0 4px 15px rgba(255, 215, 0, 0.25)'
+                    boxShadow: '0 4px 20px rgba(255, 215, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)'
                   }}
                 >
                   立即体验
-                  <ArrowRight className="h-4 w-4 ml-1" />
+                  <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
                 </Button>
               </div>
             </div>
