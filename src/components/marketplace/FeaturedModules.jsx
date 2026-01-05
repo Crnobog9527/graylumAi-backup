@@ -202,44 +202,12 @@ export default function FeaturedModules() {
         })}
       </div>
 
-      {/* 确认弹窗 */}
-      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
-        <AlertDialogContent style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-primary)' }}>
-          <AlertDialogHeader>
-            <AlertDialogTitle style={{ color: 'var(--text-primary)' }}>
-              确认使用「{confirmDialog.featured?.title}」
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p style={{ color: 'var(--text-secondary)' }}>
-                {confirmDialog.linkedModule?.description || confirmDialog.featured?.description}
-              </p>
-              <p className="font-medium" style={{ color: 'var(--warning)' }}>
-                点击"确认"以后，将按实际Token消耗计费
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel 
-              style={{ 
-                background: 'var(--bg-primary)', 
-                borderColor: 'var(--border-primary)',
-                color: 'var(--text-secondary)'
-              }}
-            >
-              取消
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirm}
-              style={{
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                color: 'var(--bg-primary)'
-              }}
-            >
-              确认
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* 模块详情弹窗 */}
+      <ModuleDetailDialog 
+        module={detailDialog.module} 
+        open={detailDialog.open} 
+        onOpenChange={(open) => setDetailDialog({ ...detailDialog, open })} 
+      />
     </div>
   );
 }
