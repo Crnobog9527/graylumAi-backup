@@ -174,12 +174,34 @@ export default function ModuleDetailDialog({ module, open, onOpenChange }) {
                 使用前请准备
               </h3>
               <div 
-                className="p-4 rounded-xl space-y-3"
+                className="p-4 rounded-xl space-y-3 relative"
                 style={{ 
                   background: 'rgba(99,102,241,0.08)',
                   border: '1px solid rgba(99,102,241,0.15)'
                 }}
               >
+                {/* 复制按钮 */}
+                <button
+                  onClick={handleCopyInputs}
+                  className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105"
+                  style={{ 
+                    background: copied ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)',
+                    border: copied ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                    color: copied ? '#4ade80' : 'var(--text-tertiary)'
+                  }}
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" />
+                      已复制
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" />
+                      复制
+                    </>
+                  )}
+                </button>
                 {module.required_inputs.map((input, idx) => (
                   <div key={idx} className="flex items-start gap-3">
                     <span 
