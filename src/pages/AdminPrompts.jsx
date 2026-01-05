@@ -194,6 +194,33 @@ function AdminPromptsContent() {
     setDeleteDialogOpen(true);
   };
 
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+    
+    const sourceIndex = result.source.index;
+    const destIndex = result.destination.index;
+    
+    if (sourceIndex === destIndex) return;
+
+    // 重新排序模块
+    const reorderedModules = Array.from(modules);
+    const [movedModule] = reorderedModules.splice(sourceIndex, 1);
+    reorderedModules.splice(destIndex, 0, movedModule);
+
+    // 更新所有受影响模块的 sort_order
+    const updates = reorderedModules.map((module, index) => ({
+      id: module.id,
+      sort_order: index
+    }));
+
+    // 批量更新
+    for (const update of updates) {
+      await base44.entities.PromptModule.update(update.id, { sort_order: update.sort_order });
+    }
+    
+    queryClient.invalidateQueries(['admin-prompts']);
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
