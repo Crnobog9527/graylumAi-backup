@@ -332,7 +332,7 @@ export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) 
 export function UsageStatsCard({ user }) {
   const userEmail = user?.email;
 
-  // 获取对话和交易数据
+  // 获取对话和交易数据 - 限制数量以提升性能
   const { data: conversations = [] } = useQuery({
     queryKey: ['all-conversations', userEmail],
     queryFn: async () => {
@@ -340,10 +340,11 @@ export function UsageStatsCard({ user }) {
       return base44.entities.Conversation.filter(
         { created_by: userEmail },
         '-created_date',
-        1000
+        100
       );
     },
     enabled: !!userEmail,
+    staleTime: 60000,
   });
 
   const { data: transactions = [] } = useQuery({
@@ -353,10 +354,11 @@ export function UsageStatsCard({ user }) {
       return base44.entities.CreditTransaction.filter(
         { user_email: userEmail, type: 'usage' },
         '-created_date',
-        1000
+        100
       );
     },
     enabled: !!userEmail,
+    staleTime: 60000,
   });
 
   // 计算统计数据
