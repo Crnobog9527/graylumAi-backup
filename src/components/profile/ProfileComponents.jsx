@@ -561,13 +561,104 @@ export function SubscriptionCard({ user }) {
   );
 }
 
+// 订阅管理页面的积分概览卡片（带积分加油包）
 export function CreditStatsCard({ user }) {
+  const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
   const credits = user?.credits || 0;
   const userEmail = user?.email;
 
   // 获取本月积分消耗
   const { data: transactions = [] } = useQuery({
     queryKey: ['user-transactions', userEmail],
+    queryFn: async () => {
+      if (!userEmail) return [];
+      return base44.entities.CreditTransaction.filter(
+        { user_email: userEmail },
+        '-created_date',
+        100
+      );
+    },
+    enabled: !!userEmail,
+  });
+
+  // 计算本月消耗
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+
+  const monthlyUsed = transactions
+    .filter(t => {
+      const date = new Date(t.created_date);
+      return date >= monthStart && date <= monthEnd && t.type === 'usage';
+    })
+    .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
+
+  return (
+    <>
+      <div
+        className="rounded-2xl p-6 md:p-8 mb-6 transition-all duration-300"
+        style={{
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-primary)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+        }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>积分概览</h3>
+          <Zap className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>积分余额</div>
+              <div
+                className="text-3xl font-bold"
+                style={{
+                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}
+              >
+                {credits.toLocaleString()}
+              </div>
+            </div>
+
+            <div className="pl-8 hidden md:block" style={{ borderLeft: '1px solid var(--border-primary)' }}>
+              <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>本月消耗</div>
+              <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{Math.round(monthlyUsed).toLocaleString()}</div>
+            </div>
+
+            <div className="pl-8 hidden md:block" style={{ borderLeft: '1px solid var(--border-primary)' }}>
+              <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>累计消耗</div>
+              <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{(user?.total_credits_used || 0).toLocaleString()}</div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* 积分加油包 */}
+      <CreditPackagesSection onBuyClick={() => setCreditsDialogOpen(true)} />
+
+      <CreditsDialog 
+        open={creditsDialogOpen} 
+        onOpenChange={setCreditsDialogOpen} 
+        user={user} 
+      />
+    </>
+  );
+}
+
+// 积分记录页面的积分概览卡片（带趋势图）
+export function CreditRecordsCard({ user }) {
+  const credits = user?.credits || 0;
+  const userEmail = user?.email;
+
+  // 获取积分交易记录
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['user-transactions-records', userEmail],
     queryFn: async () => {
       if (!userEmail) return [];
       return base44.entities.CreditTransaction.filter(
