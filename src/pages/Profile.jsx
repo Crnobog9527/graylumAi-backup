@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 export default function Profile() {
   const [activeTab, setActiveTab] = useState('profile');
   const [ticketInitialView, setTicketInitialView] = useState('list');
+  const [localUser, setLocalUser] = useState(null);
 
   const handleNavigateToCreateTicket = () => {
     setTicketInitialView('create');
@@ -21,10 +22,16 @@ export default function Profile() {
     setActiveTab('security');
   };
 
-  const { data: user, isLoading } = useQuery({
+  const { data: fetchedUser, isLoading } = useQuery({
     queryKey: ['user'],
     queryFn: () => base44.auth.me().catch(() => null),
   });
+
+  const user = localUser || fetchedUser;
+
+  const handleUserUpdate = (updatedUser) => {
+    setLocalUser(updatedUser);
+  };
 
   const handleLogout = async () => {
     await base44.auth.logout();
@@ -148,7 +155,7 @@ export default function Profile() {
              <div className="animate-fadeInUp">
                 {activeTab === 'profile' && (
                   <>
-                    <UserProfileHeader user={user} />
+                    <UserProfileHeader user={user} onUserUpdate={handleUserUpdate} />
                     <CreditsAndSubscriptionCards user={user} />
                     <UsageStatsCard user={user} />
                     <QuickActionsCard user={user} onNavigateToTickets={handleNavigateToCreateTicket} onNavigateToSecurity={handleNavigateToSecurity} />
