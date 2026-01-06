@@ -1235,7 +1235,7 @@ function ConversationItem({ conversation, isActive, isSelectMode, isSelected, on
   return (
     <div
       onClick={() => isSelectMode ? onSelect() : onClick()}
-      className="group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer conversation-item"
+      className="group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer conversation-item transition-colors"
       style={{
         background: isActive && !isSelectMode 
           ? 'rgba(255, 215, 0, 0.1)' 
