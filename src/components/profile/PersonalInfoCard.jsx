@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Pencil, Crown, Coins, Plus, RefreshCw, Key, Link2, Users, Headphones, MessageCircle, Code, PenTool, Camera, Loader2 } from 'lucide-react';
+import { Pencil, Crown, Coins, Plus, RefreshCw, Key, Link2, Users, Headphones, MessageCircle, Code, PenTool, Camera, Loader2, Check, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AvatarCropper from './AvatarCropper';
@@ -16,6 +16,9 @@ export function UserProfileHeader({ user, onUserUpdate }) {
   const [uploading, setUploading] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [nickname, setNickname] = useState(user?.nickname || '');
+  const [savingNickname, setSavingNickname] = useState(false);
   const fileInputRef = useRef(null);
   const registerDate = user?.created_date ? format(new Date(user.created_date), 'yyyy年M月d日') : '-';
 
@@ -59,6 +62,25 @@ export function UserProfileHeader({ user, onUserUpdate }) {
       setUploading(false);
       setSelectedImage(null);
     }
+  };
+
+  const handleSaveNickname = async () => {
+    if (!nickname.trim()) return;
+    setSavingNickname(true);
+    try {
+      await base44.auth.updateMe({ nickname: nickname.trim() });
+      onUserUpdate && onUserUpdate({ ...user, nickname: nickname.trim() });
+      setEditingNickname(false);
+    } catch (error) {
+      console.error('Save nickname failed:', error);
+    } finally {
+      setSavingNickname(false);
+    }
+  };
+
+  const handleCancelNickname = () => {
+    setNickname(user?.nickname || '');
+    setEditingNickname(false);
   };
 
   return (
@@ -112,10 +134,62 @@ export function UserProfileHeader({ user, onUserUpdate }) {
             </button>
           </div>
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{user?.full_name || '用户'}</h2>
-            </div>
-            <p className="text-sm mb-2" style={{ color: 'var(--text-tertiary)' }}>{user?.email}</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    {editingNickname ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={nickname}
+                          onChange={(e) => setNickname(e.target.value)}
+                          placeholder="输入昵称"
+                          className="text-xl font-bold px-2 py-1 rounded-lg outline-none"
+                          style={{
+                            background: 'var(--bg-primary)',
+                            border: '1px solid var(--border-primary)',
+                            color: 'var(--text-primary)',
+                            width: '150px'
+                          }}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveNickname();
+                            if (e.key === 'Escape') handleCancelNickname();
+                          }}
+                        />
+                        <button
+                          onClick={handleSaveNickname}
+                          disabled={savingNickname || !nickname.trim()}
+                          className="p-1.5 rounded-lg transition-colors"
+                          style={{ background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)' }}
+                        >
+                          {savingNickname ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        </button>
+                        <button
+                          onClick={handleCancelNickname}
+                          className="p-1.5 rounded-lg transition-colors"
+                          style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)' }}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                          {user?.nickname || user?.full_name || '用户'}
+                        </h2>
+                        <button
+                          onClick={() => {
+                            setNickname(user?.nickname || user?.full_name || '');
+                            setEditingNickname(true);
+                          }}
+                          className="p-1 rounded-lg transition-colors opacity-60 hover:opacity-100"
+                          style={{ color: 'var(--text-tertiary)' }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-sm mb-2" style={{ color: 'var(--text-tertiary)' }}>{user?.email}</p>
             <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>
               <span>注册时间：{registerDate}</span>
               <div className="flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
