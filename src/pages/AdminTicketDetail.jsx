@@ -43,12 +43,16 @@ function AdminTicketDetailContent() {
   // 加载所有数据
   useEffect(() => {
     const loadData = async () => {
+      console.log('=== AdminTicketDetail loadData ===');
+      console.log('ticketId from URL:', ticketId);
+      
       setLoading(true);
       setError(null);
       
       try {
         // 1. 获取用户
         const userData = await base44.auth.me();
+        console.log('当前用户:', userData.email, '角色:', userData.role);
         setUser(userData);
         
         if (userData.role !== 'admin') {
@@ -58,19 +62,28 @@ function AdminTicketDetailContent() {
         }
 
         if (!ticketId) {
+          console.log('错误: ticketId 为空');
           setError('无效的工单ID');
           setLoading(false);
           return;
         }
 
-        // 2. 获取工单
-        const tickets = await base44.entities.Ticket.filter({ id: ticketId });
-        if (tickets.length === 0) {
+        // 2. 获取所有工单，然后找到指定ID的工单
+        console.log('查询所有工单...');
+        const allTickets = await base44.entities.Ticket.list();
+        console.log('可访问的工单数量:', allTickets.length);
+        console.log('工单IDs:', allTickets.map(t => t.id));
+        
+        const foundTicket = allTickets.find(t => t.id === ticketId);
+        console.log('找到的工单:', foundTicket);
+        
+        if (!foundTicket) {
+          console.log('错误: 未找到工单');
           setError('工单不存在');
           setLoading(false);
           return;
         }
-        setTicket(tickets[0]);
+        setTicket(foundTicket);
 
         // 3. 获取回复
         const repliesData = await base44.entities.TicketReply.filter(
@@ -81,7 +94,7 @@ function AdminTicketDetailContent() {
 
       } catch (e) {
         console.error('加载数据失败:', e);
-        setError('加载失败');
+        setError('加载失败: ' + e.message);
       } finally {
         setLoading(false);
       }
