@@ -344,6 +344,7 @@ export function QuickActionsCard({ user, onNavigateToTickets, onNavigateToSecuri
             background: 'var(--bg-primary)',
             border: '1px solid var(--border-primary)'
           }}
+          onClick={() => onNavigateToSecurity && onNavigateToSecurity()}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = 'rgba(255, 215, 0, 0.3)';
             e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
@@ -361,10 +362,10 @@ export function QuickActionsCard({ user, onNavigateToTickets, onNavigateToSecuri
           </div>
           <h4 className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>账户安全</h4>
           <p className="text-sm mb-3 min-h-[40px]" style={{ color: 'var(--text-tertiary)' }}>管理登录方式和密码设置</p>
-          <a href="#security" className="text-sm font-medium flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
+          <div className="text-sm font-medium flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
             前往设置
             <span>→</span>
-          </a>
+          </div>
         </div>
 
         {/* 邀请好友 - 弹窗触发 */}
