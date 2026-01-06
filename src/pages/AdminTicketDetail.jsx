@@ -40,8 +40,17 @@ function AdminTicketDetailContent() {
     queryFn: () => base44.auth.me(),
   });
 
+  // 调试：检查enabled条件
+  React.useEffect(() => {
+    console.log('=== enabled条件检查 ===');
+    console.log('ticketId:', ticketId);
+    console.log('user:', user);
+    console.log('user?.role:', user?.role);
+    console.log('enabled:', !!ticketId && !!user && user?.role === 'admin');
+  }, [ticketId, user]);
+
   // 2. 用户数据加载后再获取工单数据
-  const { data: ticket, isLoading: ticketLoading, isError, error } = useQuery({
+  const { data: ticket, isLoading: ticketLoading, isError, error, isFetching } = useQuery({
     queryKey: ['admin-ticket', ticketId],
     queryFn: async () => {
       console.log('=== 管理员端工单查询开始 ===');
@@ -61,20 +70,21 @@ function AdminTicketDetailContent() {
       console.log('找到工单:', tickets[0]);
       return tickets[0];
     },
-    enabled: !!ticketId && !!user && user.role === 'admin',
+    enabled: !!ticketId && !!user && user?.role === 'admin',
     retry: false,
-    staleTime: 1000 * 60 * 5, // 5分钟内不重新获取
-    refetchOnWindowFocus: false, // 防止窗口聚焦时重新获取
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
   });
 
   // 调试：监控ticket状态变化
   React.useEffect(() => {
     console.log('=== 管理员ticket状态变化 ===');
     console.log('ticketLoading:', ticketLoading);
+    console.log('isFetching:', isFetching);
     console.log('isError:', isError);
     console.log('error:', error);
     console.log('ticket:', ticket);
-  }, [ticket, ticketLoading, isError, error]);
+  }, [ticket, ticketLoading, isFetching, isError, error]);
 
   // 3. 获取回复数据
   const { data: replies = [] } = useQuery({
@@ -136,8 +146,8 @@ function AdminTicketDetailContent() {
     );
   }
 
-  // 等待工单数据加载 - 包括初始 undefined 状态
-  if (ticketLoading || ticket === undefined) {
+  // 等待工单数据加载 - 包括初始 undefined 状态和正在获取中
+  if (ticketLoading || isFetching || ticket === undefined) {
     return (
       <div className="flex min-h-screen bg-slate-50">
         <AdminSidebar currentPage="AdminTickets" />
