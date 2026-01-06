@@ -70,7 +70,7 @@ export default function Profile() {
       <div className="absolute inset-0 pointer-events-none">
         {/* 顶部金色光晕 */}
         <div
-          className="absolute -top-32 left-1/3 w-[600px] h-[400px] rounded-full opacity-40 blur-[100px]"
+          className="absolute -top-32 left-1/3 w-[600px] h-[400px] rounded-full opacity-65 blur-[100px]"
           style={{
             background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
             animation: 'pulseGlow 15s ease-in-out infinite',
@@ -78,7 +78,7 @@ export default function Profile() {
         />
         {/* 右下紫色光晕 */}
         <div
-          className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full opacity-30 blur-[120px]"
+          className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full opacity-45 blur-[120px]"
           style={{
             background: 'radial-gradient(circle, rgba(139,92,246,0.6) 0%, transparent 70%)',
             animation: 'floatSoft 20s ease-in-out infinite',
@@ -86,7 +86,7 @@ export default function Profile() {
         />
         {/* 网格纹理 */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.1]"
           style={{
             backgroundImage: 'linear-gradient(rgba(255,215,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,215,0,0.1) 1px, transparent 1px)',
             backgroundSize: '50px 50px',
