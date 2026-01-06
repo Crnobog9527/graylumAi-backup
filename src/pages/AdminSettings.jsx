@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
-import MembershipPermissionsCard from '../components/admin/MembershipPermissionsCard';
+import MembershipPermissionsCard from '@/components/admin/MembershipPermissionsCard';
 
 const defaultSettings = {
   // General
