@@ -7,7 +7,6 @@ import AdminModels from './pages/AdminModels';
 import AdminPackages from './pages/AdminPackages';
 import AdminPrompts from './pages/AdminPrompts';
 import AdminSettings from './pages/AdminSettings';
-import AdminTicketDetail from './pages/AdminTicketDetail';
 import AdminTickets from './pages/AdminTickets';
 import AdminTransactions from './pages/AdminTransactions';
 import AdminUsers from './pages/AdminUsers';
@@ -29,7 +28,6 @@ export const PAGES = {
     "AdminPackages": AdminPackages,
     "AdminPrompts": AdminPrompts,
     "AdminSettings": AdminSettings,
-    "AdminTicketDetail": AdminTicketDetail,
     "AdminTickets": AdminTickets,
     "AdminTransactions": AdminTransactions,
     "AdminUsers": AdminUsers,
