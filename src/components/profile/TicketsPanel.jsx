@@ -689,8 +689,8 @@ function CreateTicketForm({ user, onBack, onSuccess }) {
 }
 
 // 主组件
-export default function TicketsPanel({ user }) {
-  const [view, setView] = useState('list'); // 'list' | 'detail' | 'create'
+export default function TicketsPanel({ user, initialView = 'list' }) {
+  const [view, setView] = useState(initialView); // 'list' | 'detail' | 'create'
   const [selectedTicket, setSelectedTicket] = useState(null);
 
   const { data: tickets = [], isLoading, refetch } = useQuery({
