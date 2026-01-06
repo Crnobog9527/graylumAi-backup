@@ -31,25 +31,18 @@ function AdminTicketDetailContent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [replyMessage, setReplyMessage] = useState('');
-  const [user, setUser] = useState(null);
-  const [userLoading, setUserLoading] = useState(true);
 
+  // 从URL获取ticketId - 直接解析，不使用useMemo
   const ticketId = new URLSearchParams(location.search).get('id');
 
-  // 1. 首先获取用户数据 - 使用 useState 确保稳定
-  React.useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        setUser(null);
-      } finally {
-        setUserLoading(false);
-      }
-    };
-    loadUser();
-  }, []);
+  // 1. 首先获取用户数据
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ['user'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  // 检查是否满足查询条件
+  const canQuery = !!ticketId && !!user && user?.role === 'admin';
 
   // 2. 用户数据加载后再获取工单数据
   const { data: ticket, isLoading: ticketLoading, isError, error } = useQuery({
@@ -72,10 +65,10 @@ function AdminTicketDetailContent() {
       console.log('找到工单:', tickets[0]);
       return tickets[0];
     },
-    enabled: !!ticketId && !!user && user.role === 'admin',
+    enabled: canQuery,
     retry: false,
-    staleTime: 1000 * 60 * 5, // 5分钟内不重新获取
-    refetchOnWindowFocus: false, // 防止窗口聚焦时重新获取
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
   });
 
   // 3. 获取回复数据
@@ -138,8 +131,30 @@ function AdminTicketDetailContent() {
     );
   }
 
+  // 如果没有ticketId，显示错误
+  if (!ticketId) {
+    return (
+      <div className="flex min-h-screen bg-slate-50">
+        <AdminSidebar currentPage="AdminTickets" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+            <p className="text-slate-600">无效的工单ID</p>
+            <Button
+              variant="outline"
+              onClick={() => navigate(createPageUrl('AdminTickets'))}
+              className="mt-4"
+            >
+              返回工单列表
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 等待工单数据加载 - 包括初始 undefined 状态
-  if (ticketLoading || ticket === undefined) {
+  if (ticketLoading || (!ticket && canQuery)) {
     return (
       <div className="flex min-h-screen bg-slate-50">
         <AdminSidebar currentPage="AdminTickets" />
