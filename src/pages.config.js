@@ -12,7 +12,6 @@ import AdminTickets from './pages/AdminTickets';
 import AdminTransactions from './pages/AdminTransactions';
 import AdminUsers from './pages/AdminUsers';
 import Chat from './pages/Chat';
-import Credits from './pages/Credits';
 import Home from './pages/Home';
 import Marketplace from './pages/Marketplace';
 import Profile from './pages/Profile';
@@ -35,7 +34,6 @@ export const PAGES = {
     "AdminTransactions": AdminTransactions,
     "AdminUsers": AdminUsers,
     "Chat": Chat,
-    "Credits": Credits,
     "Home": Home,
     "Marketplace": Marketplace,
     "Profile": Profile,
