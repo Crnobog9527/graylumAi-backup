@@ -10,6 +10,12 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState('profile');
+  const [ticketInitialView, setTicketInitialView] = useState('list');
+
+  const handleNavigateToCreateTicket = () => {
+    setTicketInitialView('create');
+    setActiveTab('tickets');
+  };
 
   const { data: user, isLoading } = useQuery({
     queryKey: ['user'],
