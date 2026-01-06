@@ -90,7 +90,7 @@ function CreditPackagesSection({ onBuyClick }) {
               </div>
             )}
             <div className="text-lg font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
-              ${pkg.price.toFixed(2)}
+              ${pkg.price.toFixed(1)}
             </div>
             <Button
               onClick={onBuyClick}
@@ -350,7 +350,7 @@ export function SubscriptionCard({ user }) {
                     {/* 原价划线（月价格） */}
                     <div className="flex items-center gap-2">
                       <span className="text-sm line-through" style={{ color: 'var(--text-disabled)' }}>
-                        ${plan.price.monthly.toFixed(2)}/月
+                        ${plan.price.monthly.toFixed(1)}/月
                       </span>
                       <span
                         className="text-xs px-1.5 py-0.5 rounded"
@@ -372,12 +372,12 @@ export function SubscriptionCard({ user }) {
                           WebkitTextFillColor: 'transparent'
                         }}
                       >
-                        {(price / 12).toFixed(2)}
+                        {(price / 12).toFixed(1)}
                       </span>
                       <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>/月</span>
                     </div>
                     <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                      年付共 ${price.toFixed(2)}
+                      年付共 ${price.toFixed(1)}
                     </span>
                   </div>
                 ) : (
@@ -393,7 +393,7 @@ export function SubscriptionCard({ user }) {
                         WebkitTextFillColor: 'transparent'
                       }}
                     >
-                      {price.toFixed(2)}
+                      {price.toFixed(1)}
                     </span>
                     <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>/月</span>
                   </div>
