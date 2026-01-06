@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, GripVertical, Bot } from 'lucide-react';
+import { Plus, Pencil, Trash2, Wand2, GripVertical, Bot } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { iconMap, iconOptions, getIconColor } from '../components/modules/iconConfig';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,6 +37,7 @@ import {
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
+import { iconComponents, getIconColor, iconGroups } from '../components/modules/moduleIcons';
 
 const categories = [
   { value: 'writing', label: '写作' },
@@ -252,10 +252,7 @@ function AdminPromptsContent() {
                         {...provided.draggableProps}
                         className={`relative overflow-hidden ${snapshot.isDragging ? 'shadow-lg ring-2 ring-violet-400' : ''}`}
                       >
-                        <div 
-                          className="absolute top-0 left-0 w-1 h-full"
-                          style={{ background: getIconColor(module.icon) }}
-                        />
+                        <div className={`absolute top-0 left-0 w-1 h-full bg-${module.color || 'violet'}-500`} />
                         <CardContent className="p-5">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-3">
@@ -265,17 +262,8 @@ function AdminPromptsContent() {
                               >
                                 <GripVertical className="h-5 w-5 text-slate-400" />
                               </div>
-                              <div 
-                                className="p-2 rounded-lg"
-                                style={{ 
-                                  background: `${getIconColor(module.icon)}20`,
-                                  border: `1px solid ${getIconColor(module.icon)}40`
-                                }}
-                              >
-                                {(() => {
-                                  const IconComp = iconMap[module.icon] || Bot;
-                                  return <IconComp className="h-5 w-5" style={{ color: getIconColor(module.icon) }} />;
-                                })()}
+                              <div className={`p-2 rounded-lg bg-${module.color || 'violet'}-100`}>
+                                <Wand2 className={`h-5 w-5 text-${module.color || 'violet'}-600`} />
                               </div>
                               <div>
                                 <h3 className="font-semibold text-slate-800">{module.title}</h3>
@@ -492,51 +480,37 @@ function AdminPromptsContent() {
 
               <div className="space-y-2">
                 <Label>{t('icon')}</Label>
-                <div className="border rounded-lg p-3 max-h-64 overflow-y-auto bg-slate-50">
-                  {/* 按分类分组显示图标 */}
-                  {['创作', '媒体', '营销', '数据', '办公', '社交', '电商', '设计', '学习', '其他'].map(category => {
-                    const categoryIcons = iconOptions.filter(i => i.category === category);
-                    if (categoryIcons.length === 0) return null;
-                    return (
-                      <div key={category} className="mb-3">
-                        <div className="text-xs font-medium text-slate-500 mb-2">{category}</div>
-                        <div className="grid grid-cols-6 gap-2">
-                          {categoryIcons.map(iconOpt => {
-                            const IconComp = iconMap[iconOpt.value] || Bot;
-                            const color = getIconColor(iconOpt.value);
-                            const isSelected = formData.icon === iconOpt.value;
-                            return (
-                              <button
-                                key={iconOpt.value}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, icon: iconOpt.value })}
-                                className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-all hover:scale-105 ${
-                                  isSelected ? 'ring-2 ring-violet-500 bg-white shadow-md' : 'hover:bg-white'
-                                }`}
-                                title={iconOpt.label}
-                              >
-                                <div 
-                                  className="p-1.5 rounded-md"
-                                  style={{ 
-                                    background: `${color}20`,
-                                    border: `1px solid ${color}40`
-                                  }}
-                                >
-                                  <IconComp className="h-4 w-4" style={{ color }} />
-                                </div>
-                                <span className="text-[10px] text-slate-600 truncate w-full text-center">
-                                  {iconOpt.label}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
+                <div className="border rounded-lg p-4 max-h-72 overflow-y-auto bg-white">
+                  {iconGroups.map((group) => (
+                    <div key={group.label} className="mb-4 last:mb-0">
+                      <div className="text-xs font-medium text-slate-500 mb-2">{group.label}</div>
+                      <div className="grid grid-cols-6 gap-2">
+                        {group.icons.map((iconName) => {
+                          const IconComp = iconComponents[iconName];
+                          const color = getIconColor(iconName);
+                          return IconComp ? (
+                            <button
+                              key={iconName}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, icon: iconName })}
+                              className={`p-3 rounded-lg flex flex-col items-center gap-1 transition-all hover:scale-105 ${formData.icon === iconName ? 'ring-2 ring-violet-500 bg-violet-50' : 'hover:bg-slate-100'}`}
+                              style={{ 
+                                background: formData.icon === iconName ? `${color}15` : undefined,
+                                borderColor: formData.icon === iconName ? color : undefined
+                              }}
+                              title={iconName}
+                            >
+                              <IconComp className="h-5 w-5" style={{ color }} />
+                              <span className="text-[10px] text-slate-500 truncate w-full text-center">{iconName}</span>
+                            </button>
+                          ) : null;
+                        })}
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
                 <p className="text-xs text-slate-500">
-                  当前选中：{iconOptions.find(i => i.value === formData.icon)?.label || formData.icon}
+                  当前选择: <span className="font-medium text-violet-600">{formData.icon}</span>
                 </p>
               </div>
 
