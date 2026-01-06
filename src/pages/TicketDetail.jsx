@@ -21,7 +21,15 @@ export default function TicketDetail() {
   const [replyMessage, setReplyMessage] = useState('');
   const [debugInfo, setDebugInfo] = useState(null);
 
-  const ticketId = new URLSearchParams(location.search).get('id');
+  // 从URL获取ticketId
+  const ticketId = React.useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    console.log('=== 用户端URL解析 ===');
+    console.log('location.search:', location.search);
+    console.log('解析到的id:', id);
+    return id;
+  }, [location.search]);
 
   // 1. 首先获取用户数据
   const { data: user, isLoading: userLoading } = useQuery({
