@@ -36,105 +36,50 @@ export default function Home() {
         }}
       />
 
-      {/* 2. 右上角金色/橙色光晕 - 漂移动画 */}
+      {/* 2. 右上角金色光晕 - 简化动画 */}
       <div
-        className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full opacity-60 blur-[120px]"
+        className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full opacity-40 blur-[100px]"
         style={{
-          background: `linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 50%, var(--success) 100%)`,
-          animation: 'driftTopRight 25s ease-in-out infinite, breathe 8s ease-in-out infinite',
-          willChange: 'transform, opacity',
+          background: `linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 100%)`,
+          willChange: 'transform',
+          contain: 'layout paint',
         }}
       />
 
-      {/* 3. 左侧蓝紫色光晕 - 漂移动画 */}
+      {/* 3. 左侧紫色光晕 - 静态 */}
       <div
-        className="absolute top-1/3 -left-48 w-[500px] h-[500px] rounded-full opacity-30 blur-[100px]"
+        className="absolute top-1/4 -left-32 w-[400px] h-[400px] rounded-full opacity-20 blur-[80px]"
         style={{
-          background: `linear-gradient(90deg, rgba(139, 92, 246, 0.5) 0%, var(--info) 100%)`,
-          animation: 'driftLeft 30s ease-in-out infinite, breathe 12s ease-in-out infinite 2s',
-          willChange: 'transform, opacity',
+          background: `rgba(139, 92, 246, 0.5)`,
+          contain: 'layout paint',
         }}
       />
 
-      {/* 4. 底部暖色光晕 - 漂移动画 */}
+      {/* 4. 底部暖色光晕 - 静态 */}
       <div
-        className="absolute -bottom-32 left-1/3 w-[700px] h-[400px] rounded-full opacity-40 blur-[120px]"
+        className="absolute -bottom-32 left-1/4 w-[500px] h-[300px] rounded-full opacity-30 blur-[100px]"
         style={{
-          background: `linear-gradient(0deg, var(--color-secondary) 0%, transparent 100%)`,
-          animation: 'driftBottom 22s ease-in-out infinite, breathe 10s ease-in-out infinite 4s',
-          willChange: 'transform, opacity',
+          background: `var(--color-secondary)`,
+          contain: 'layout paint',
         }}
       />
 
-      {/* 5. 中心微光效果 - 脉冲扩散 */}
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full opacity-20 blur-[150px]"
-        style={{
-          background: `linear-gradient(90deg, var(--success) 0%, transparent 50%, var(--info) 100%)`,
-          animation: 'pulse 15s ease-in-out infinite',
-          willChange: 'transform, opacity',
-        }}
-      />
-
-      {/* 6. 网格纹理层 - 缓慢平移 */}
+      {/* 5. 网格纹理层 - 静态 */}
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
           backgroundSize: '50px 50px',
-          animation: 'gridMove 60s linear infinite',
+          contain: 'layout paint',
         }}
       />
 
-      {/* 6.5 光线扫描效果 */}
+      {/* 6. 暗角遮罩 */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'linear-gradient(105deg, transparent 40%, rgba(255,215,0,0.03) 50%, transparent 60%)',
-          animation: 'lightSweep 15s ease-in-out infinite',
-        }}
-      />
-
-      {/* 8. 噪点纹理层 */}
-      <div
-        className="absolute inset-0 opacity-[0.015] pointer-events-none"
-        style={{
-          backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-        }}
-      />
-
-      {/* 8. 浮动光点动画 - 带尾迹和远近感 */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => {
-          const size = 1 + Math.random() * 2;
-          const hasTrail = i < 5;
-          return (
-            <div
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                width: `${size}px`,
-                height: `${size}px`,
-                background: hasTrail 
-                  ? 'linear-gradient(180deg, var(--color-primary), transparent)'
-                  : 'var(--color-primary)',
-                boxShadow: hasTrail ? `0 0 ${size * 3}px var(--color-primary)` : 'none',
-                opacity: 0.15 + Math.random() * 0.25,
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animation: `floatAdvanced ${12 + Math.random() * 18}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 8}s`,
-              }}
-            />
-          );
-        })}
-      </div>
-
-      {/* 9. 暗角遮罩 - 模拟光线被吸入效果 */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 20%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.4) 75%, rgba(0,0,0,0.7) 100%)',
+          background: 'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 30%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0.6) 100%)',
+          contain: 'layout paint',
         }}
       />
 
