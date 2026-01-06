@@ -41,15 +41,40 @@ function AdminTicketDetailContent() {
   });
 
   // 2. 用户数据加载后再获取工单数据
-  const { data: ticket, isLoading: ticketLoading } = useQuery({
+  const { data: ticket, isLoading: ticketLoading, isError, error } = useQuery({
     queryKey: ['admin-ticket', ticketId],
     queryFn: async () => {
-      // 管理员获取所有工单，然后找到匹配的
-      const tickets = await base44.entities.Ticket.list();
-      return tickets.find(t => t.id === ticketId) || null;
+      console.log('=== 管理员端工单查询开始 ===');
+      console.log('ticketId:', ticketId);
+      console.log('user:', user);
+      
+      // 直接通过ID过滤获取工单
+      const tickets = await base44.entities.Ticket.filter({ id: ticketId });
+      console.log('查询返回结果:', tickets);
+      console.log('结果数量:', tickets.length);
+      
+      if (tickets.length === 0) {
+        console.log('未找到工单');
+        return null;
+      }
+      
+      console.log('找到工单:', tickets[0]);
+      return tickets[0];
     },
     enabled: !!ticketId && !!user && user.role === 'admin',
+    retry: false,
+    staleTime: 1000 * 60 * 5, // 5分钟内不重新获取
+    refetchOnWindowFocus: false, // 防止窗口聚焦时重新获取
   });
+
+  // 调试：监控ticket状态变化
+  React.useEffect(() => {
+    console.log('=== 管理员ticket状态变化 ===');
+    console.log('ticketLoading:', ticketLoading);
+    console.log('isError:', isError);
+    console.log('error:', error);
+    console.log('ticket:', ticket);
+  }, [ticket, ticketLoading, isError, error]);
 
   // 3. 获取回复数据
   const { data: replies = [] } = useQuery({

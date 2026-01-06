@@ -30,32 +30,40 @@ export default function TicketDetail() {
   });
 
   // 2. 用户数据加载后再获取工单数据
-  const { data: ticket, isLoading: ticketLoading, isError } = useQuery({
-    queryKey: ['user-ticket', ticketId, user?.email],
+  const { data: ticket, isLoading: ticketLoading, isError, error } = useQuery({
+    queryKey: ['user-ticket', ticketId],
     queryFn: async () => {
-      console.log('=== 工单查询调试 ===');
-      console.log('ticketId from URL:', ticketId);
-      console.log('user.email:', user.email);
+      console.log('=== 用户端工单查询开始 ===');
+      console.log('ticketId:', ticketId);
+      console.log('user:', user);
       
       // 直接通过ID过滤获取工单（RLS会自动验证权限）
       const tickets = await base44.entities.Ticket.filter({ id: ticketId });
-      console.log('查询结果:', tickets);
+      console.log('查询返回结果:', tickets);
+      console.log('结果数量:', tickets.length);
       
-      const found = tickets.length > 0 ? tickets[0] : null;
-      console.log('找到匹配工单:', found ? '是' : '否');
+      if (tickets.length === 0) {
+        console.log('未找到工单');
+        return null;
+      }
       
-      setDebugInfo({
-        ticketId,
-        userEmail: user.email,
-        queryResult: tickets,
-        found: !!found
-      });
-      
-      return found;
+      console.log('找到工单:', tickets[0]);
+      return tickets[0];
     },
-    enabled: !!ticketId && !!user?.email,
+    enabled: !!ticketId && !!user,
     retry: false,
+    staleTime: 1000 * 60 * 5, // 5分钟内不重新获取
+    refetchOnWindowFocus: false, // 防止窗口聚焦时重新获取
   });
+
+  // 调试：监控ticket状态变化
+  React.useEffect(() => {
+    console.log('=== ticket状态变化 ===');
+    console.log('ticketLoading:', ticketLoading);
+    console.log('isError:', isError);
+    console.log('error:', error);
+    console.log('ticket:', ticket);
+  }, [ticket, ticketLoading, isError, error]);
 
   // 3. 获取回复数据
   const { data: replies = [] } = useQuery({
