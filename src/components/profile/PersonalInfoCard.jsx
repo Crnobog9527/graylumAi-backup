@@ -323,7 +323,7 @@ export function UsageStatsCard({ user }) {
   );
 }
 
-export function QuickActionsCard({ user }) {
+export function QuickActionsCard({ user, onNavigateToTickets }) {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   return (
