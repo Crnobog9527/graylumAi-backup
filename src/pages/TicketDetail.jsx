@@ -27,10 +27,11 @@ export default function TicketDetail() {
     queryFn: () => base44.auth.me(),
   });
 
-  const { data: ticket, isLoading } = useQuery({
+  const { data: ticket, isLoading, isError } = useQuery({
     queryKey: ['ticket', ticketId],
     queryFn: () => base44.entities.Ticket.get(ticketId),
     enabled: !!ticketId,
+    retry: false,
   });
 
   const { data: replies = [] } = useQuery({
@@ -89,7 +90,7 @@ export default function TicketDetail() {
     return <LoadingSpinner />;
   }
 
-  if (!ticket) {
+  if (isError || !ticket) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
         <div className="text-center">
