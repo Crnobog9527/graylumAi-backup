@@ -212,27 +212,7 @@ export default function CreateTicket() {
               </SelectTrigger>
               <SelectContent style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}>
                 {categoryOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Priority */}
-          <div>
-            <Label className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>优先级</Label>
-            <Select
-              value={formData.priority}
-              onValueChange={(value) => setFormData({ ...formData, priority: value })}
-            >
-              <SelectTrigger className="mt-2" style={inputStyle}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}>
-                {priorityOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem key={option.value} value={option.value} style={{ color: 'white' }}>
                     {option.label}
                   </SelectItem>
                 ))}
