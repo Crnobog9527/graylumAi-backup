@@ -20,7 +20,8 @@ import { Bot } from 'lucide-react';
 export default function ModuleCard({ module, models = [], className, onShowDetail }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
-  const Icon = iconMap[module.icon] || Bot;
+  const Icon = iconComponents[module.icon] || Bot;
+  const iconColor = getIconColor(module.icon);
 
   const targetUrl = `${createPageUrl('Chat')}?module_id=${module.id}&auto_start=true`;
 
