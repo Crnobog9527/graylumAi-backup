@@ -169,7 +169,7 @@ export default function Profile() {
                   </>
                 )}
 
-                {activeTab === 'credits' && <CreditStatsCard user={user} />}
+                {activeTab === 'credits' && <CreditRecordsCard user={user} />}
 
                 {activeTab === 'history' && <UsageHistoryCard user={user} />}
 
