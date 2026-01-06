@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, MessageSquare, Pencil, ChevronDown, Paperclip, Send, Loader2, Copy, RefreshCw, ThumbsUp, ThumbsDown, Bot, Trash2, CheckSquare, Square, Settings2, AlertTriangle, X, FileText, Image } from 'lucide-react';
+import { Plus, MessageSquare, Pencil, ChevronDown, Paperclip, Send, Loader2, Copy, RefreshCw, ThumbsUp, ThumbsDown, Bot, Trash2, CheckSquare, Square, Settings2, AlertTriangle, X, FileText, Image, Download } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,8 @@ export default function Chat() {
   const [editingTitleValue, setEditingTitleValue] = useState('');
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [debugInfo, setDebugInfo] = useState([]);
+  const [isExporting, setIsExporting] = useState(false);
+  const [canExport, setCanExport] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -66,6 +68,12 @@ export default function Chat() {
       try {
         const userData = await base44.auth.me();
         setUser(userData);
+        
+        // 检查导出权限
+        const userTier = userData.subscription_tier || 'free';
+        const plans = await base44.entities.MembershipPlan.filter({ is_active: true });
+        const plan = plans.find(p => p.level === userTier);
+        setCanExport(plan?.can_export_conversations || false);
       } catch (e) {
         // 未登录用户由Layout处理重定向到Landing页面
       }
@@ -577,6 +585,42 @@ export default function Chat() {
     setFileContents(prev => prev.filter((_, i) => i !== index));
   };
 
+  // 导出当前对话
+  const handleExportConversation = async () => {
+    if (!currentConversation) {
+      alert('请先选择一个对话');
+      return;
+    }
+    
+    setIsExporting(true);
+    try {
+      const { data } = await base44.functions.invoke('exportConversations', {
+        conversation_ids: [currentConversation.id],
+        format: 'markdown'
+      });
+      
+      // 创建下载
+      const blob = new Blob([data], { type: 'text/markdown;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentConversation.title || '对话记录'}_${format(new Date(), 'yyyyMMdd_HHmm')}.md`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      const errorData = error.response?.data || {};
+      if (errorData.upgrade_required) {
+        alert('您当前的会员等级不支持导出功能，请升级会员');
+      } else {
+        alert('导出失败: ' + (errorData.error || error.message));
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Group conversations by date
   const groupedConversations = React.useMemo(() => {
     const groups = { today: [], yesterday: [], thisWeek: [], older: [] };
@@ -901,6 +945,28 @@ export default function Chat() {
           </div>
 
           <div className="flex items-center gap-2">
+              {/* Export Button */}
+              {canExport && currentConversation && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportConversation}
+                  disabled={isExporting}
+                  className="h-9 px-3 gap-2"
+                  style={{ 
+                    background: 'transparent',
+                    borderColor: 'var(--border-primary)',
+                    color: 'var(--text-secondary)'
+                  }}
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  导出
+                </Button>
+              )}
               {/* Debug Panel Toggle (Admin Only) */}
               {user.role === 'admin' && (
                 <Button

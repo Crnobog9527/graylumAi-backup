@@ -47,11 +47,21 @@ const initialAnnouncementForm = {
   icon_color: 'text-blue-500',
   tag: '',
   tag_color: 'blue',
+  announcement_type: 'homepage',
+  banner_style: 'info',
+  banner_link: '',
   publish_date: '',
   expire_date: '',
   is_active: true,
   sort_order: 0,
 };
+
+const bannerStyles = [
+  { value: 'info', label: '信息（蓝色）', class: 'bg-blue-500' },
+  { value: 'warning', label: '警告（橙色）', class: 'bg-amber-500' },
+  { value: 'success', label: '成功（绿色）', class: 'bg-green-500' },
+  { value: 'error', label: '错误（红色）', class: 'bg-red-500' },
+];
 
 const announcementIcons = [
   { value: 'Megaphone', label: '公告', icon: Megaphone },
@@ -289,7 +299,7 @@ function AdminAnnouncementsContent() {
   };
 
   // 公告管理
-  const handleOpenAnnouncementDialog = (announcement = null) => {
+  const handleOpenAnnouncementDialog = (announcement = null, type = 'homepage') => {
     if (announcement) {
       setEditingAnnouncement(announcement);
       setAnnouncementForm({
@@ -299,6 +309,9 @@ function AdminAnnouncementsContent() {
         icon_color: announcement.icon_color || 'text-blue-500',
         tag: announcement.tag || '',
         tag_color: announcement.tag_color || 'blue',
+        announcement_type: announcement.announcement_type || 'homepage',
+        banner_style: announcement.banner_style || 'info',
+        banner_link: announcement.banner_link || '',
         publish_date: announcement.publish_date || '',
         expire_date: announcement.expire_date || '',
         is_active: announcement.is_active !== false,
@@ -306,7 +319,7 @@ function AdminAnnouncementsContent() {
       });
     } else {
       setEditingAnnouncement(null);
-      setAnnouncementForm(initialAnnouncementForm);
+      setAnnouncementForm({ ...initialAnnouncementForm, announcement_type: type });
     }
     setAnnouncementDialogOpen(true);
   };
@@ -361,6 +374,92 @@ function AdminAnnouncementsContent() {
         </div>
 
         <div className="space-y-6">
+          {/* 全站横幅公告 */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Megaphone className="h-5 w-5 text-violet-500" />
+                    全站横幅公告
+                  </CardTitle>
+                  <CardDescription>在导航栏下方显示的横幅公告，所有页面可见（用户可关闭）</CardDescription>
+                </div>
+                <Button onClick={() => handleOpenAnnouncementDialog(null, 'banner')} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  添加横幅
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {announcements.filter(a => a.announcement_type === 'banner').length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  暂无横幅公告，点击上方按钮添加
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {announcements.filter(a => a.announcement_type === 'banner').map((announcement) => {
+                    const styleInfo = bannerStyles.find(s => s.value === announcement.banner_style) || bannerStyles[0];
+                    
+                    return (
+                      <div
+                        key={announcement.id}
+                        className="flex items-center gap-4 p-4 rounded-lg border bg-white border-slate-200"
+                      >
+                        <div className={`w-3 h-10 rounded-full ${styleInfo.class}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-slate-900">{announcement.title}</span>
+                            {!announcement.is_active && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-500">已禁用</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-500 truncate">{announcement.description}</p>
+                          {announcement.banner_link && (
+                            <p className="text-xs text-blue-500 truncate mt-1">链接: {announcement.banner_link}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenAnnouncementDialog(announcement)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>确认删除</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  确定要删除横幅公告"{announcement.title}"吗？此操作无法撤销。
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>取消</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteAnnouncementMutation.mutate(announcement.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  删除
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* 首页平台公告 */}
           <Card>
             <CardHeader>
@@ -372,20 +471,20 @@ function AdminAnnouncementsContent() {
                   </CardTitle>
                   <CardDescription>管理首页显示的平台公告（最多显示3条）</CardDescription>
                 </div>
-                <Button onClick={() => handleOpenAnnouncementDialog()} className="gap-2">
+                <Button onClick={() => handleOpenAnnouncementDialog(null, 'homepage')} className="gap-2">
                   <Plus className="h-4 w-4" />
                   添加公告
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              {announcements.length === 0 ? (
+              {announcements.filter(a => a.announcement_type !== 'banner').length === 0 ? (
                 <div className="text-center py-8 text-slate-500">
                   暂无公告，点击上方按钮添加
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {announcements.map((announcement) => {
+                  {announcements.filter(a => a.announcement_type !== 'banner').map((announcement) => {
                     const IconComp = announcementIcons.find(i => i.value === announcement.icon)?.icon || Megaphone;
                     const colorInfo = tagColors.find(c => c.value === announcement.tag_color) || tagColors[0];
                     
@@ -400,6 +499,7 @@ function AdminAnnouncementsContent() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-slate-900">{announcement.title}</span>
+                            
                             {announcement.tag && (
                               <span className={`text-xs px-2 py-0.5 rounded ${colorInfo.class}`}>
                                 {announcement.tag}
@@ -711,6 +811,43 @@ function AdminAnnouncementsContent() {
                 />
               </div>
 
+              {/* 横幅专属设置 */}
+              {announcementForm.announcement_type === 'banner' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>横幅样式</Label>
+                      <Select
+                        value={announcementForm.banner_style}
+                        onValueChange={(v) => setAnnouncementForm({ ...announcementForm, banner_style: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bannerStyles.map((style) => (
+                            <SelectItem key={style.value} value={style.value}>
+                              <div className="flex items-center gap-2">
+                                <span className={`w-3 h-3 rounded-full ${style.class}`} />
+                                {style.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>跳转链接（可选）</Label>
+                      <Input
+                        value={announcementForm.banner_link}
+                        onChange={(e) => setAnnouncementForm({ ...announcementForm, banner_link: e.target.value })}
+                        placeholder="如：/Marketplace 或 https://..."
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>发布日期</Label>
@@ -749,6 +886,7 @@ function AdminAnnouncementsContent() {
                   <Label>启用此公告</Label>
                 </div>
               </div>
+
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setAnnouncementDialogOpen(false)}>取消</Button>

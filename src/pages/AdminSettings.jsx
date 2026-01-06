@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
+import MembershipPermissionsCard from '@/components/admin/MembershipPermissionsCard';
 
 const defaultSettings = {
   // General
@@ -207,6 +208,7 @@ function AdminSettingsContent() {
             <TabsTrigger value="checkin">签到福利</TabsTrigger>
             <TabsTrigger value="referral">邀请奖励</TabsTrigger>
             <TabsTrigger value="features">{t('features')}</TabsTrigger>
+            <TabsTrigger value="membership">会员权限</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
@@ -343,6 +345,10 @@ function AdminSettingsContent() {
                 })}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="membership">
+            <MembershipPermissionsCard />
           </TabsContent>
         </Tabs>
       </div>

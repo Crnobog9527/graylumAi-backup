@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
@@ -6,8 +6,9 @@ import { useQuery } from '@tanstack/react-query';
 import {
   User, CreditCard, History, Shield, LogOut,
   Crown, Zap, Clock, ChevronRight, ChevronLeft,
-  CheckCircle2, RefreshCw, Settings, Wallet, Package, Mail, Lock, Loader2, Headphones, X
+  CheckCircle2, RefreshCw, Settings, Wallet, Package, Mail, Lock, Loader2, Headphones, X, TrendingDown
 } from 'lucide-react';
+import CreditsDialog from './CreditsDialog';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -21,8 +22,226 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subDays, eachDayOfInterval } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+// 积分加油包购买组件（用于订阅管理页面）
+function CreditPackagesSection({ onBuyClick }) {
+  const { data: packages = [] } = useQuery({
+    queryKey: ['credit-packages'],
+    queryFn: () => base44.entities.CreditPackage.filter({ is_active: true }, 'sort_order'),
+  });
+
+  if (packages.length === 0) return null;
+
+  return (
+    <div
+      className="rounded-2xl p-6 md:p-8 mt-6 transition-all duration-300"
+      style={{
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border-primary)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+      }}
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <div
+          className="p-2 rounded-lg"
+          style={{ background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.2)' }}
+        >
+          <Package className="h-5 w-5" style={{ color: 'rgba(139, 92, 246, 1)' }} />
+        </div>
+        <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>积分加油包</h3>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {packages.map((pkg) => (
+          <div
+            key={pkg.id}
+            className="relative p-4 rounded-xl text-center transition-all duration-300"
+            style={{
+              background: 'var(--bg-primary)',
+              border: pkg.is_popular ? '2px solid rgba(59, 130, 246, 0.5)' : '1px solid var(--border-primary)',
+              boxShadow: pkg.is_popular ? '0 0 20px rgba(59, 130, 246, 0.2)' : 'none'
+            }}
+          >
+            {pkg.is_popular && (
+              <div
+                className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium"
+                style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#3B82F6', border: '1px solid rgba(59, 130, 246, 0.3)' }}
+              >
+                ⭐ 热门
+              </div>
+            )}
+            <div className="flex items-center justify-center gap-1 mb-2 mt-2">
+              <Zap className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+              <span
+                className="text-2xl font-bold"
+                style={{
+                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}
+              >
+                {pkg.credits.toLocaleString()}
+              </span>
+            </div>
+            {pkg.bonus_credits > 0 && (
+              <div className="text-xs mb-2" style={{ color: 'var(--success)' }}>
+                +{pkg.bonus_credits} 赠送
+              </div>
+            )}
+            <div className="text-lg font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
+              ${pkg.price.toFixed(1)}
+            </div>
+            <Button
+              onClick={onBuyClick}
+              size="sm"
+              className="w-full gap-2"
+              style={{
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                color: 'var(--bg-primary)'
+              }}
+            >
+              🚀 购买
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 每日积分消耗趋势图组件（用于积分记录页面）
+function DailyUsageTrendChart({ transactions }) {
+  // 获取最近14天的数据
+  const chartData = useMemo(() => {
+    const now = new Date();
+    const days = eachDayOfInterval({
+      start: subDays(now, 13),
+      end: now
+    });
+    
+    return days.map(day => {
+      const dayStr = format(day, 'yyyy-MM-dd');
+      const dayUsage = transactions
+        .filter(t => {
+          const txDate = format(new Date(t.created_date), 'yyyy-MM-dd');
+          return txDate === dayStr && t.type === 'usage';
+        })
+        .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
+      
+      return {
+        date: format(day, 'MM/dd', { locale: zhCN }),
+        fullDate: format(day, 'M月d日', { locale: zhCN }),
+        usage: Math.round(dayUsage)
+      };
+    });
+  }, [transactions]);
+
+  // 计算统计数据
+  const stats = useMemo(() => {
+    const totalUsage = chartData.reduce((sum, d) => sum + d.usage, 0);
+    const avgUsage = Math.round(totalUsage / chartData.length);
+    const maxUsage = Math.max(...chartData.map(d => d.usage));
+    return { totalUsage, avgUsage, maxUsage };
+  }, [chartData]);
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div
+          className="rounded-lg px-3 py-2 shadow-lg"
+          style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-primary)'
+          }}
+        >
+          <p className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
+            {payload[0]?.payload?.fullDate}
+          </p>
+          <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
+            消耗 {payload[0]?.value?.toLocaleString()} 积分
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div
+      className="rounded-2xl p-6 md:p-8 mt-6 transition-all duration-300"
+      style={{
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border-primary)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+      }}
+    >
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div
+            className="p-2 rounded-lg"
+            style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}
+          >
+            <TrendingDown className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+          </div>
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>每日消耗趋势</h3>
+        </div>
+        <div className="flex items-center gap-4 text-sm">
+          <div className="text-right">
+            <span style={{ color: 'var(--text-tertiary)' }}>14日总计</span>
+            <span className="ml-2 font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {stats.totalUsage.toLocaleString()}
+            </span>
+          </div>
+          <div className="text-right hidden md:block">
+            <span style={{ color: 'var(--text-tertiary)' }}>日均</span>
+            <span className="ml-2 font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {stats.avgUsage.toLocaleString()}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="h-[200px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+            <defs>
+              <linearGradient id="usageGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" opacity={0.5} />
+            <XAxis 
+              dataKey="date" 
+              tick={{ fill: 'var(--text-disabled)', fontSize: 11 }}
+              axisLine={{ stroke: 'var(--border-primary)' }}
+              tickLine={false}
+            />
+            <YAxis 
+              tick={{ fill: 'var(--text-disabled)', fontSize: 11 }}
+              axisLine={{ stroke: 'var(--border-primary)' }}
+              tickLine={false}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Area
+              type="monotone"
+              dataKey="usage"
+              stroke="var(--color-primary)"
+              strokeWidth={2}
+              fill="url(#usageGradient)"
+              dot={false}
+              activeDot={{ r: 5, fill: 'var(--color-primary)', stroke: 'var(--bg-secondary)', strokeWidth: 2 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
 
 export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
   const navigate = useNavigate();
@@ -32,7 +251,7 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
     { id: 'credits', label: '积分记录', icon: Wallet },
     { id: 'history', label: '使用历史', icon: History },
     { id: 'security', label: '账户安全', icon: Shield },
-    { id: 'tickets', label: '工单记录', icon: Headphones, isLink: true, path: 'Tickets' },
+    { id: 'tickets', label: '工单记录', icon: Headphones },
   ];
 
   const handleLogout = async () => {
@@ -59,28 +278,6 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
-
-            if (item.isLink) {
-              return (
-                <Link key={item.id} to={createPageUrl(item.path)}>
-                  <button
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200"
-                    style={{ color: 'var(--text-secondary)' }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 215, 0, 0.05)';
-                      e.currentTarget.style.color = 'var(--text-primary)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = 'var(--text-secondary)';
-                    }}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                  </button>
-                </Link>
-              );
-            }
 
             return (
               <button
@@ -130,26 +327,62 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
 }
 
 export function SubscriptionCard({ user }) {
+  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
+  
   const { data: membershipPlans = [] } = useQuery({
     queryKey: ['membership-plans'],
     queryFn: () => base44.entities.MembershipPlan.filter({ is_active: true }, 'sort_order'),
   });
 
   const subscriptionTier = user?.subscription_tier || 'free';
-  const tierLabels = {
-    free: '免费用户',
-    basic: '基础会员',
-    pro: '专业会员',
-    enterprise: '企业会员'
-  };
-  const tierBadges = {
-    free: '',
-    basic: 'Basic',
-    pro: 'Pro',
-    enterprise: 'Enterprise'
+  const isFreeTier = subscriptionTier === 'free';
+
+  // 会员等级配置
+  const planConfigs = {
+    free: {
+      name: '免费会员',
+      price: { monthly: 0, yearly: 0 },
+      features: ['注册赠送100积分（一次性）', '对话历史保存5天'],
+      recommended: false,
+      highlight: false
+    },
+    pro: {
+      name: '进阶会员',
+      price: { monthly: 9.9, yearly: 95 },
+      features: ['月度积分1500积分', '购买加油包享受95折', '对话历史保存1个月'],
+      recommended: false,
+      highlight: false
+    },
+    gold: {
+      name: '黄金会员',
+      price: { monthly: 29.9, yearly: 287 },
+      features: ['月度积分5500积分', '购买加油包享受9折', '对话历史保存1个月'],
+      recommended: true,
+      highlight: true
+    }
   };
 
-  const isFreeTier = subscriptionTier === 'free';
+  // 合并数据库中的会员计划
+  const displayPlans = membershipPlans.length > 0 
+    ? membershipPlans.map(plan => ({
+        ...plan,
+        ...planConfigs[plan.level] || {},
+        price: {
+          monthly: plan.monthly_price || planConfigs[plan.level]?.price?.monthly || 0,
+          yearly: plan.yearly_price || planConfigs[plan.level]?.price?.yearly || 0
+        },
+        features: plan.features?.length > 0 ? plan.features : planConfigs[plan.level]?.features || []
+      }))
+    : Object.entries(planConfigs).map(([level, config]) => ({
+        level,
+        name: config.name,
+        ...config
+      }));
+
+  const handleSelectPlan = (plan) => {
+    // 这里可以跳转到支付页面或显示支付弹窗
+    console.log('Selected plan:', plan);
+  };
 
   return (
     <div
@@ -160,6 +393,7 @@ export function SubscriptionCard({ user }) {
         boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
       }}
     >
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div
@@ -168,122 +402,168 @@ export function SubscriptionCard({ user }) {
           >
             <Crown className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
           </div>
-          <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>当前订阅</h3>
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>会员订阅</h3>
         </div>
-        <div
-          className="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium"
-          style={{
-            background: isFreeTier ? 'var(--bg-primary)' : 'rgba(34, 197, 94, 0.1)',
-            color: isFreeTier ? 'var(--text-tertiary)' : 'var(--success)',
-            border: `1px solid ${isFreeTier ? 'var(--border-primary)' : 'rgba(34, 197, 94, 0.3)'}`
-          }}
-        >
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{ background: isFreeTier ? 'var(--text-disabled)' : 'var(--success)' }}
-          ></span>
-          {isFreeTier ? '未订阅' : '订阅中'}
+
+        {/* Billing Toggle */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+            style={{
+              background: billingCycle === 'monthly' ? 'rgba(255, 215, 0, 0.2)' : 'transparent',
+              color: billingCycle === 'monthly' ? 'var(--color-primary)' : 'var(--text-tertiary)',
+              border: billingCycle === 'monthly' ? '1px solid rgba(255, 215, 0, 0.3)' : '1px solid transparent'
+            }}
+          >
+            按月
+          </button>
+          <button
+            onClick={() => setBillingCycle('yearly')}
+            className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+            style={{
+              background: billingCycle === 'yearly' ? 'rgba(255, 215, 0, 0.2)' : 'transparent',
+              color: billingCycle === 'yearly' ? 'var(--color-primary)' : 'var(--text-tertiary)',
+              border: billingCycle === 'yearly' ? '1px solid rgba(255, 215, 0, 0.3)' : '1px solid transparent'
+            }}
+          >
+            按年
+          </button>
+
         </div>
       </div>
 
-      {isFreeTier ? (
-        <div className="text-center py-8">
-          <div className="mb-6" style={{ color: 'var(--text-secondary)' }}>您当前是免费用户，升级会员享受更多权益</div>
-          <Link to={createPageUrl('Credits')}>
-            <Button
-              className="gap-2"
+      {/* Plans Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {displayPlans.map((plan) => {
+          const isCurrentPlan = plan.level === subscriptionTier || (plan.level === 'free' && isFreeTier);
+          const isHighlight = plan.recommended || plan.highlight;
+          const price = billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly;
+          
+          return (
+            <div
+              key={plan.level || plan.id}
+              className="relative rounded-xl p-5 transition-all duration-300"
               style={{
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                color: 'var(--bg-primary)',
-                boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
+                background: isHighlight ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)' : 'var(--bg-primary)',
+                border: isHighlight ? '2px solid rgba(139, 92, 246, 0.5)' : '1px solid var(--border-primary)',
+                boxShadow: isHighlight ? '0 0 30px rgba(139, 92, 246, 0.2)' : 'none'
               }}
             >
-              <Crown className="h-4 w-4" />
-              升级会员
-            </Button>
-          </Link>
-        </div>
-      ) : (
-        <div className="flex flex-col lg:flex-row gap-8">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{tierLabels[subscriptionTier]}</h2>
-              {tierBadges[subscriptionTier] && (
-                <span
-                  className="text-xs px-2 py-0.5 rounded font-medium"
-                  style={{ background: 'rgba(255, 215, 0, 0.1)', color: 'var(--color-primary)' }}
+              {/* Recommended Badge */}
+              {plan.recommended && (
+                <div
+                  className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(99, 102, 241, 0.3) 100%)', 
+                    color: '#A78BFA', 
+                    border: '1px solid rgba(139, 92, 246, 0.4)' 
+                  }}
                 >
-                  {tierBadges[subscriptionTier]}
-                </span>
-              )}
-            </div>
-            <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-              感谢您的支持！
-            </p>
-
-            <div className="space-y-3">
-              <div className="text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>套餐权益</div>
-              {[
-                "更多积分配额",
-                "所有核心功能",
-                "优先响应速度",
-                "专属客服"
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <CheckCircle2 className="h-4 w-4" style={{ color: 'var(--success)' }} />
-                  {item}
+                  ✨ 推荐
                 </div>
-              ))}
-            </div>
-          </div>
+              )}
 
-          <div className="lg:w-80 flex flex-col gap-4">
-            <div
-              className="rounded-xl p-4 flex items-center justify-between mb-2"
-              style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}
-            >
-              <div>
-                <div className="font-medium" style={{ color: 'var(--text-primary)' }}>自动续费</div>
-                <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>开启后，到期前自动扣费续订</div>
+              {/* Plan Name */}
+              <h4 className="text-center font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                {plan.name}
+              </h4>
+
+              {/* Price */}
+              <div className="text-center mb-4">
+                {price === 0 ? (
+                  <span className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>免费</span>
+                ) : billingCycle === 'yearly' ? (
+                  <div className="flex flex-col items-center gap-1">
+                    {/* 原价划线（月价格） */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm line-through" style={{ color: 'var(--text-disabled)' }}>
+                        ${plan.price.monthly.toFixed(1)}/月
+                      </span>
+                      <span
+                        className="text-xs px-1.5 py-0.5 rounded"
+                        style={{ background: 'rgba(34, 197, 94, 0.2)', color: 'var(--success)' }}
+                      >
+                        省{Math.round((1 - price / (plan.price.monthly * 12)) * 100)}%
+                      </span>
+                    </div>
+                    {/* 年付价格（每月均摊） */}
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>$</span>
+                      <span
+                        className="text-3xl font-bold"
+                        style={{
+                          background: isHighlight 
+                            ? 'linear-gradient(135deg, #A78BFA 0%, #818CF8 100%)' 
+                            : 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent'
+                        }}
+                      >
+                        {(price / 12).toFixed(1)}
+                      </span>
+                      <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>/月</span>
+                    </div>
+                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                      年付共 ${price.toFixed(1)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>$</span>
+                    <span
+                      className="text-3xl font-bold"
+                      style={{
+                        background: isHighlight 
+                          ? 'linear-gradient(135deg, #A78BFA 0%, #818CF8 100%)' 
+                          : 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent'
+                      }}
+                    >
+                      {price.toFixed(1)}
+                    </span>
+                    <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>/月</span>
+                  </div>
+                )}
               </div>
-              <Switch />
+
+              {/* Features */}
+              <div className="space-y-2 mb-5">
+                {plan.features?.map((feature, idx) => (
+                  <div key={idx} className="flex items-start gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" style={{ color: 'var(--success)' }} />
+                    <span style={{ color: 'var(--text-secondary)' }}>{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Action Button */}
+              <Button
+                onClick={() => handleSelectPlan(plan)}
+                className="w-full"
+                disabled={isCurrentPlan}
+                style={{
+                  background: isCurrentPlan 
+                    ? 'var(--bg-tertiary)' 
+                    : 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                  color: isCurrentPlan ? 'var(--text-tertiary)' : 'var(--bg-primary)',
+                  cursor: isCurrentPlan ? 'default' : 'pointer'
+                }}
+              >
+                {isCurrentPlan ? '当前套餐' : '选择'}
+              </Button>
             </div>
-
-            <Link to={createPageUrl('Credits')}>
-              <Button
-                className="w-full h-11 text-base gap-2"
-                style={{
-                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                  color: 'var(--bg-primary)',
-                  boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
-                }}
-              >
-                <RefreshCw className="h-4 w-4" />
-                立即续费
-              </Button>
-            </Link>
-
-            <Link to={createPageUrl('Credits')}>
-              <Button
-                variant="outline"
-                className="w-full h-11"
-                style={{
-                  background: 'transparent',
-                  borderColor: 'rgba(255, 215, 0, 0.3)',
-                  color: 'var(--color-primary)'
-                }}
-              >
-                ↑ 升级套餐
-              </Button>
-            </Link>
-          </div>
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }
 
+// 订阅管理页面的积分概览卡片（带积分加油包）
 export function CreditStatsCard({ user }) {
+  const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
   const credits = user?.credits || 0;
   const userEmail = user?.email;
 
@@ -314,94 +594,143 @@ export function CreditStatsCard({ user }) {
     .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
 
   return (
-    <div
-      className="rounded-2xl p-6 md:p-8 mb-6 transition-all duration-300"
-      style={{
-        background: 'var(--bg-secondary)',
-        border: '1px solid var(--border-primary)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-      }}
-    >
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>积分概览</h3>
-        <Zap className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
-      </div>
-
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div>
-            <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>积分余额</div>
-            <div
-              className="text-3xl font-bold"
-              style={{
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}
-            >
-              {credits.toLocaleString()}
-            </div>
-          </div>
-
-          <div className="pl-8 hidden md:block" style={{ borderLeft: '1px solid var(--border-primary)' }}>
-            <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>本月消耗</div>
-            <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{Math.round(monthlyUsed).toLocaleString()}</div>
-          </div>
-
-          <div className="pl-8 hidden md:block" style={{ borderLeft: '1px solid var(--border-primary)' }}>
-            <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>累计消耗</div>
-            <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{(user?.total_credits_used || 0).toLocaleString()}</div>
-          </div>
+    <>
+      <div
+        className="rounded-2xl p-6 md:p-8 mb-6 transition-all duration-300"
+        style={{
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-primary)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+        }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>积分概览</h3>
+          <Zap className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
         </div>
 
-        <Link to={createPageUrl('Credits')}>
-          <Button
-            className="rounded-full px-6 gap-2"
-            style={{
-              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-              color: 'var(--bg-primary)',
-              boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
-            }}
-          >
-            <Zap className="h-4 w-4" />
-            购买加油包
-          </Button>
-        </Link>
-      </div>
-
-      <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--border-primary)' }}>
-        <h4 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>最近积分变动</h4>
-        <div className="space-y-3">
-          {transactions.slice(0, 5).map((tx) => (
-            <div key={tx.id} className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{
-                    background: tx.amount > 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    border: `1px solid ${tx.amount > 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
-                  }}
-                >
-                  <Zap className="h-4 w-4" style={{ color: tx.amount > 0 ? 'var(--success)' : 'var(--error)' }} />
-                </div>
-                <div>
-                  <div style={{ color: 'var(--text-primary)' }}>{tx.description?.slice(0, 30) || tx.type}</div>
-                  <div className="text-xs" style={{ color: 'var(--text-disabled)' }}>
-                    {format(new Date(tx.created_date), 'MM-dd HH:mm')}
-                  </div>
-                </div>
-              </div>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>积分余额</div>
               <div
-                className="font-medium"
-                style={{ color: tx.amount > 0 ? 'var(--success)' : 'var(--error)' }}
+                className="text-3xl font-bold"
+                style={{
+                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}
               >
-                {tx.amount > 0 ? '+' : ''}{tx.amount}
+                {credits.toLocaleString()}
               </div>
             </div>
-          ))}
+
+            <div className="pl-8 hidden md:block" style={{ borderLeft: '1px solid var(--border-primary)' }}>
+              <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>本月消耗</div>
+              <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{Math.round(monthlyUsed).toLocaleString()}</div>
+            </div>
+
+            <div className="pl-8 hidden md:block" style={{ borderLeft: '1px solid var(--border-primary)' }}>
+              <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>累计消耗</div>
+              <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{(user?.total_credits_used || 0).toLocaleString()}</div>
+            </div>
+          </div>
+
         </div>
+
       </div>
-    </div>
+
+      {/* 积分加油包 */}
+      <CreditPackagesSection onBuyClick={() => setCreditsDialogOpen(true)} />
+
+      <CreditsDialog 
+        open={creditsDialogOpen} 
+        onOpenChange={setCreditsDialogOpen} 
+        user={user} 
+      />
+    </>
+  );
+}
+
+// 积分记录页面的积分概览卡片（带趋势图）
+export function CreditRecordsCard({ user }) {
+  const credits = user?.credits || 0;
+  const userEmail = user?.email;
+
+  // 获取积分交易记录
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['user-transactions-records', userEmail],
+    queryFn: async () => {
+      if (!userEmail) return [];
+      return base44.entities.CreditTransaction.filter(
+        { user_email: userEmail },
+        '-created_date',
+        100
+      );
+    },
+    enabled: !!userEmail,
+  });
+
+  // 计算本月消耗
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+
+  const monthlyUsed = transactions
+    .filter(t => {
+      const date = new Date(t.created_date);
+      return date >= monthStart && date <= monthEnd && t.type === 'usage';
+    })
+    .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
+
+  return (
+    <>
+      <div
+        className="rounded-2xl p-6 md:p-8 mb-6 transition-all duration-300"
+        style={{
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-primary)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+        }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>积分概览</h3>
+          <Zap className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>积分余额</div>
+              <div
+                className="text-3xl font-bold"
+                style={{
+                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}
+              >
+                {credits.toLocaleString()}
+              </div>
+            </div>
+
+            <div className="pl-8 hidden md:block" style={{ borderLeft: '1px solid var(--border-primary)' }}>
+              <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>本月消耗</div>
+              <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{Math.round(monthlyUsed).toLocaleString()}</div>
+            </div>
+
+            <div className="pl-8 hidden md:block" style={{ borderLeft: '1px solid var(--border-primary)' }}>
+              <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>累计消耗</div>
+              <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{(user?.total_credits_used || 0).toLocaleString()}</div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* 每日消耗趋势图 */}
+      <DailyUsageTrendChart transactions={transactions} />
+    </>
   );
 }
 

@@ -1,19 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { ProfileSidebar, SubscriptionCard, CreditStatsCard, OrderHistory, UsageHistoryCard, SecuritySettingsCard } from '@/components/profile/ProfileComponents';
+import { ProfileSidebar, SubscriptionCard, CreditStatsCard, CreditRecordsCard, OrderHistory, UsageHistoryCard, SecuritySettingsCard } from '@/components/profile/ProfileComponents';
 import { UserProfileHeader, CreditsAndSubscriptionCards, UsageStatsCard, QuickActionsCard } from '@/components/profile/PersonalInfoCard';
+import TicketsPanel from '@/components/profile/TicketsPanel';
 import { Button } from "@/components/ui/button";
 import { Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function Profile() {
-  const [activeTab, setActiveTab] = useState('profile');
+  // 从 URL 参数读取初始 tab
+  const getInitialTab = () => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && ['profile', 'subscription', 'credits', 'history', 'security', 'tickets'].includes(tab)) {
+      return tab;
+    }
+    return 'profile';
+  };
 
-  const { data: user, isLoading } = useQuery({
+  const [activeTab, setActiveTab] = useState(getInitialTab);
+  const [ticketInitialView, setTicketInitialView] = useState('list');
+  const [localUser, setLocalUser] = useState(null);
+
+  const handleNavigateToCreateTicket = () => {
+    setTicketInitialView('create');
+    setActiveTab('tickets');
+  };
+
+  const handleNavigateToSecurity = () => {
+    setActiveTab('security');
+  };
+
+  const { data: fetchedUser, isLoading } = useQuery({
     queryKey: ['user'],
     queryFn: () => base44.auth.me().catch(() => null),
   });
+
+  const user = localUser || fetchedUser;
+
+  const handleUserUpdate = (updatedUser) => {
+    setLocalUser(updatedUser);
+  };
 
   const handleLogout = async () => {
     await base44.auth.logout();
@@ -52,7 +80,7 @@ export default function Profile() {
       <div className="absolute inset-0 pointer-events-none">
         {/* 顶部金色光晕 */}
         <div
-          className="absolute -top-32 left-1/3 w-[600px] h-[400px] rounded-full opacity-40 blur-[100px]"
+          className="absolute -top-32 left-1/3 w-[600px] h-[400px] rounded-full opacity-65 blur-[100px]"
           style={{
             background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
             animation: 'pulseGlow 15s ease-in-out infinite',
@@ -60,7 +88,7 @@ export default function Profile() {
         />
         {/* 右下紫色光晕 */}
         <div
-          className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full opacity-30 blur-[120px]"
+          className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full opacity-45 blur-[120px]"
           style={{
             background: 'radial-gradient(circle, rgba(139,92,246,0.6) 0%, transparent 70%)',
             animation: 'floatSoft 20s ease-in-out infinite',
@@ -68,7 +96,7 @@ export default function Profile() {
         />
         {/* 网格纹理 */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.1]"
           style={{
             backgroundImage: 'linear-gradient(rgba(255,215,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,215,0,0.1) 1px, transparent 1px)',
             backgroundSize: '50px 50px',
@@ -79,7 +107,7 @@ export default function Profile() {
       {/* 动画样式 */}
       <style>{`
         @keyframes pulseGlow {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
+          0%, 100% { opacity: 0.8; transform: scale(1); }
           50% { opacity: 0.5; transform: scale(1.1); }
         }
         @keyframes floatSoft {
@@ -136,13 +164,13 @@ export default function Profile() {
           <div className="flex-1 min-w-0">
              <div className="animate-fadeInUp">
                 {activeTab === 'profile' && (
-                  <>
-                    <UserProfileHeader user={user} />
-                    <CreditsAndSubscriptionCards user={user} />
-                    <UsageStatsCard user={user} />
-                    <QuickActionsCard user={user} />
-                  </>
-                )}
+                    <>
+                      <UserProfileHeader user={user} onUserUpdate={handleUserUpdate} />
+                      <CreditsAndSubscriptionCards user={user} onNavigateToSubscription={() => setActiveTab('subscription')} />
+                      <UsageStatsCard user={user} />
+                      <QuickActionsCard user={user} onNavigateToTickets={handleNavigateToCreateTicket} onNavigateToSecurity={handleNavigateToSecurity} />
+                    </>
+                  )}
 
                 {activeTab === 'subscription' && (
                   <>
@@ -151,11 +179,20 @@ export default function Profile() {
                   </>
                 )}
 
-                {activeTab === 'credits' && <CreditStatsCard user={user} />}
+                {activeTab === 'credits' && <CreditRecordsCard user={user} />}
 
                 {activeTab === 'history' && <UsageHistoryCard user={user} />}
 
                 {activeTab === 'security' && <SecuritySettingsCard user={user} />}
+
+                {activeTab === 'tickets' && (
+                  <TicketsPanel 
+                    user={user} 
+                    key={`${activeTab}-${ticketInitialView}`}
+                    initialView={ticketInitialView}
+                    onViewChange={(v) => setTicketInitialView(v)}
+                  />
+                )}
              </div>
           </div>
         </div>

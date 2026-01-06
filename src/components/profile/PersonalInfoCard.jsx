@@ -1,16 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Pencil, Crown, Coins, Plus, RefreshCw, Key, Link2, Users, Headphones, MessageCircle, Code, PenTool } from 'lucide-react';
+import { Pencil, Crown, Coins, Plus, RefreshCw, Key, Link2, Users, Headphones, MessageCircle, Code, PenTool, Camera, Loader2, Check, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import AvatarCropper from './AvatarCropper';
 import { Progress } from "@/components/ui/progress";
 import { format, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 import InviteDialog from '../invite/InviteDialog';
+import CreditsDialog from './CreditsDialog';
 
-export function UserProfileHeader({ user }) {
+export function UserProfileHeader({ user, onUserUpdate }) {
+  const [uploading, setUploading] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [nickname, setNickname] = useState(user?.nickname || '');
+  const [savingNickname, setSavingNickname] = useState(false);
+  const fileInputRef = useRef(null);
   const registerDate = user?.created_date ? format(new Date(user.created_date), 'yyyy年M月d日') : '-';
 
   const tierLabels = {
@@ -20,6 +29,59 @@ export function UserProfileHeader({ user }) {
     enterprise: '企业会员'
   };
   const subscriptionTier = user?.subscription_tier || 'free';
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedImage(reader.result);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedFile) => {
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: croppedFile });
+      await base44.auth.updateMe({ avatar_url: file_url });
+      onUserUpdate && onUserUpdate({ ...user, avatar_url: file_url });
+    } catch (error) {
+      console.error('Upload failed:', error);
+    } finally {
+      setUploading(false);
+      setSelectedImage(null);
+    }
+  };
+
+  const handleSaveNickname = async () => {
+    if (!nickname.trim()) return;
+    setSavingNickname(true);
+    try {
+      await base44.auth.updateMe({ nickname: nickname.trim() });
+      onUserUpdate && onUserUpdate({ ...user, nickname: nickname.trim() });
+      setEditingNickname(false);
+    } catch (error) {
+      console.error('Save nickname failed:', error);
+    } finally {
+      setSavingNickname(false);
+    }
+  };
+
+  const handleCancelNickname = () => {
+    setNickname(user?.nickname || '');
+    setEditingNickname(false);
+  };
 
   return (
     <div
@@ -32,23 +94,102 @@ export function UserProfileHeader({ user }) {
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <Avatar
-            className="h-20 w-20"
-            style={{ border: '2px solid rgba(255, 215, 0, 0.3)' }}
-          >
-            <AvatarImage src={user?.avatar_url} />
-            <AvatarFallback
-              className="text-2xl font-medium"
-              style={{ background: 'rgba(255, 215, 0, 0.1)', color: 'var(--color-primary)' }}
+          <div className="relative group">
+            <Avatar
+              className="h-20 w-20"
+              style={{ border: '2px solid rgba(255, 215, 0, 0.3)' }}
             >
-              {user?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
+              <AvatarImage src={user?.avatar_url} />
+              <AvatarFallback
+                className="text-2xl font-medium"
+                style={{ background: 'rgba(255, 215, 0, 0.1)', color: 'var(--color-primary)' }}
+              >
+                {user?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <AvatarCropper
+              open={cropperOpen}
+              onOpenChange={setCropperOpen}
+              imageSrc={selectedImage}
+              onCropComplete={handleCropComplete}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ background: 'rgba(0,0,0,0.6)' }}
+            >
+              {uploading ? (
+                <Loader2 className="h-6 w-6 animate-spin text-white" />
+              ) : (
+                <Camera className="h-6 w-6 text-white" />
+              )}
+            </button>
+          </div>
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{user?.full_name || '用户'}</h2>
-            </div>
-            <p className="text-sm mb-2" style={{ color: 'var(--text-tertiary)' }}>{user?.email}</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    {editingNickname ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={nickname}
+                          onChange={(e) => setNickname(e.target.value)}
+                          placeholder="输入昵称"
+                          className="text-xl font-bold px-2 py-1 rounded-lg outline-none"
+                          style={{
+                            background: 'var(--bg-primary)',
+                            border: '1px solid var(--border-primary)',
+                            color: 'var(--text-primary)',
+                            width: '150px'
+                          }}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveNickname();
+                            if (e.key === 'Escape') handleCancelNickname();
+                          }}
+                        />
+                        <button
+                          onClick={handleSaveNickname}
+                          disabled={savingNickname || !nickname.trim()}
+                          className="p-1.5 rounded-lg transition-colors"
+                          style={{ background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)' }}
+                        >
+                          {savingNickname ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        </button>
+                        <button
+                          onClick={handleCancelNickname}
+                          className="p-1.5 rounded-lg transition-colors"
+                          style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)' }}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                          {user?.nickname || user?.full_name || '用户'}
+                        </h2>
+                        <button
+                          onClick={() => {
+                            setNickname(user?.nickname || user?.full_name || '');
+                            setEditingNickname(true);
+                          }}
+                          className="p-1 rounded-lg transition-colors opacity-60 hover:opacity-100"
+                          style={{ color: 'var(--text-tertiary)' }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-sm mb-2" style={{ color: 'var(--text-tertiary)' }}>{user?.email}</p>
             <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>
               <span>注册时间：{registerDate}</span>
               <div className="flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
@@ -63,7 +204,7 @@ export function UserProfileHeader({ user }) {
   );
 }
 
-export function CreditsAndSubscriptionCards({ user }) {
+export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) {
   const credits = user?.credits || 0;
   const totalUsed = user?.total_credits_used || 0;
   const totalPurchased = user?.total_credits_purchased || 0;
@@ -104,33 +245,34 @@ export function CreditsAndSubscriptionCards({ user }) {
   const isFreeTier = subscriptionTier === 'free';
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      {/* Credits Card */}
-      <div
-        className="rounded-2xl p-6 transition-all duration-300"
-        style={{
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border-primary)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-        }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>积分余额</h3>
-          <Coins className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
-        </div>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Credits Card */}
         <div
-          className="text-4xl font-bold mb-2"
+          className="rounded-2xl p-6 transition-all duration-300 flex flex-col"
           style={{
-            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-primary)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
           }}
         >
-          {credits.toLocaleString()}
-        </div>
-        <div className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>本月已消耗 {Math.round(monthlyUsed).toLocaleString()} 积分</div>
-        <Link to={createPageUrl('Credits')}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>积分余额</h3>
+            <Coins className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+          </div>
+          <div
+            className="text-4xl font-bold mb-2"
+            style={{
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}
+          >
+            {credits.toLocaleString()}
+          </div>
+          <div className="text-sm mb-4 flex-1" style={{ color: 'var(--text-tertiary)' }}>本月已消耗 {Math.round(monthlyUsed).toLocaleString()} 积分</div>
           <Button
+            onClick={() => onNavigateToSubscription && onNavigateToSubscription()}
             className="w-full gap-2"
             style={{
               background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
@@ -141,28 +283,27 @@ export function CreditsAndSubscriptionCards({ user }) {
             <Plus className="h-4 w-4" />
             购买加油包
           </Button>
-        </Link>
-      </div>
+        </div>
 
-      {/* Subscription Card */}
-      <div
-        className="rounded-2xl p-6 transition-all duration-300"
-        style={{
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border-primary)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-        }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>订阅状态</h3>
-          <Crown className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
-        </div>
-        <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{tierLabels[subscriptionTier]}</div>
-        <div className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>
-          {isFreeTier ? '升级会员享受更多权益' : '感谢您的支持'}
-        </div>
-        <Link to={createPageUrl('Credits')}>
+        {/* Subscription Card */}
+        <div
+          className="rounded-2xl p-6 transition-all duration-300 flex flex-col"
+          style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-primary)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+          }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>订阅状态</h3>
+            <Crown className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+          </div>
+          <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{tierLabels[subscriptionTier]}</div>
+          <div className="text-sm mb-4 flex-1" style={{ color: 'var(--text-tertiary)' }}>
+            {isFreeTier ? '升级会员享受更多权益' : '感谢您的支持'}
+          </div>
           <Button
+            onClick={() => onNavigateToSubscription && onNavigateToSubscription()}
             className="w-full gap-2"
             style={{
               background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
@@ -182,9 +323,9 @@ export function CreditsAndSubscriptionCards({ user }) {
               </>
             )}
           </Button>
-        </Link>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -323,7 +464,7 @@ export function UsageStatsCard({ user }) {
   );
 }
 
-export function QuickActionsCard({ user }) {
+export function QuickActionsCard({ user, onNavigateToTickets, onNavigateToSecurity }) {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   return (
@@ -344,6 +485,7 @@ export function QuickActionsCard({ user }) {
             background: 'var(--bg-primary)',
             border: '1px solid var(--border-primary)'
           }}
+          onClick={() => onNavigateToSecurity && onNavigateToSecurity()}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = 'rgba(255, 215, 0, 0.3)';
             e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
@@ -361,10 +503,10 @@ export function QuickActionsCard({ user }) {
           </div>
           <h4 className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>账户安全</h4>
           <p className="text-sm mb-3 min-h-[40px]" style={{ color: 'var(--text-tertiary)' }}>管理登录方式和密码设置</p>
-          <a href="#security" className="text-sm font-medium flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
+          <div className="text-sm font-medium flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
             前往设置
             <span>→</span>
-          </a>
+          </div>
         </div>
 
         {/* 邀请好友 - 弹窗触发 */}
@@ -411,6 +553,7 @@ export function QuickActionsCard({ user }) {
             background: 'var(--bg-primary)',
             border: '1px solid var(--border-primary)'
           }}
+          onClick={() => onNavigateToTickets && onNavigateToTickets()}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.3)';
             e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
@@ -432,10 +575,10 @@ export function QuickActionsCard({ user }) {
             <span className="w-2 h-2 rounded-full" style={{ background: 'var(--success)' }}></span>
             在线反馈
           </div>
-          <Link to={createPageUrl('CreateTicket')} className="text-sm font-medium flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
+          <div className="text-sm font-medium flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
             立即咨询
             <span>→</span>
-          </Link>
+          </div>
         </div>
       </div>
 
