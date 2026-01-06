@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
@@ -15,13 +15,17 @@ import {
 } from '@/components/tickets';
 
 export default function TicketDetail() {
-  const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [replyMessage, setReplyMessage] = useState('');
   const [debugInfo, setDebugInfo] = useState(null);
 
-  const ticketId = new URLSearchParams(location.search).get('id');
+  // 使用window.location确保获取最新值
+  const ticketId = new URLSearchParams(window.location.search).get('id');
+  
+  console.log('=== TicketDetail 渲染 ===');
+  console.log('window.location.search:', window.location.search);
+  console.log('ticketId:', ticketId);
 
   // 1. 首先获取用户数据
   const { data: user, isLoading: userLoading } = useQuery({
