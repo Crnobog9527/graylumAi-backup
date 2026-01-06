@@ -78,7 +78,7 @@ export default function Profile() {
         />
         {/* 右下紫色光晕 */}
         <div
-          className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full opacity-45 blur-[120px]"
+          className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full opacity-45 blur-[120px]"
           style={{
             background: 'radial-gradient(circle, rgba(139,92,246,0.6) 0%, transparent 70%)',
             animation: 'floatSoft 20s ease-in-out infinite',
@@ -97,7 +97,7 @@ export default function Profile() {
       {/* 动画样式 */}
       <style>{`
         @keyframes pulseGlow {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
+          0%, 100% { opacity: 0.8; transform: scale(1); }
           50% { opacity: 0.5; transform: scale(1.1); }
         }
         @keyframes floatSoft {
