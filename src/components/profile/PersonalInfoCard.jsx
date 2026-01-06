@@ -85,11 +85,11 @@ export function UserProfileHeader({ user, onUserUpdate }) {
 
   return (
     <div
-      className="rounded-2xl p-6 mb-6 transition-all duration-300"
+      className="rounded-2xl p-6 mb-6"
       style={{
         background: 'var(--bg-secondary)',
         border: '1px solid var(--border-primary)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+        contain: 'layout paint',
       }}
     >
       <div className="flex items-start justify-between">
