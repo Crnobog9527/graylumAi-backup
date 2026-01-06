@@ -649,58 +649,13 @@ export default function Chat() {
 
   return (
     <div className="h-[calc(100vh-4rem)] flex" style={{ background: 'var(--bg-primary)' }}>
-      {/* 动画样式 */}
+      {/* 精简动画样式 */}
       <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeInLeft {
-          from { opacity: 0; transform: translateX(-10px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateX(20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.15); }
-          50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.25); }
-        }
-        @keyframes borderGlow {
-          0%, 100% { border-color: rgba(255, 215, 0, 0.2); }
-          50% { border-color: rgba(255, 215, 0, 0.4); }
-        }
-        .chat-input-box {
-          transition: all 0.3s ease;
-        }
         .chat-input-box:focus-within {
           border-color: rgba(255, 215, 0, 0.5) !important;
-          box-shadow: 0 0 20px rgba(255, 215, 0, 0.15), inset 0 1px 2px rgba(0,0,0,0.3);
-        }
-        .message-bubble {
-          animation: fadeInUp 0.4s ease forwards;
-        }
-        .conversation-item {
-          transition: all 0.2s ease;
         }
         .conversation-item:hover {
           background: rgba(255, 215, 0, 0.05) !important;
-          transform: translateX(4px);
-        }
-        .send-btn {
-          transition: all 0.3s ease;
-        }
-        .send-btn:hover:not(:disabled) {
-          transform: scale(1.05);
-          box-shadow: 0 6px 25px rgba(255, 215, 0, 0.4);
-        }
-        .send-btn:active:not(:disabled) {
-          transform: scale(0.98);
-        }
-        @keyframes float {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(30px, -20px) scale(1.1); }
         }
       `}</style>
       
