@@ -1,32 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { X, Megaphone, Sparkles, Wrench, Gift, Bell, AlertTriangle, Info, Star } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import { X, Megaphone, AlertTriangle, CheckCircle, Info, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-const iconMap = {
-  Megaphone,
-  Sparkles,
-  Wrench,
-  Gift,
-  Bell,
-  AlertTriangle,
-  Info,
-  Star,
-};
-
-const tagColorMap = {
-  blue: 'bg-blue-500/20 text-blue-300',
-  orange: 'bg-amber-500/20 text-amber-300',
-  green: 'bg-green-500/20 text-green-300',
-  red: 'bg-red-500/20 text-red-300',
-  purple: 'bg-purple-500/20 text-purple-300',
+const bannerStyles = {
+  info: {
+    bg: 'linear-gradient(90deg, rgba(59, 130, 246, 0.95) 0%, rgba(99, 102, 241, 0.95) 100%)',
+    text: '#ffffff',
+    icon: Info,
+  },
+  warning: {
+    bg: 'linear-gradient(90deg, rgba(245, 158, 11, 0.95) 0%, rgba(251, 191, 36, 0.95) 100%)',
+    text: '#1f2937',
+    icon: AlertTriangle,
+  },
+  success: {
+    bg: 'linear-gradient(90deg, rgba(34, 197, 94, 0.95) 0%, rgba(74, 222, 128, 0.95) 100%)',
+    text: '#ffffff',
+    icon: CheckCircle,
+  },
+  error: {
+    bg: 'linear-gradient(90deg, rgba(239, 68, 68, 0.95) 0%, rgba(248, 113, 113, 0.95) 100%)',
+    text: '#ffffff',
+    icon: AlertTriangle,
+  },
 };
 
 export default function GlobalBanner() {
   const [dismissedBanners, setDismissedBanners] = useState(() => {
     try {
-      const stored = localStorage.getItem('dismissed_banners');
-      return stored ? JSON.parse(stored) : [];
+      const saved = localStorage.getItem('dismissedBanners');
+      return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
@@ -35,18 +40,14 @@ export default function GlobalBanner() {
   const { data: banners = [] } = useQuery({
     queryKey: ['global-banners'],
     queryFn: async () => {
-      const all = await base44.entities.Announcement.filter({ 
-        is_active: true, 
-        is_global_banner: true 
-      }, 'sort_order');
-      
-      // 过滤过期公告
-      const now = new Date();
-      return all.filter(b => {
-        if (b.expire_date) {
-          const expireDate = new Date(b.expire_date);
-          return expireDate >= now;
-        }
+      const today = new Date().toISOString().split('T')[0];
+      const allAnnouncements = await base44.entities.Announcement.filter(
+        { is_active: true, announcement_type: 'banner' },
+        'sort_order'
+      );
+      // 过滤过期的公告
+      return allAnnouncements.filter(a => {
+        if (a.expire_date && a.expire_date < today) return false;
         return true;
       });
     },
@@ -54,61 +55,73 @@ export default function GlobalBanner() {
   });
 
   // 过滤已关闭的横幅
-  const activeBanners = banners.filter(b => !dismissedBanners.includes(b.id));
+  const visibleBanners = banners.filter(b => !dismissedBanners.includes(b.id));
 
   const handleDismiss = (bannerId) => {
     const newDismissed = [...dismissedBanners, bannerId];
     setDismissedBanners(newDismissed);
-    localStorage.setItem('dismissed_banners', JSON.stringify(newDismissed));
+    localStorage.setItem('dismissedBanners', JSON.stringify(newDismissed));
   };
 
-  if (activeBanners.length === 0) return null;
+  if (visibleBanners.length === 0) return null;
 
   // 只显示第一个横幅
-  const banner = activeBanners[0];
-  const IconComp = iconMap[banner.icon] || Megaphone;
-  const tagColorClass = tagColorMap[banner.tag_color] || tagColorMap.blue;
+  const banner = visibleBanners[0];
+  const style = bannerStyles[banner.banner_style] || bannerStyles.info;
+  const IconComponent = style.icon;
+
+  const content = (
+    <div className="flex items-center justify-center gap-3 flex-1 min-w-0">
+      <IconComponent className="h-4 w-4 shrink-0" />
+      <span className="font-medium truncate">{banner.title}</span>
+      {banner.description && (
+        <span className="hidden sm:inline opacity-90 truncate">— {banner.description}</span>
+      )}
+      {banner.banner_link && (
+        <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
+      )}
+    </div>
+  );
 
   return (
-    <div 
-      className="w-full px-4 py-2.5 flex items-center justify-center gap-3 relative"
+    <div
+      className="w-full py-2.5 px-4 text-sm relative z-40"
       style={{
-        background: 'linear-gradient(90deg, rgba(255,215,0,0.15) 0%, rgba(139,92,246,0.15) 50%, rgba(255,215,0,0.15) 100%)',
-        borderBottom: '1px solid rgba(255,215,0,0.2)',
+        background: style.bg,
+        color: style.text,
       }}
     >
-      <div className="flex items-center gap-3 max-w-4xl">
-        <div 
-          className="p-1.5 rounded-lg shrink-0"
-          style={{ background: 'rgba(255,215,0,0.2)' }}
-        >
-          <IconComp className="h-4 w-4" style={{ color: 'var(--color-primary)' }} />
-        </div>
+      <div className="max-w-7xl mx-auto flex items-center gap-4">
+        {banner.banner_link ? (
+          banner.banner_link.startsWith('http') ? (
+            <a
+              href={banner.banner_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+            >
+              {content}
+            </a>
+          ) : (
+            <Link
+              to={banner.banner_link}
+              className="flex items-center justify-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+            >
+              {content}
+            </Link>
+          )
+        ) : (
+          content
+        )}
         
-        <div className="flex items-center gap-2 flex-wrap">
-          {banner.tag && (
-            <span className={`text-xs px-2 py-0.5 rounded-full ${tagColorClass}`}>
-              {banner.tag}
-            </span>
-          )}
-          <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {banner.title}
-          </span>
-          {banner.description && (
-            <span className="text-sm hidden sm:inline" style={{ color: 'var(--text-secondary)' }}>
-              {banner.description}
-            </span>
-          )}
-        </div>
+        <button
+          onClick={() => handleDismiss(banner.id)}
+          className="shrink-0 p-1 rounded-full hover:bg-white/20 transition-colors"
+          aria-label="关闭公告"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
-
-      <button
-        onClick={() => handleDismiss(banner.id)}
-        className="absolute right-4 p-1.5 rounded-lg transition-colors hover:bg-white/10"
-        style={{ color: 'var(--text-tertiary)' }}
-      >
-        <X className="h-4 w-4" />
-      </button>
     </div>
   );
 }
