@@ -1068,11 +1068,10 @@ export default function Chat() {
                     data-send-button
                     onClick={() => handleSendMessage(false)}
                     disabled={(!inputMessage.trim() && fileContents.length === 0) || isStreaming || uploadedFiles.some(f => f.status === 'extracting')}
-                    className="h-9 px-5 gap-2 send-btn rounded-xl font-medium"
+                    className="h-9 px-5 gap-2 rounded-xl font-medium"
                     style={{ 
                       background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
                       color: 'var(--bg-primary)',
-                      boxShadow: '0 4px 15px rgba(255, 215, 0, 0.25)'
                     }}
                   >
                     {isStreaming ? (
