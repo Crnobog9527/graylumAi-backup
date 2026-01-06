@@ -351,6 +351,22 @@ function TicketDetailView({ ticket, user, onBack, onTicketUpdate }) {
       >
         <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>回复记录</h3>
 
+        {/* 时效提醒 */}
+        {ticket.status !== 'closed' && (
+          <div
+            className="flex items-center gap-2 p-3 rounded-lg mb-4"
+            style={{
+              background: 'rgba(59, 130, 246, 0.1)',
+              border: '1px solid rgba(59, 130, 246, 0.2)'
+            }}
+          >
+            <Clock className="h-4 w-4 shrink-0" style={{ color: '#3B82F6' }} />
+            <span className="text-sm" style={{ color: '#3B82F6' }}>
+              我们会在 48 小时内回复您的问题，通常会更快。
+            </span>
+          </div>
+        )}
+
         {repliesLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--color-primary)' }} />
