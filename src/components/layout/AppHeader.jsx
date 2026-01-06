@@ -149,14 +149,14 @@ export default function AppHeader({ user }) {
                           fontWeight: 600,
                         }}
                       >
-                        {user.full_name?.[0] || user.email?.[0]?.toUpperCase()}
+                        {user.nickname?.[0] || user.full_name?.[0] || user.email?.[0]?.toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <span
                       className="hidden sm:inline text-sm font-medium"
                       style={{ color: 'var(--text-primary)' }}
                     >
-                      {user.full_name || 'User'}
+                      {user.nickname || user.full_name || 'User'}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
