@@ -147,7 +147,7 @@ export default function Profile() {
                     <UserProfileHeader user={user} />
                     <CreditsAndSubscriptionCards user={user} />
                     <UsageStatsCard user={user} />
-                    <QuickActionsCard user={user} onNavigateToTickets={() => setActiveTab('tickets')} />
+                    <QuickActionsCard user={user} onNavigateToTickets={handleNavigateToCreateTicket} />
                   </>
                 )}
 
