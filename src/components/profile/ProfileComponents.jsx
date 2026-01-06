@@ -8,6 +8,7 @@ import {
   Crown, Zap, Clock, ChevronRight, ChevronLeft,
   CheckCircle2, RefreshCw, Settings, Wallet, Package, Mail, Lock, Loader2, Headphones, X
 } from 'lucide-react';
+import CreditsDialog from './CreditsDialog';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
