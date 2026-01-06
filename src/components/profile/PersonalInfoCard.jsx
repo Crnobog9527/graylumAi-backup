@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Pencil, Crown, Coins, Plus, RefreshCw, Key, Link2, Users, Headphones, MessageCircle, Code, PenTool } from 'lucide-react';
+import { Pencil, Crown, Coins, Plus, RefreshCw, Key, Link2, Users, Headphones, MessageCircle, Code, PenTool, Camera, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
@@ -11,7 +11,9 @@ import { format, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 import InviteDialog from '../invite/InviteDialog';
 import CreditsDialog from './CreditsDialog';
 
-export function UserProfileHeader({ user }) {
+export function UserProfileHeader({ user, onUserUpdate }) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const registerDate = user?.created_date ? format(new Date(user.created_date), 'yyyy年M月d日') : '-';
 
   const tierLabels = {
@@ -21,6 +23,29 @@ export function UserProfileHeader({ user }) {
     enterprise: '企业会员'
   };
   const subscriptionTier = user?.subscription_tier || 'free';
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.auth.updateMe({ avatar_url: file_url });
+      onUserUpdate && onUserUpdate({ ...user, avatar_url: file_url });
+    } catch (error) {
+      console.error('Upload failed:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div
@@ -33,18 +58,39 @@ export function UserProfileHeader({ user }) {
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <Avatar
-            className="h-20 w-20"
-            style={{ border: '2px solid rgba(255, 215, 0, 0.3)' }}
-          >
-            <AvatarImage src={user?.avatar_url} />
-            <AvatarFallback
-              className="text-2xl font-medium"
-              style={{ background: 'rgba(255, 215, 0, 0.1)', color: 'var(--color-primary)' }}
+          <div className="relative group">
+            <Avatar
+              className="h-20 w-20"
+              style={{ border: '2px solid rgba(255, 215, 0, 0.3)' }}
             >
-              {user?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
+              <AvatarImage src={user?.avatar_url} />
+              <AvatarFallback
+                className="text-2xl font-medium"
+                style={{ background: 'rgba(255, 215, 0, 0.1)', color: 'var(--color-primary)' }}
+              >
+                {user?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ background: 'rgba(0,0,0,0.6)' }}
+            >
+              {uploading ? (
+                <Loader2 className="h-6 w-6 animate-spin text-white" />
+              ) : (
+                <Camera className="h-6 w-6 text-white" />
+              )}
+            </button>
+          </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{user?.full_name || '用户'}</h2>
