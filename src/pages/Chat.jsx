@@ -68,6 +68,12 @@ export default function Chat() {
       try {
         const userData = await base44.auth.me();
         setUser(userData);
+        
+        // 检查导出权限
+        const userTier = userData.subscription_tier || 'free';
+        const plans = await base44.entities.MembershipPlan.filter({ is_active: true });
+        const plan = plans.find(p => p.level === userTier);
+        setCanExport(plan?.can_export_conversations || false);
       } catch (e) {
         // 未登录用户由Layout处理重定向到Landing页面
       }
