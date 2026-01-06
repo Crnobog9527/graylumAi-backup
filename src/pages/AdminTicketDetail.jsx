@@ -86,6 +86,16 @@ export default function AdminTicketDetail() {
     }
   });
 
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ['user'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  // 等待用户数据加载
+  if (userLoading) {
+    return <LoadingSpinner />;
+  }
+
   if (!user || user.role !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
