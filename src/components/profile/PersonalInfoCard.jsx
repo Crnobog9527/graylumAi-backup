@@ -471,11 +471,11 @@ export function QuickActionsCard({ user, onNavigateToTickets, onNavigateToSecuri
 
   return (
     <div
-      className="rounded-2xl p-6 transition-all duration-300"
+      className="rounded-2xl p-6"
       style={{
         background: 'var(--bg-secondary)',
         border: '1px solid var(--border-primary)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+        contain: 'layout paint',
       }}
     >
       <h3 className="font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>快捷操作</h3>
