@@ -187,23 +187,7 @@ export default function AppHeader({ user }) {
                       个人中心
                     </DropdownMenuItem>
                   </Link>
-                  <Link to={createPageUrl('Profile') + '?tab=subscription'}>
-                    <DropdownMenuItem
-                      className="cursor-pointer transition-colors"
-                      style={{ color: 'var(--text-secondary)' }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255, 215, 0, 0.1)';
-                        e.currentTarget.style.color = 'var(--color-primary)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = 'var(--text-secondary)';
-                      }}
-                    >
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      充值中心
-                    </DropdownMenuItem>
-                  </Link>
+
                   {user.role === 'admin' &&
                 <Link to={createPageUrl('AdminDashboard')}>
                       <DropdownMenuItem
