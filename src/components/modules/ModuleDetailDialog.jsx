@@ -15,7 +15,8 @@ import { iconComponents, getIconColor } from './moduleIcons';
 
 export default function ModuleDetailDialog({ module, open, onOpenChange }) {
   const navigate = useNavigate();
-  const Icon = iconMap[module?.icon] || Bot;
+  const Icon = iconComponents[module?.icon] || Bot;
+  const iconColor = getIconColor(module?.icon);
   const [copied, setCopied] = useState(false);
 
   const handleCopyInputs = () => {
