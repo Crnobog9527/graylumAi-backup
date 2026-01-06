@@ -262,9 +262,18 @@ function AdminPromptsContent() {
                               >
                                 <GripVertical className="h-5 w-5 text-slate-400" />
                               </div>
-                              <div className={`p-2 rounded-lg bg-${module.color || 'violet'}-100`}>
-                                <Wand2 className={`h-5 w-5 text-${module.color || 'violet'}-600`} />
-                              </div>
+                              {(() => {
+                                const IconComp = iconComponents[module.icon] || Bot;
+                                const iconColor = getIconColor(module.icon);
+                                return (
+                                  <div 
+                                    className="p-2 rounded-lg"
+                                    style={{ background: `${iconColor}20` }}
+                                  >
+                                    <IconComp className="h-5 w-5" style={{ color: iconColor }} />
+                                  </div>
+                                );
+                              })()}
                               <div>
                                 <h3 className="font-semibold text-slate-800">{module.title}</h3>
                                 <Badge variant="secondary" className="text-xs mt-1">
