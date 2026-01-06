@@ -272,7 +272,7 @@ export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) 
           </div>
           <div className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>本月已消耗 {Math.round(monthlyUsed).toLocaleString()} 积分</div>
           <Button
-            onClick={() => setCreditsDialogOpen(true)}
+            onClick={() => onNavigateToSubscription && onNavigateToSubscription()}
             className="w-full gap-2"
             style={{
               background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
@@ -303,7 +303,7 @@ export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) 
             {isFreeTier ? '升级会员享受更多权益' : '感谢您的支持'}
           </div>
           <Button
-            onClick={() => setCreditsDialogOpen(true)}
+            onClick={() => onNavigateToSubscription && onNavigateToSubscription()}
             className="w-full gap-2"
             style={{
               background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
@@ -325,12 +325,6 @@ export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) 
           </Button>
         </div>
       </div>
-
-      <CreditsDialog 
-        open={creditsDialogOpen} 
-        onOpenChange={setCreditsDialogOpen} 
-        user={user} 
-      />
     </>
   );
 }
