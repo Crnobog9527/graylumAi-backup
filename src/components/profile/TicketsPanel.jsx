@@ -589,6 +589,70 @@ function CreateTicketForm({ user, onBack, onSuccess }) {
           />
         </div>
 
+        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+            附件截图
+          </label>
+          <div
+            className="p-4 rounded-xl border-2 border-dashed transition-colors"
+            style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-primary)' }}
+          >
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileUpload}
+              className="hidden"
+              id="ticket-attachment"
+              disabled={uploading}
+            />
+            <label
+              htmlFor="ticket-attachment"
+              className="flex flex-col items-center justify-center cursor-pointer py-4"
+            >
+              {uploading ? (
+                <Loader2 className="h-8 w-8 animate-spin mb-2" style={{ color: 'var(--color-primary)' }} />
+              ) : (
+                <Upload className="h-8 w-8 mb-2" style={{ color: 'var(--text-tertiary)' }} />
+              )}
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                {uploading ? '上传中...' : '点击上传截图（支持多张）'}
+              </span>
+              <span className="text-xs mt-1" style={{ color: 'var(--text-disabled)' }}>
+                支持 JPG、PNG 格式，单张不超过 5MB
+              </span>
+            </label>
+          </div>
+
+          {attachments.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {attachments.map((att, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 rounded-lg"
+                  style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <img src={att.url} alt={att.name} className="w-12 h-12 object-cover rounded" />
+                    <span className="text-sm truncate max-w-[200px]" style={{ color: 'var(--text-primary)' }}>
+                      {att.name}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeAttachment(index)}
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex justify-end gap-3">
           <Button
             type="button"
