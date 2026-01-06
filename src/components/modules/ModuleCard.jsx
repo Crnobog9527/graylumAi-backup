@@ -14,18 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  Video, PenTool, Sparkles, Briefcase, BarChart3, Lightbulb, 
-  Target, Image as ImageIcon, Languages, Code, Megaphone, 
-  BookOpen, Music, Bot
-} from 'lucide-react';
-
-
-const iconMap = {
-  Video, PenTool, Sparkles, Briefcase, BarChart3, Lightbulb,
-  Target, Image: ImageIcon, Languages, Code, Megaphone,
-  BookOpen, Music, Bot
-};
+import { iconComponents, getIconColor } from './moduleIcons';
+import { Bot } from 'lucide-react';
 
 export default function ModuleCard({ module, models = [], className, onShowDetail }) {
   const [showConfirm, setShowConfirm] = useState(false);
