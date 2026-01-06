@@ -270,6 +270,7 @@ export function SubscriptionCard({ user }) {
 }
 
 export function CreditStatsCard({ user }) {
+  const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
   const credits = user?.credits || 0;
   const userEmail = user?.email;
 
@@ -300,48 +301,49 @@ export function CreditStatsCard({ user }) {
     .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
 
   return (
-    <div
-      className="rounded-2xl p-6 md:p-8 mb-6 transition-all duration-300"
-      style={{
-        background: 'var(--bg-secondary)',
-        border: '1px solid var(--border-primary)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-      }}
-    >
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>积分概览</h3>
-        <Zap className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
-      </div>
+    <>
+      <div
+        className="rounded-2xl p-6 md:p-8 mb-6 transition-all duration-300"
+        style={{
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-primary)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+        }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>积分概览</h3>
+          <Zap className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+        </div>
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div>
-            <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>积分余额</div>
-            <div
-              className="text-3xl font-bold"
-              style={{
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}
-            >
-              {credits.toLocaleString()}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>积分余额</div>
+              <div
+                className="text-3xl font-bold"
+                style={{
+                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}
+              >
+                {credits.toLocaleString()}
+              </div>
+            </div>
+
+            <div className="pl-8 hidden md:block" style={{ borderLeft: '1px solid var(--border-primary)' }}>
+              <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>本月消耗</div>
+              <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{Math.round(monthlyUsed).toLocaleString()}</div>
+            </div>
+
+            <div className="pl-8 hidden md:block" style={{ borderLeft: '1px solid var(--border-primary)' }}>
+              <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>累计消耗</div>
+              <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{(user?.total_credits_used || 0).toLocaleString()}</div>
             </div>
           </div>
 
-          <div className="pl-8 hidden md:block" style={{ borderLeft: '1px solid var(--border-primary)' }}>
-            <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>本月消耗</div>
-            <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{Math.round(monthlyUsed).toLocaleString()}</div>
-          </div>
-
-          <div className="pl-8 hidden md:block" style={{ borderLeft: '1px solid var(--border-primary)' }}>
-            <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>累计消耗</div>
-            <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{(user?.total_credits_used || 0).toLocaleString()}</div>
-          </div>
-        </div>
-
-        <Link to={createPageUrl('Credits')}>
           <Button
+            onClick={() => setCreditsDialogOpen(true)}
             className="rounded-full px-6 gap-2"
             style={{
               background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
@@ -352,42 +354,48 @@ export function CreditStatsCard({ user }) {
             <Zap className="h-4 w-4" />
             购买加油包
           </Button>
-        </Link>
-      </div>
+        </div>
 
-      <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--border-primary)' }}>
-        <h4 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>最近积分变动</h4>
-        <div className="space-y-3">
-          {transactions.slice(0, 5).map((tx) => (
-            <div key={tx.id} className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{
-                    background: tx.amount > 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    border: `1px solid ${tx.amount > 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
-                  }}
-                >
-                  <Zap className="h-4 w-4" style={{ color: tx.amount > 0 ? 'var(--success)' : 'var(--error)' }} />
-                </div>
-                <div>
-                  <div style={{ color: 'var(--text-primary)' }}>{tx.description?.slice(0, 30) || tx.type}</div>
-                  <div className="text-xs" style={{ color: 'var(--text-disabled)' }}>
-                    {format(new Date(tx.created_date), 'MM-dd HH:mm')}
+        <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--border-primary)' }}>
+          <h4 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>最近积分变动</h4>
+          <div className="space-y-3">
+            {transactions.slice(0, 5).map((tx) => (
+              <div key={tx.id} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{
+                      background: tx.amount > 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                      border: `1px solid ${tx.amount > 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                    }}
+                  >
+                    <Zap className="h-4 w-4" style={{ color: tx.amount > 0 ? 'var(--success)' : 'var(--error)' }} />
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--text-primary)' }}>{tx.description?.slice(0, 30) || tx.type}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-disabled)' }}>
+                      {format(new Date(tx.created_date), 'MM-dd HH:mm')}
+                    </div>
                   </div>
                 </div>
+                <div
+                  className="font-medium"
+                  style={{ color: tx.amount > 0 ? 'var(--success)' : 'var(--error)' }}
+                >
+                  {tx.amount > 0 ? '+' : ''}{tx.amount}
+                </div>
               </div>
-              <div
-                className="font-medium"
-                style={{ color: tx.amount > 0 ? 'var(--success)' : 'var(--error)' }}
-              >
-                {tx.amount > 0 ? '+' : ''}{tx.amount}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+
+      <CreditsDialog 
+        open={creditsDialogOpen} 
+        onOpenChange={setCreditsDialogOpen} 
+        user={user} 
+      />
+    </>
   );
 }
 
