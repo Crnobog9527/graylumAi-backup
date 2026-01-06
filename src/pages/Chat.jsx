@@ -665,11 +665,10 @@ export default function Chat() {
         <div className="p-4">
           <Button
             onClick={() => handleStartNewChat()}
-            className="w-full gap-2 h-11 rounded-xl font-medium transition-all duration-300"
+            className="w-full gap-2 h-11 rounded-xl font-medium"
             style={{ 
               background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
               color: 'var(--bg-primary)',
-              boxShadow: '0 4px 20px rgba(255, 215, 0, 0.3)'
             }}
           >
             <Plus className="h-5 w-5" />
