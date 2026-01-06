@@ -91,24 +91,68 @@ export default function TicketDetail() {
 
   if (!ticket) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
         <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-600">工单不存在</p>
+          <AlertCircle className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
+          <p style={{ color: 'var(--text-secondary)' }}>工单不存在</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen relative overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+      {/* 动态背景 */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div
+          className="absolute -top-32 left-1/3 w-[600px] h-[400px] rounded-full opacity-40 blur-[100px]"
+          style={{
+            background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
+            animation: 'pulseGlow 15s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full opacity-30 blur-[120px]"
+          style={{
+            background: 'radial-gradient(circle, rgba(139,92,246,0.6) 0%, transparent 70%)',
+            animation: 'floatSoft 20s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(255,215,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,215,0,0.1) 1px, transparent 1px)',
+            backgroundSize: '50px 50px',
+          }}
+        />
+      </div>
+
+      <style>{`
+        @keyframes pulseGlow {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.1); }
+        }
+        @keyframes floatSoft {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(-30px, -20px); }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeInUp {
+          animation: fadeInUp 0.5s ease forwards;
+        }
+      `}</style>
+
+      <div className="max-w-4xl mx-auto px-4 py-8 relative z-10">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 animate-fadeInUp">
           <Button
             variant="ghost"
             onClick={() => navigate(createPageUrl('Tickets'))}
             className="mb-4 -ml-2"
+            style={{ color: 'var(--text-secondary)' }}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             返回工单列表
@@ -116,41 +160,48 @@ export default function TicketDetail() {
         </div>
 
         {/* Ticket Info */}
-        <TicketInfo ticket={ticket}>
-          {ticket.status === 'resolved' && (
-            <Button
-              onClick={() => closeTicketMutation.mutate()}
-              disabled={closeTicketMutation.isPending}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {closeTicketMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <CheckCircle className="h-4 w-4 mr-2" />
-              )}
-              确认解决
-            </Button>
-          )}
-        </TicketInfo>
+        <div className="animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
+          <TicketInfo ticket={ticket}>
+            {ticket.status === 'resolved' && (
+              <Button
+                onClick={() => closeTicketMutation.mutate()}
+                disabled={closeTicketMutation.isPending}
+                style={{
+                  background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+                  color: 'white'
+                }}
+              >
+                {closeTicketMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                )}
+                确认解决
+              </Button>
+            )}
+          </TicketInfo>
+        </div>
 
         {/* Replies */}
-        <div className="space-y-4 mb-6">
-          <h2 className="text-lg font-semibold text-slate-900">回复记录</h2>
+        <div className="space-y-4 mb-6 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>回复记录</h2>
           <TicketReplyList replies={replies} isAdmin={false} />
         </div>
 
         {/* Reply Form */}
-        {ticket.status !== 'closed' ? (
-          <TicketReplyForm
-            replyMessage={replyMessage}
-            setReplyMessage={setReplyMessage}
-            onSubmit={handleReplySubmit}
-            isPending={addReplyMutation.isPending}
-            isAdmin={false}
-          />
-        ) : (
-          <TicketClosedNotice />
-        )}
+        <div className="animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
+          {ticket.status !== 'closed' ? (
+            <TicketReplyForm
+              replyMessage={replyMessage}
+              setReplyMessage={setReplyMessage}
+              onSubmit={handleReplySubmit}
+              isPending={addReplyMutation.isPending}
+              isAdmin={false}
+            />
+          ) : (
+            <TicketClosedNotice />
+          )}
+        </div>
       </div>
     </div>
   );
