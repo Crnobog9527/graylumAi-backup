@@ -154,13 +154,13 @@ export default function Profile() {
           <div className="flex-1 min-w-0">
              <div className="animate-fadeInUp">
                 {activeTab === 'profile' && (
-                  <>
-                    <UserProfileHeader user={user} onUserUpdate={handleUserUpdate} />
-                    <CreditsAndSubscriptionCards user={user} />
-                    <UsageStatsCard user={user} />
-                    <QuickActionsCard user={user} onNavigateToTickets={handleNavigateToCreateTicket} onNavigateToSecurity={handleNavigateToSecurity} />
-                  </>
-                )}
+                    <>
+                      <UserProfileHeader user={user} onUserUpdate={handleUserUpdate} />
+                      <CreditsAndSubscriptionCards user={user} onNavigateToSubscription={() => setActiveTab('subscription')} />
+                      <UsageStatsCard user={user} />
+                      <QuickActionsCard user={user} onNavigateToTickets={handleNavigateToCreateTicket} onNavigateToSecurity={handleNavigateToSecurity} />
+                    </>
+                  )}
 
                 {activeTab === 'subscription' && (
                   <>
