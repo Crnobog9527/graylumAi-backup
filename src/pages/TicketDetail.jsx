@@ -93,7 +93,13 @@ export default function TicketDetail() {
     addReplyMutation.mutate(replyMessage);
   };
 
-  if (isLoading || !user) {
+  // 等待用户数据加载
+  if (userLoading) {
+    return <LoadingSpinner />;
+  }
+
+  // 等待工单数据加载
+  if (ticketLoading) {
     return <LoadingSpinner />;
   }
 
