@@ -9,18 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Video, PenTool, Sparkles, Briefcase, BarChart3, Lightbulb, 
-  Target, Image as ImageIcon, Languages, Code, Megaphone, 
-  BookOpen, Music, Bot, CheckCircle2, HelpCircle, Monitor, ArrowRight, Copy, Check
-} from 'lucide-react';
+import { CheckCircle2, HelpCircle, Monitor, ArrowRight, Copy, Check, Bot, Sparkles } from 'lucide-react';
 import { useState } from 'react';
-
-const iconMap = {
-  Video, PenTool, Sparkles, Briefcase, BarChart3, Lightbulb,
-  Target, Image: ImageIcon, Languages, Code, Megaphone,
-  BookOpen, Music, Bot
-};
+import { iconComponents, getIconColor } from './moduleIcons';
 
 export default function ModuleDetailDialog({ module, open, onOpenChange }) {
   const navigate = useNavigate();
