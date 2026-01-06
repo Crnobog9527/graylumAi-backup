@@ -9,13 +9,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckCircle2, HelpCircle, Monitor, ArrowRight, Copy, Check, Bot, Sparkles } from 'lucide-react';
+import { 
+  Sparkles, Bot, CheckCircle2, HelpCircle, Monitor, ArrowRight, Copy, Check
+} from 'lucide-react';
 import { useState } from 'react';
-import { iconComponents, getIconColor } from './moduleIcons';
+import { iconMap, getIconColor } from './iconConfig';
 
 export default function ModuleDetailDialog({ module, open, onOpenChange }) {
   const navigate = useNavigate();
-  const Icon = iconComponents[module?.icon] || Bot;
+  const Icon = iconMap[module?.icon] || Bot;
   const iconColor = getIconColor(module?.icon);
   const [copied, setCopied] = useState(false);
 
@@ -64,12 +66,12 @@ export default function ModuleDetailDialog({ module, open, onOpenChange }) {
             <div 
               className="p-4 rounded-2xl shrink-0"
               style={{ 
-                background: `linear-gradient(135deg, ${iconColor}25 0%, ${iconColor}10 100%)`,
-                border: `1px solid ${iconColor}40`,
-                boxShadow: `0 8px 24px ${iconColor}20`
+                background: 'linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(255,180,0,0.08) 100%)',
+                border: '1px solid rgba(255, 215, 0, 0.25)',
+                boxShadow: '0 8px 24px rgba(255,215,0,0.15)'
               }}
             >
-              <Icon className="h-8 w-8" style={{ color: iconColor }} />
+              <Icon className="h-8 w-8" style={{ color: 'var(--color-primary)' }} />
             </div>
             <div className="flex-1 min-w-0">
               <DialogHeader className="p-0 space-y-1">
