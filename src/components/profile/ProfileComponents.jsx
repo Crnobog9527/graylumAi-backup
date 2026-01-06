@@ -345,6 +345,41 @@ export function SubscriptionCard({ user }) {
               <div className="text-center mb-4">
                 {price === 0 ? (
                   <span className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>免费</span>
+                ) : billingCycle === 'yearly' ? (
+                  <div className="flex flex-col items-center gap-1">
+                    {/* 原价划线 */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm line-through" style={{ color: 'var(--text-disabled)' }}>
+                        ${plan.price.monthly * 12}/年
+                      </span>
+                      <span
+                        className="text-xs px-1.5 py-0.5 rounded"
+                        style={{ background: 'rgba(34, 197, 94, 0.2)', color: 'var(--success)' }}
+                      >
+                        省{Math.round((1 - price / (plan.price.monthly * 12)) * 100)}%
+                      </span>
+                    </div>
+                    {/* 年付价格 */}
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>$</span>
+                      <span
+                        className="text-3xl font-bold"
+                        style={{
+                          background: isHighlight 
+                            ? 'linear-gradient(135deg, #A78BFA 0%, #818CF8 100%)' 
+                            : 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent'
+                        }}
+                      >
+                        {(price / 12).toFixed(1)}
+                      </span>
+                      <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>/月</span>
+                    </div>
+                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                      年付共 ${price}
+                    </span>
+                  </div>
                 ) : (
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>$</span>
@@ -360,7 +395,7 @@ export function SubscriptionCard({ user }) {
                     >
                       {price}
                     </span>
-                    <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>/{billingCycle === 'monthly' ? '月' : '年'}</span>
+                    <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>/月</span>
                   </div>
                 )}
               </div>
