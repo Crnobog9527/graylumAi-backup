@@ -187,7 +187,7 @@ export default function AppHeader({ user }) {
                       个人中心
                     </DropdownMenuItem>
                   </Link>
-                  <Link to={createPageUrl('Credits')}>
+                  <Link to={createPageUrl('Profile') + '?tab=subscription'}>
                     <DropdownMenuItem
                       className="cursor-pointer transition-colors"
                       style={{ color: 'var(--text-secondary)' }}
