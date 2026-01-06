@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, GripVertical, Bot } from 'lucide-react';
+import { Plus, Pencil, Trash2, Wand2, GripVertical, Bot } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { iconMap, iconOptions, getIconColor } from '../components/modules/iconConfig';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,6 +37,7 @@ import {
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
+import { iconComponents, getIconColor, iconGroups } from '../components/modules/moduleIcons';
 
 const categories = [
   { value: 'writing', label: '写作' },
@@ -262,17 +262,8 @@ function AdminPromptsContent() {
                               >
                                 <GripVertical className="h-5 w-5 text-slate-400" />
                               </div>
-                              <div 
-                                className="p-2 rounded-lg"
-                                style={{ 
-                                  background: `${getIconColor(module.icon)}20`,
-                                  border: `1px solid ${getIconColor(module.icon)}40`
-                                }}
-                              >
-                                {(() => {
-                                  const IconComp = iconMap[module.icon] || Bot;
-                                  return <IconComp className="h-5 w-5" style={{ color: getIconColor(module.icon) }} />;
-                                })()}
+                              <div className={`p-2 rounded-lg bg-${module.color || 'violet'}-100`}>
+                                <Wand2 className={`h-5 w-5 text-${module.color || 'violet'}-600`} />
                               </div>
                               <div>
                                 <h3 className="font-semibold text-slate-800">{module.title}</h3>
@@ -487,54 +478,46 @@ function AdminPromptsContent() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>{t('icon')}</Label>
-                <div className="border rounded-lg p-3 max-h-64 overflow-y-auto bg-slate-50">
-                  {/* 按分类分组显示图标 */}
-                  {['创作', '媒体', '营销', '数据', '办公', '社交', '电商', '设计', '学习', '其他'].map(category => {
-                    const categoryIcons = iconOptions.filter(i => i.category === category);
-                    if (categoryIcons.length === 0) return null;
-                    return (
-                      <div key={category} className="mb-3">
-                        <div className="text-xs font-medium text-slate-500 mb-2">{category}</div>
-                        <div className="grid grid-cols-6 gap-2">
-                          {categoryIcons.map(iconOpt => {
-                            const IconComp = iconMap[iconOpt.value] || Bot;
-                            const color = getIconColor(iconOpt.value);
-                            const isSelected = formData.icon === iconOpt.value;
-                            return (
-                              <button
-                                key={iconOpt.value}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, icon: iconOpt.value })}
-                                className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-all hover:scale-105 ${
-                                  isSelected ? 'ring-2 ring-violet-500 bg-white shadow-md' : 'hover:bg-white'
-                                }`}
-                                title={iconOpt.label}
-                              >
-                                <div 
-                                  className="p-1.5 rounded-md"
-                                  style={{ 
-                                    background: `${color}20`,
-                                    border: `1px solid ${color}40`
-                                  }}
-                                >
-                                  <IconComp className="h-4 w-4" style={{ color }} />
-                                </div>
-                                <span className="text-[10px] text-slate-600 truncate w-full text-center">
-                                  {iconOpt.label}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('icon')}</Label>
+                  <Select
+                    value={formData.icon}
+                    onValueChange={(value) => setFormData({ ...formData, icon: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {icons.map((icon) => (
+                        <SelectItem key={icon.value} value={icon.value}>
+                          {icon.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <p className="text-xs text-slate-500">
-                  当前选中：{iconOptions.find(i => i.value === formData.icon)?.label || formData.icon}
-                </p>
+                <div className="space-y-2">
+                  <Label>{t('color')}</Label>
+                  <Select
+                    value={formData.color}
+                    onValueChange={(value) => setFormData({ ...formData, color: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {colors.map((color) => (
+                        <SelectItem key={color.value} value={color.value}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full bg-${color.value}-500`} />
+                            {color.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
