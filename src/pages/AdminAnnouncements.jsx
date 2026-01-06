@@ -61,6 +61,8 @@ const bannerStyles = [
   { value: 'warning', label: '警告（橙色）', class: 'bg-amber-500' },
   { value: 'success', label: '成功（绿色）', class: 'bg-green-500' },
   { value: 'error', label: '错误（红色）', class: 'bg-red-500' },
+  { value: 'promo', label: '促销（金色）', class: 'bg-yellow-500' },
+  { value: 'announcement', label: '公告（靛蓝）', class: 'bg-indigo-500' },
 ];
 
 const announcementIcons = [
