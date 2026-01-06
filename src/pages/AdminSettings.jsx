@@ -345,6 +345,10 @@ function AdminSettingsContent() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="membership">
+            <MembershipPermissionsCard />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
