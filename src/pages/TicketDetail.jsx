@@ -21,21 +21,16 @@ export default function TicketDetail() {
   const [replyMessage, setReplyMessage] = useState('');
   const [debugInfo, setDebugInfo] = useState(null);
 
-  // 从URL获取ticketId
-  const ticketId = React.useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    const id = params.get('id');
-    console.log('=== 用户端URL解析 ===');
-    console.log('location.search:', location.search);
-    console.log('解析到的id:', id);
-    return id;
-  }, [location.search]);
+  const ticketId = new URLSearchParams(location.search).get('id');
 
   // 1. 首先获取用户数据
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['user'],
     queryFn: () => base44.auth.me(),
   });
+
+  // 检查是否满足查询条件
+  const canQuery = !!ticketId && !!user;
 
   // 2. 用户数据加载后再获取工单数据
   const { data: ticket, isLoading: ticketLoading, isError, error } = useQuery({
@@ -58,7 +53,7 @@ export default function TicketDetail() {
       console.log('找到工单:', tickets[0]);
       return tickets[0];
     },
-    enabled: !!ticketId && !!user,
+    enabled: canQuery,
     retry: false,
     staleTime: 1000 * 60 * 5, // 5分钟内不重新获取
     refetchOnWindowFocus: false, // 防止窗口聚焦时重新获取
@@ -131,8 +126,27 @@ export default function TicketDetail() {
     return <LoadingSpinner />;
   }
 
-  // 等待工单数据加载 - 包括初始 undefined 状态
-  if (ticketLoading || ticket === undefined) {
+  // 如果没有ticketId，显示错误
+  if (!ticketId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
+          <p style={{ color: 'var(--text-secondary)' }} className="mb-4">无效的工单ID</p>
+          <Button
+            variant="outline"
+            onClick={() => navigate(createPageUrl('Tickets'))}
+            className="mt-4"
+          >
+            返回工单列表
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // 等待工单数据加载
+  if (ticketLoading || (!ticket && canQuery)) {
     return <LoadingSpinner />;
   }
 
