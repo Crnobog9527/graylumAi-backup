@@ -125,9 +125,27 @@ export default function TicketDetail() {
   if (isError || !ticket) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
-        <div className="text-center">
+        <div className="text-center max-w-2xl mx-auto p-6">
           <AlertCircle className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
-          <p style={{ color: 'var(--text-secondary)' }}>工单不存在</p>
+          <p style={{ color: 'var(--text-secondary)' }} className="mb-4">工单不存在</p>
+          
+          {/* 调试信息 */}
+          {debugInfo && (
+            <div className="text-left p-4 rounded-lg mt-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}>
+              <h3 className="font-bold mb-2" style={{ color: 'var(--color-primary)' }}>调试信息：</h3>
+              <pre className="text-xs overflow-auto" style={{ color: 'var(--text-secondary)' }}>
+{JSON.stringify(debugInfo, null, 2)}
+              </pre>
+            </div>
+          )}
+          
+          <Button
+            variant="outline"
+            onClick={() => navigate(createPageUrl('Tickets'))}
+            className="mt-4"
+          >
+            返回工单列表
+          </Button>
         </div>
       </div>
     );
