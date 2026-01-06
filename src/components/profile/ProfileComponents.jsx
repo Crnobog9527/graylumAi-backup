@@ -27,13 +27,62 @@ import { zhCN } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-function CreditPackagesSection({ onBuyClick }) {
-  const { data: packages = [] } = useQuery({
-    queryKey: ['credit-packages'],
-    queryFn: () => base44.entities.CreditPackage.filter({ is_active: true }, 'sort_order'),
-  });
+// 每日积分消耗趋势图组件
+function DailyUsageTrendChart({ transactions }) {
+  // 获取最近14天的数据
+  const chartData = useMemo(() => {
+    const now = new Date();
+    const days = eachDayOfInterval({
+      start: subDays(now, 13),
+      end: now
+    });
+    
+    return days.map(day => {
+      const dayStr = format(day, 'yyyy-MM-dd');
+      const dayUsage = transactions
+        .filter(t => {
+          const txDate = format(new Date(t.created_date), 'yyyy-MM-dd');
+          return txDate === dayStr && t.type === 'usage';
+        })
+        .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
+      
+      return {
+        date: format(day, 'MM/dd', { locale: zhCN }),
+        fullDate: format(day, 'M月d日', { locale: zhCN }),
+        usage: Math.round(dayUsage)
+      };
+    });
+  }, [transactions]);
 
-  if (packages.length === 0) return null;
+  // 计算统计数据
+  const stats = useMemo(() => {
+    const totalUsage = chartData.reduce((sum, d) => sum + d.usage, 0);
+    const avgUsage = Math.round(totalUsage / chartData.length);
+    const maxUsage = Math.max(...chartData.map(d => d.usage));
+    return { totalUsage, avgUsage, maxUsage };
+  }, [chartData]);
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div
+          className="rounded-lg px-3 py-2 shadow-lg"
+          style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-primary)'
+          }}
+        >
+          <p className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
+            {payload[0]?.payload?.fullDate}
+          </p>
+          <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
+            消耗 {payload[0]?.value?.toLocaleString()} 积分
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div
@@ -44,69 +93,65 @@ function CreditPackagesSection({ onBuyClick }) {
         boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
       }}
     >
-      <div className="flex items-center gap-3 mb-6">
-        <div
-          className="p-2 rounded-lg"
-          style={{ background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.2)' }}
-        >
-          <Package className="h-5 w-5" style={{ color: 'rgba(139, 92, 246, 1)' }} />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div
+            className="p-2 rounded-lg"
+            style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}
+          >
+            <TrendingDown className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+          </div>
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>每日消耗趋势</h3>
         </div>
-        <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>积分加油包</h3>
+        <div className="flex items-center gap-4 text-sm">
+          <div className="text-right">
+            <span style={{ color: 'var(--text-tertiary)' }}>14日总计</span>
+            <span className="ml-2 font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {stats.totalUsage.toLocaleString()}
+            </span>
+          </div>
+          <div className="text-right hidden md:block">
+            <span style={{ color: 'var(--text-tertiary)' }}>日均</span>
+            <span className="ml-2 font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {stats.avgUsage.toLocaleString()}
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {packages.map((pkg) => (
-          <div
-            key={pkg.id}
-            className="relative p-4 rounded-xl text-center transition-all duration-300"
-            style={{
-              background: 'var(--bg-primary)',
-              border: pkg.is_popular ? '2px solid rgba(59, 130, 246, 0.5)' : '1px solid var(--border-primary)',
-              boxShadow: pkg.is_popular ? '0 0 20px rgba(59, 130, 246, 0.2)' : 'none'
-            }}
-          >
-            {pkg.is_popular && (
-              <div
-                className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium"
-                style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#3B82F6', border: '1px solid rgba(59, 130, 246, 0.3)' }}
-              >
-                ⭐ 热门
-              </div>
-            )}
-            <div className="flex items-center justify-center gap-1 mb-2 mt-2">
-              <Zap className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
-              <span
-                className="text-2xl font-bold"
-                style={{
-                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
-                }}
-              >
-                {pkg.credits.toLocaleString()}
-              </span>
-            </div>
-            {pkg.bonus_credits > 0 && (
-              <div className="text-xs mb-2" style={{ color: 'var(--success)' }}>
-                +{pkg.bonus_credits} 赠送
-              </div>
-            )}
-            <div className="text-lg font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
-              ${pkg.price.toFixed(1)}
-            </div>
-            <Button
-              onClick={onBuyClick}
-              size="sm"
-              className="w-full gap-2"
-              style={{
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                color: 'var(--bg-primary)'
-              }}
-            >
-              🚀 购买
-            </Button>
-          </div>
-        ))}
+      <div className="h-[200px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+            <defs>
+              <linearGradient id="usageGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" opacity={0.5} />
+            <XAxis 
+              dataKey="date" 
+              tick={{ fill: 'var(--text-disabled)', fontSize: 11 }}
+              axisLine={{ stroke: 'var(--border-primary)' }}
+              tickLine={false}
+            />
+            <YAxis 
+              tick={{ fill: 'var(--text-disabled)', fontSize: 11 }}
+              axisLine={{ stroke: 'var(--border-primary)' }}
+              tickLine={false}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Area
+              type="monotone"
+              dataKey="usage"
+              stroke="var(--color-primary)"
+              strokeWidth={2}
+              fill="url(#usageGradient)"
+              dot={false}
+              activeDot={{ r: 5, fill: 'var(--color-primary)', stroke: 'var(--bg-secondary)', strokeWidth: 2 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
