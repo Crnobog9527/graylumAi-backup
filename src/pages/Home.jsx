@@ -85,91 +85,12 @@ export default function Home() {
 
 
 
-      {/* ============================================
-          动画样式定义
-          ============================================ */}
+      {/* 动画样式定义 - 精简版 */}
       <style>{`
-        /* 光晕漂移动画 - 右上角 */
-        @keyframes driftTopRight {
-          0%, 100% { transform: translate(0, 0); }
-          25% { transform: translate(-30px, 20px); }
-          50% { transform: translate(-50px, 40px); }
-          75% { transform: translate(-20px, 25px); }
-        }
-
-        /* 光晕漂移动画 - 左侧 */
-        @keyframes driftLeft {
-          0%, 100% { transform: translate(-48px, 33%); }
-          33% { transform: translate(-30px, 38%); }
-          66% { transform: translate(-60px, 28%); }
-        }
-
-        /* 光晕漂移动画 - 底部 */
-        @keyframes driftBottom {
-          0%, 100% { transform: translate(33%, 100%); }
-          50% { transform: translate(40%, 100%) scale(1.1); }
-        }
-
-        /* 呼吸效果 */
-        @keyframes breathe {
-          0%, 100% { opacity: 0.4; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(1.05); }
-        }
-
-        /* 脉冲效果 */
-        @keyframes pulse {
-          0%, 100% { opacity: 0.15; transform: translate(-50%, -50%) scale(1); }
-          50% { opacity: 0.25; transform: translate(-50%, -50%) scale(1.1); }
-        }
-
-        /* 网格平移 */
-        @keyframes gridMove {
-          0% { background-position: 0 0; }
-          100% { background-position: 50px 50px; }
-        }
-
-        /* 光线扫描 */
-        @keyframes lightSweep {
-          0%, 90%, 100% { transform: translateX(-100%); opacity: 0; }
-          45% { transform: translateX(100%); opacity: 1; }
-          50% { transform: translateX(100%); opacity: 0; }
-        }
-
-        /* 高级浮动光点 - 带远近感 */
-        @keyframes floatAdvanced {
-          0%, 100% {
-            transform: translateY(0) translateX(0) scale(1);
-            opacity: 0.2;
-          }
-          25% {
-            transform: translateY(-30px) translateX(15px) scale(1.2);
-            opacity: 0.5;
-          }
-          50% {
-            transform: translateY(-60px) translateX(-10px) scale(0.8);
-            opacity: 0.3;
-          }
-          75% {
-            transform: translateY(-30px) translateX(8px) scale(1.1);
-            opacity: 0.6;
-          }
-        }
-
-
-
-        /* 入场动画 - 从下往上淡入 */
         @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-
-        /* 卡片悬停时图标和边框变金色 */
         .card-clickable:hover {
           border-color: var(--color-primary) !important;
         }
