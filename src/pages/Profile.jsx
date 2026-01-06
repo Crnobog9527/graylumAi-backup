@@ -138,13 +138,13 @@ export default function Profile() {
           </div>
 
           {/* Desktop Sidebar */}
-          <div className="animate-slideInLeft">
+          <div>
             <ProfileSidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} />
           </div>
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-             <div className="animate-fadeInUp">
+             <div>
                 {activeTab === 'profile' && (
                     <>
                       <UserProfileHeader user={user} onUserUpdate={handleUserUpdate} />
