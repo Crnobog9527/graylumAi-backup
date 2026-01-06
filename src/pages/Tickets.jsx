@@ -4,8 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
-import { Plus, Filter, AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Plus, Filter, AlertCircle } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -13,28 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const statusMap = {
-  pending: { label: '待处理', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock },
-  in_progress: { label: '处理中', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: AlertCircle },
-  resolved: { label: '已解决', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle },
-  closed: { label: '已关闭', color: 'bg-slate-100 text-slate-800 border-slate-200', icon: XCircle }
-};
-
-const priorityMap = {
-  low: { label: '低', color: 'text-slate-500' },
-  medium: { label: '中', color: 'text-blue-600' },
-  high: { label: '高', color: 'text-orange-600' },
-  urgent: { label: '紧急', color: 'text-red-600' }
-};
-
-const categoryMap = {
-  technical_support: '技术支持',
-  feature_request: '功能建议',
-  bug_report: 'Bug反馈',
-  account_issue: '账户问题',
-  other: '其他'
-};
+import { statusOptions } from '@/constants/ticketConstants';
+import { LoadingSpinner, TicketCard } from '@/components/tickets';
 
 export default function Tickets() {
   const [statusFilter, setStatusFilter] = useState('all');
@@ -58,11 +37,7 @@ export default function Tickets() {
   });
 
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -93,10 +68,11 @@ export default function Tickets() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部</SelectItem>
-                <SelectItem value="pending">待处理</SelectItem>
-                <SelectItem value="in_progress">处理中</SelectItem>
-                <SelectItem value="resolved">已解决</SelectItem>
-                <SelectItem value="closed">已关闭</SelectItem>
+                {statusOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -104,9 +80,7 @@ export default function Tickets() {
 
         {/* Tickets List */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
+          <LoadingSpinner className="py-20" />
         ) : tickets.length === 0 ? (
           <div className="bg-white rounded-lg border border-slate-200 p-12 text-center">
             <AlertCircle className="h-12 w-12 text-slate-300 mx-auto mb-4" />
@@ -121,39 +95,9 @@ export default function Tickets() {
           </div>
         ) : (
           <div className="grid gap-4">
-            {tickets.map((ticket) => {
-              const StatusIcon = statusMap[ticket.status].icon;
-              return (
-                <Link key={ticket.id} to={createPageUrl('TicketDetail') + `?id=${ticket.id}`}>
-                  <div className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="text-sm font-mono text-slate-500">{ticket.ticket_number}</span>
-                          <span className={cn(
-                            "px-2.5 py-1 rounded-full text-xs font-medium border inline-flex items-center gap-1.5",
-                            statusMap[ticket.status].color
-                          )}>
-                            <StatusIcon className="h-3 w-3" />
-                            {statusMap[ticket.status].label}
-                          </span>
-                          <span className={cn("text-sm font-medium", priorityMap[ticket.priority].color)}>
-                            {priorityMap[ticket.priority].label}优先级
-                          </span>
-                        </div>
-                        <h3 className="text-lg font-semibold text-slate-900 mb-1">{ticket.title}</h3>
-                        <p className="text-slate-600 text-sm line-clamp-2 mb-3">{ticket.description}</p>
-                        <div className="flex items-center gap-4 text-xs text-slate-500">
-                          <span>{categoryMap[ticket.category]}</span>
-                          <span>创建于 {new Date(ticket.created_date).toLocaleDateString('zh-CN')}</span>
-                          <span>更新于 {new Date(ticket.updated_date).toLocaleDateString('zh-CN')}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+            {tickets.map((ticket) => (
+              <TicketCard key={ticket.id} ticket={ticket} linkTo="TicketDetail" />
+            ))}
           </div>
         )}
       </div>

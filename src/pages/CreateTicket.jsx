@@ -16,6 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { categoryOptions, priorityOptions } from '@/constants/ticketConstants';
+import { LoadingSpinner } from '@/components/tickets';
 
 export default function CreateTicket() {
   const navigate = useNavigate();
@@ -35,15 +37,13 @@ export default function CreateTicket() {
 
   const createTicketMutation = useMutation({
     mutationFn: async (data) => {
-      // Generate ticket number
       const today = new Date();
       const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-      
-      // Get today's tickets to determine the next number
+
       const todayTickets = await base44.entities.Ticket.filter({
         created_date: { $gte: today.toISOString().split('T')[0] }
       });
-      
+
       const nextNum = (todayTickets.length + 1).toString().padStart(3, '0');
       const ticketNumber = `TK${dateStr}${nextNum}`;
 
@@ -106,11 +106,7 @@ export default function CreateTicket() {
   };
 
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -156,11 +152,11 @@ export default function CreateTicket() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="technical_support">技术支持</SelectItem>
-                <SelectItem value="feature_request">功能建议</SelectItem>
-                <SelectItem value="bug_report">Bug反馈</SelectItem>
-                <SelectItem value="account_issue">账户问题</SelectItem>
-                <SelectItem value="other">其他</SelectItem>
+                {categoryOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -176,10 +172,11 @@ export default function CreateTicket() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="low">低</SelectItem>
-                <SelectItem value="medium">中</SelectItem>
-                <SelectItem value="high">高</SelectItem>
-                <SelectItem value="urgent">紧急</SelectItem>
+                {priorityOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
