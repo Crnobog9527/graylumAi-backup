@@ -1,5 +1,4 @@
 import Admin from './pages/Admin';
-import AdminAnnouncements from './pages/AdminAnnouncements';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminFinance from './pages/AdminFinance';
 import AdminInvitations from './pages/AdminInvitations';
@@ -15,12 +14,12 @@ import Home from './pages/Home';
 import Marketplace from './pages/Marketplace';
 import Profile from './pages/Profile';
 import Templates from './pages/Templates';
+import AdminAnnouncements from './pages/AdminAnnouncements';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Admin": Admin,
-    "AdminAnnouncements": AdminAnnouncements,
     "AdminDashboard": AdminDashboard,
     "AdminFinance": AdminFinance,
     "AdminInvitations": AdminInvitations,
@@ -36,6 +35,7 @@ export const PAGES = {
     "Marketplace": Marketplace,
     "Profile": Profile,
     "Templates": Templates,
+    "AdminAnnouncements": AdminAnnouncements,
 }
 
 export const pagesConfig = {
