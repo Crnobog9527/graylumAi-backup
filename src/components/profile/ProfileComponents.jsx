@@ -476,7 +476,6 @@ export function SubscriptionCard({ user }) {
 }
 
 export function CreditStatsCard({ user }) {
-  const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
   const credits = user?.credits || 0;
   const userEmail = user?.email;
 
