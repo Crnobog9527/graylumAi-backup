@@ -204,8 +204,7 @@ export function UserProfileHeader({ user, onUserUpdate }) {
   );
 }
 
-export function CreditsAndSubscriptionCards({ user }) {
-  const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
+export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) {
   const credits = user?.credits || 0;
   const totalUsed = user?.total_credits_used || 0;
   const totalPurchased = user?.total_credits_purchased || 0;
