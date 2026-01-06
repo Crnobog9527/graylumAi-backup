@@ -122,9 +122,7 @@ export default function SixStepsGuide() {
               className="card card-clickable group p-8"
               style={{
                 borderRadius: 'var(--radius-2xl)',
-                animation: `fadeInUp 0.6s ease forwards`,
-                animationDelay: `${index * 0.1}s`,
-                opacity: 0
+                contain: 'layout paint',
               }}
             >
               {/* 步骤编号和图标 */}
