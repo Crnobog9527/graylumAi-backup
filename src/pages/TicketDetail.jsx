@@ -37,23 +37,21 @@ export default function TicketDetail() {
       console.log('ticketId from URL:', ticketId);
       console.log('user.email:', user.email);
       
-      // 获取当前用户的工单列表
-      const tickets = await base44.entities.Ticket.filter({ user_email: user.email });
-      console.log('获取到的工单数量:', tickets.length);
-      console.log('所有工单ID:', tickets.map(t => t.id));
+      // 直接通过ID过滤获取工单（RLS会自动验证权限）
+      const tickets = await base44.entities.Ticket.filter({ id: ticketId });
+      console.log('查询结果:', tickets);
       
-      const found = tickets.find(t => t.id === ticketId);
+      const found = tickets.length > 0 ? tickets[0] : null;
       console.log('找到匹配工单:', found ? '是' : '否');
       
       setDebugInfo({
         ticketId,
         userEmail: user.email,
-        totalTickets: tickets.length,
-        allTicketIds: tickets.map(t => ({ id: t.id, title: t.title })),
+        queryResult: tickets,
         found: !!found
       });
       
-      return found || null;
+      return found;
     },
     enabled: !!ticketId && !!user?.email,
     retry: false,
