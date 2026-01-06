@@ -249,7 +249,7 @@ export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Credits Card */}
         <div
-          className="rounded-2xl p-6 transition-all duration-300"
+          className="rounded-2xl p-6 transition-all duration-300 flex flex-col"
           style={{
             background: 'var(--bg-secondary)',
             border: '1px solid var(--border-primary)',
@@ -270,7 +270,7 @@ export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) 
           >
             {credits.toLocaleString()}
           </div>
-          <div className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>本月已消耗 {Math.round(monthlyUsed).toLocaleString()} 积分</div>
+          <div className="text-sm mb-4 flex-1" style={{ color: 'var(--text-tertiary)' }}>本月已消耗 {Math.round(monthlyUsed).toLocaleString()} 积分</div>
           <Button
             onClick={() => onNavigateToSubscription && onNavigateToSubscription()}
             className="w-full gap-2"
