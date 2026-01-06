@@ -14,13 +14,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { iconComponents, getIconColor } from './moduleIcons';
+import { iconMap, getIconColor } from './iconConfig';
+
 import { Bot } from 'lucide-react';
 
 export default function ModuleCard({ module, models = [], className, onShowDetail }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
-  const Icon = iconComponents[module.icon] || Bot;
+  const Icon = iconMap[module.icon] || Bot;
   const iconColor = getIconColor(module.icon);
 
   const targetUrl = `${createPageUrl('Chat')}?module_id=${module.id}&auto_start=true`;
@@ -66,12 +67,12 @@ export default function ModuleCard({ module, models = [], className, onShowDetai
           <div 
             className="p-3 rounded-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3"
             style={{ 
-              background: `linear-gradient(135deg, ${iconColor}20 0%, ${iconColor}10 100%)`,
-              border: `1px solid ${iconColor}40`,
-              boxShadow: `0 4px 12px ${iconColor}15`
+              background: 'linear-gradient(135deg, rgba(255,215,0,0.12) 0%, rgba(255,180,0,0.06) 100%)',
+              border: '1px solid rgba(255, 215, 0, 0.2)',
+              boxShadow: '0 4px 12px rgba(255,215,0,0.08)'
             }}
           >
-            <Icon className="h-6 w-6" style={{ color: iconColor }} />
+            <Icon className="h-6 w-6" style={{ color: 'var(--color-primary)' }} />
           </div>
           {module.category === 'video' && (
             <span 
