@@ -449,9 +449,10 @@ function CreateTicketForm({ user, onBack, onSuccess }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'technical_support',
-    priority: 'medium'
+    category: 'technical_support'
   });
+  const [attachments, setAttachments] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
