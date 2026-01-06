@@ -945,6 +945,28 @@ export default function Chat() {
           </div>
 
           <div className="flex items-center gap-2">
+              {/* Export Button */}
+              {canExport && currentConversation && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportConversation}
+                  disabled={isExporting}
+                  className="h-9 px-3 gap-2"
+                  style={{ 
+                    background: 'transparent',
+                    borderColor: 'var(--border-primary)',
+                    color: 'var(--text-secondary)'
+                  }}
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  导出
+                </Button>
+              )}
               {/* Debug Panel Toggle (Admin Only) */}
               {user.role === 'admin' && (
                 <Button
