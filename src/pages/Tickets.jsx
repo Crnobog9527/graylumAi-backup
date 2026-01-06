@@ -4,19 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
-import { Plus, Filter, AlertCircle } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { statusOptions } from '@/constants/ticketConstants';
+import { Plus, AlertCircle, Inbox, Archive } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner, TicketCard } from '@/components/tickets';
 
 export default function Tickets() {
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('active');
 
   const { data: user } = useQuery({
     queryKey: ['user'],
@@ -24,17 +17,17 @@ export default function Tickets() {
   });
 
   const { data: tickets = [], isLoading } = useQuery({
-    queryKey: ['tickets', user?.email, statusFilter],
+    queryKey: ['tickets', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
-      const filter = { user_email: user.email };
-      if (statusFilter !== 'all') {
-        filter.status = statusFilter;
-      }
-      return base44.entities.Ticket.filter(filter, '-created_date');
+      return base44.entities.Ticket.filter({ user_email: user.email }, '-created_date');
     },
     enabled: !!user?.email,
   });
+
+  // 按状态分类工单
+  const activeTickets = tickets.filter(t => t.status !== 'closed');
+  const closedTickets = tickets.filter(t => t.status === 'closed');
 
   if (!user) {
     return <LoadingSpinner />;
@@ -106,82 +99,122 @@ export default function Tickets() {
           </Link>
         </div>
 
-        {/* Filter */}
-        <div
-          className="rounded-xl p-4 mb-6 animate-fadeInUp"
-          style={{
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-primary)',
-            animationDelay: '0.1s'
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <Filter className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
-            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>筛选状态：</span>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger
-                className="w-[180px]"
-                style={{
-                  background: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border-primary)',
-                  color: 'var(--text-primary)'
-                }}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
+          <TabsList 
+            className="mb-6 p-1 rounded-xl"
+            style={{ 
+              background: 'var(--bg-secondary)', 
+              border: '1px solid var(--border-primary)' 
+            }}
+          >
+            <TabsTrigger 
+              value="active" 
+              className="gap-2 rounded-lg data-[state=active]:text-[var(--bg-primary)]"
+              style={{ 
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <Inbox className="h-4 w-4" />
+              现有工单
+              {activeTickets.length > 0 && (
+                <span 
+                  className="ml-1 px-2 py-0.5 text-xs rounded-full"
+                  style={{ 
+                    background: 'rgba(255, 215, 0, 0.2)', 
+                    color: 'var(--color-primary)' 
+                  }}
+                >
+                  {activeTickets.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="closed" 
+              className="gap-2 rounded-lg data-[state=active]:text-[var(--bg-primary)]"
+              style={{ 
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <Archive className="h-4 w-4" />
+              已关闭
+              {closedTickets.length > 0 && (
+                <span 
+                  className="ml-1 px-2 py-0.5 text-xs rounded-full"
+                  style={{ 
+                    background: 'var(--bg-tertiary)', 
+                    color: 'var(--text-tertiary)' 
+                  }}
+                >
+                  {closedTickets.length}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="active">
+            {isLoading ? (
+              <LoadingSpinner className="py-20" />
+            ) : activeTickets.length === 0 ? (
+              <div
+                className="rounded-xl p-12 text-center"
                 style={{
                   background: 'var(--bg-secondary)',
                   border: '1px solid var(--border-primary)'
                 }}
               >
-                <SelectItem value="all">全部</SelectItem>
-                {statusOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
+                <AlertCircle className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
+                <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--text-primary)' }}>暂无现有工单</h3>
+                <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>您还没有进行中的工单</p>
+                <Link to={createPageUrl('CreateTicket')}>
+                  <Button
+                    style={{
+                      background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                      color: 'var(--bg-primary)'
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    创建工单
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {activeTickets.map((ticket, index) => (
+                  <div key={ticket.id} className="animate-fadeInUp" style={{ animationDelay: `${0.05 * (index + 1)}s` }}>
+                    <TicketCard ticket={ticket} linkTo="TicketDetail" />
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+              </div>
+            )}
+          </TabsContent>
 
-        {/* Tickets List */}
-        {isLoading ? (
-          <LoadingSpinner className="py-20" />
-        ) : tickets.length === 0 ? (
-          <div
-            className="rounded-xl p-12 text-center animate-fadeInUp"
-            style={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-primary)',
-              animationDelay: '0.2s'
-            }}
-          >
-            <AlertCircle className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
-            <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--text-primary)' }}>暂无工单</h3>
-            <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>您还没有创建任何工单</p>
-            <Link to={createPageUrl('CreateTicket')}>
-              <Button
+          <TabsContent value="closed">
+            {isLoading ? (
+              <LoadingSpinner className="py-20" />
+            ) : closedTickets.length === 0 ? (
+              <div
+                className="rounded-xl p-12 text-center"
                 style={{
-                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                  color: 'var(--bg-primary)'
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-primary)'
                 }}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                创建第一个工单
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {tickets.map((ticket, index) => (
-              <div key={ticket.id} className="animate-fadeInUp" style={{ animationDelay: `${0.1 * (index + 1)}s` }}>
-                <TicketCard ticket={ticket} linkTo="TicketDetail" />
+                <Archive className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
+                <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--text-primary)' }}>暂无已关闭工单</h3>
+                <p style={{ color: 'var(--text-secondary)' }}>关闭的工单会显示在这里</p>
               </div>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="grid gap-4">
+                {closedTickets.map((ticket, index) => (
+                  <div key={ticket.id} className="animate-fadeInUp" style={{ animationDelay: `${0.05 * (index + 1)}s` }}>
+                    <TicketCard ticket={ticket} linkTo="TicketDetail" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
