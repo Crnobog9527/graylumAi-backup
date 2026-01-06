@@ -29,10 +29,7 @@ export default function TicketDetail() {
 
   const { data: ticket, isLoading, isError } = useQuery({
     queryKey: ['ticket', ticketId],
-    queryFn: async () => {
-      const tickets = await base44.entities.Ticket.filter({ id: ticketId });
-      return tickets.length > 0 ? tickets[0] : null;
-    },
+    queryFn: () => base44.entities.Ticket.get(ticketId),
     enabled: !!ticketId,
     retry: false,
   });
