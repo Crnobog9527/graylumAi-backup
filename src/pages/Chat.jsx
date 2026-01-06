@@ -1024,9 +1024,8 @@ export default function Chat() {
             <div 
               className="relative rounded-2xl chat-input-box" 
               style={{ 
-                background: 'linear-gradient(145deg, rgba(30,30,30,0.9) 0%, rgba(20,20,20,0.95) 100%)',
+                background: 'var(--bg-primary)',
                 border: '1px solid rgba(255, 215, 0, 0.15)',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.05)'
               }}
             >
               <div className="flex items-end p-3">
