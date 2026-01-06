@@ -136,8 +136,8 @@ function AdminTicketDetailContent() {
     );
   }
 
-  // 等待工单数据加载
-  if (ticketLoading) {
+  // 等待工单数据加载 - 包括初始 undefined 状态
+  if (ticketLoading || ticket === undefined) {
     return (
       <div className="flex min-h-screen bg-slate-50">
         <AdminSidebar currentPage="AdminTickets" />
@@ -148,8 +148,8 @@ function AdminTicketDetailContent() {
     );
   }
 
-  // 工单不存在
-  if (!ticket) {
+  // 工单不存在 - 只有明确返回 null 时才显示
+  if (ticket === null) {
     return (
       <div className="flex min-h-screen bg-slate-50">
         <AdminSidebar currentPage="AdminTickets" />

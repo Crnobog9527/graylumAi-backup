@@ -123,12 +123,13 @@ export default function TicketDetail() {
     return <LoadingSpinner />;
   }
 
-  // 等待工单数据加载
-  if (ticketLoading) {
+  // 等待工单数据加载 - 包括初始 undefined 状态
+  if (ticketLoading || ticket === undefined) {
     return <LoadingSpinner />;
   }
 
-  if (isError || !ticket) {
+  // 工单不存在 - 只有明确返回 null 时才显示
+  if (isError || ticket === null) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
         <div className="text-center max-w-2xl mx-auto p-6">
