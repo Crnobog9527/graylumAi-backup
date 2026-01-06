@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { ProfileSidebar, SubscriptionCard, CreditStatsCard, OrderHistory, UsageHistoryCard, SecuritySettingsCard } from '@/components/profile/ProfileComponents';
 import { UserProfileHeader, CreditsAndSubscriptionCards, UsageStatsCard, QuickActionsCard } from '@/components/profile/PersonalInfoCard';
+import TicketsPanel from '@/components/profile/TicketsPanel';
 import { Button } from "@/components/ui/button";
 import { Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -156,6 +157,8 @@ export default function Profile() {
                 {activeTab === 'history' && <UsageHistoryCard user={user} />}
 
                 {activeTab === 'security' && <SecuritySettingsCard user={user} />}
+
+                {activeTab === 'tickets' && <TicketsPanel user={user} />}
              </div>
           </div>
         </div>
