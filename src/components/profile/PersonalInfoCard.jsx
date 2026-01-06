@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { format, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 import InviteDialog from '../invite/InviteDialog';
+import CreditsDialog from './CreditsDialog';
 
 export function UserProfileHeader({ user }) {
   const registerDate = user?.created_date ? format(new Date(user.created_date), 'yyyy年M月d日') : '-';
