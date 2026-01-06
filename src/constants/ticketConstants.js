@@ -1,17 +1,35 @@
 import { Clock, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 
+// 深色主题下的状态颜色映射
 export const statusMap = {
-  pending: { label: '待处理', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock },
-  in_progress: { label: '处理中', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: AlertCircle },
-  resolved: { label: '已解决', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle },
-  closed: { label: '已关闭', color: 'bg-slate-100 text-slate-800 border-slate-200', icon: XCircle }
+  pending: {
+    label: '待处理',
+    color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+    icon: Clock
+  },
+  in_progress: {
+    label: '处理中',
+    color: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    icon: AlertCircle
+  },
+  resolved: {
+    label: '已解决',
+    color: 'bg-green-500/20 text-green-400 border-green-500/30',
+    icon: CheckCircle
+  },
+  closed: {
+    label: '已关闭',
+    color: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+    icon: XCircle
+  }
 };
 
+// 深色主题下的优先级颜色映射
 export const priorityMap = {
-  low: { label: '低', color: 'text-slate-500' },
-  medium: { label: '中', color: 'text-blue-600' },
-  high: { label: '高', color: 'text-orange-600' },
-  urgent: { label: '紧急', color: 'text-red-600' }
+  low: { label: '低', color: 'text-gray-400' },
+  medium: { label: '中', color: 'text-blue-400' },
+  high: { label: '高', color: 'text-orange-400' },
+  urgent: { label: '紧急', color: 'text-red-400' }
 };
 
 export const categoryMap = {

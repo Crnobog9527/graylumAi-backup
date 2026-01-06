@@ -109,49 +109,108 @@ export default function CreateTicket() {
     return <LoadingSpinner />;
   }
 
+  const inputStyle = {
+    background: 'var(--bg-tertiary)',
+    border: '1px solid var(--border-primary)',
+    color: 'var(--text-primary)'
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="max-w-3xl mx-auto px-4">
+    <div className="min-h-screen relative overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+      {/* 动态背景 */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div
+          className="absolute -top-32 left-1/3 w-[600px] h-[400px] rounded-full opacity-40 blur-[100px]"
+          style={{
+            background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
+            animation: 'pulseGlow 15s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full opacity-30 blur-[120px]"
+          style={{
+            background: 'radial-gradient(circle, rgba(139,92,246,0.6) 0%, transparent 70%)',
+            animation: 'floatSoft 20s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(255,215,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,215,0,0.1) 1px, transparent 1px)',
+            backgroundSize: '50px 50px',
+          }}
+        />
+      </div>
+
+      <style>{`
+        @keyframes pulseGlow {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.1); }
+        }
+        @keyframes floatSoft {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(-30px, -20px); }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeInUp {
+          animation: fadeInUp 0.5s ease forwards;
+        }
+      `}</style>
+
+      <div className="max-w-3xl mx-auto px-4 py-8 relative z-10">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 animate-fadeInUp">
           <Button
             variant="ghost"
             onClick={() => navigate(createPageUrl('Tickets'))}
             className="mb-4 -ml-2"
+            style={{ color: 'var(--text-secondary)' }}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             返回工单列表
           </Button>
-          <h1 className="text-3xl font-bold text-slate-900">创建工单</h1>
-          <p className="text-slate-500 mt-1">请详细描述您遇到的问题，我们会尽快回复</p>
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>创建工单</h1>
+          <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>请详细描述您遇到的问题，我们会尽快回复</p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-slate-200 p-6 space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-xl p-6 space-y-6 animate-fadeInUp"
+          style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-primary)',
+            animationDelay: '0.1s'
+          }}
+        >
           {/* Title */}
           <div>
-            <Label htmlFor="title" className="text-base font-medium">工单标题 *</Label>
+            <Label htmlFor="title" className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>工单标题 *</Label>
             <Input
               id="title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="请简要描述您的问题"
               className="mt-2"
+              style={inputStyle}
               maxLength={100}
             />
           </div>
 
           {/* Category */}
           <div>
-            <Label className="text-base font-medium">问题分类 *</Label>
+            <Label className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>问题分类 *</Label>
             <Select
               value={formData.category}
               onValueChange={(value) => setFormData({ ...formData, category: value })}
             >
-              <SelectTrigger className="mt-2">
+              <SelectTrigger className="mt-2" style={inputStyle}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}>
                 {categoryOptions.map(option => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -163,15 +222,15 @@ export default function CreateTicket() {
 
           {/* Priority */}
           <div>
-            <Label className="text-base font-medium">优先级</Label>
+            <Label className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>优先级</Label>
             <Select
               value={formData.priority}
               onValueChange={(value) => setFormData({ ...formData, priority: value })}
             >
-              <SelectTrigger className="mt-2">
+              <SelectTrigger className="mt-2" style={inputStyle}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}>
                 {priorityOptions.map(option => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -183,21 +242,22 @@ export default function CreateTicket() {
 
           {/* Description */}
           <div>
-            <Label htmlFor="description" className="text-base font-medium">问题描述 *</Label>
+            <Label htmlFor="description" className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>问题描述 *</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="请详细描述您遇到的问题，包括具体的场景、步骤和期望结果"
               className="mt-2 min-h-[200px]"
+              style={inputStyle}
               maxLength={2000}
             />
-            <p className="text-xs text-slate-500 mt-1">{formData.description.length}/2000</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{formData.description.length}/2000</p>
           </div>
 
           {/* Attachments */}
           <div>
-            <Label className="text-base font-medium">附件（可选）</Label>
+            <Label className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>附件（可选）</Label>
             <div className="mt-2">
               <input
                 type="file"
@@ -208,7 +268,17 @@ export default function CreateTicket() {
                 className="hidden"
               />
               <label htmlFor="file-upload">
-                <Button type="button" variant="outline" disabled={isUploading} asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isUploading}
+                  asChild
+                  style={{
+                    background: 'var(--bg-tertiary)',
+                    border: '1px solid var(--border-primary)',
+                    color: 'var(--text-secondary)'
+                  }}
+                >
                   <span className="cursor-pointer">
                     {isUploading ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -219,24 +289,29 @@ export default function CreateTicket() {
                   </span>
                 </Button>
               </label>
-              <p className="text-xs text-slate-500 mt-2">支持图片、PDF、Word文档，单个文件不超过10MB</p>
+              <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>支持图片、PDF、Word文档，单个文件不超过10MB</p>
             </div>
 
             {/* Attachment List */}
             {attachments.length > 0 && (
               <div className="mt-4 space-y-2">
                 {attachments.map((file, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 p-3 rounded-lg"
+                    style={{ background: 'var(--bg-tertiary)' }}
+                  >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">{file.name}</p>
-                      <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(2)} KB</p>
+                      <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{file.name}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{(file.size / 1024).toFixed(2)} KB</p>
                     </div>
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       onClick={() => removeAttachment(index)}
-                      className="text-slate-400 hover:text-red-600"
+                      style={{ color: 'var(--text-tertiary)' }}
+                      className="hover:text-red-400"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -253,13 +328,22 @@ export default function CreateTicket() {
               variant="outline"
               onClick={() => navigate(createPageUrl('Tickets'))}
               className="flex-1"
+              style={{
+                background: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-primary)',
+                color: 'var(--text-secondary)'
+              }}
             >
               取消
             </Button>
             <Button
               type="submit"
               disabled={createTicketMutation.isPending}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className="flex-1"
+              style={{
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                color: 'var(--bg-primary)'
+              }}
             >
               {createTicketMutation.isPending ? (
                 <>
