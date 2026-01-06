@@ -156,3 +156,26 @@ button:focus-visible {
     @apply bg-background text-foreground;
   }
 }
+
+/* ============================================
+   隐藏 SDK 默认横幅公告样式
+   使用自定义 GlobalBanner 组件替代
+   ============================================ */
+
+/* 隐藏 base44 SDK 注入的默认横幅 */
+[data-base44-banner],
+[data-site-banner],
+.base44-banner,
+.b44-banner,
+.sdk-site-banner,
+.site-notification-bar,
+#base44-banner,
+#site-banner {
+  display: none !important;
+}
+
+/* 如果 SDK 使用 iframe 注入横幅，也隐藏 */
+iframe[src*="banner"],
+iframe[src*="notification"] {
+  display: none !important;
+}
