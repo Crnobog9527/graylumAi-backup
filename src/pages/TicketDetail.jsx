@@ -22,28 +22,21 @@ export default function TicketDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
-  const [ticketId, setTicketId] = useState(null);
 
-  // 获取URL参数 - 在useEffect中解析以确保正确获取
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    console.log('URL解析 - 完整URL:', window.location.href);
-    console.log('URL解析 - search:', window.location.search);
-    console.log('URL解析 - ticketId:', id);
-    setTicketId(id);
-  }, []);
+  // 直接从URL获取ticketId
+  const ticketId = new URLSearchParams(window.location.search).get('id');
 
   // 加载所有数据
   useEffect(() => {
-    // 等待ticketId被设置
-    if (ticketId === null) {
-      return;
-    }
-    
     const loadData = async () => {
       console.log('=== TicketDetail loadData ===');
       console.log('ticketId:', ticketId);
+      
+      if (!ticketId) {
+        setError('无效的工单ID');
+        setLoading(false);
+        return;
+      }
       
       setLoading(true);
       setError(null);
@@ -53,13 +46,6 @@ export default function TicketDetail() {
         const userData = await base44.auth.me();
         console.log('当前用户:', userData.email);
         setUser(userData);
-
-        if (!ticketId) {
-          console.log('错误: ticketId 为空');
-          setError('无效的工单ID');
-          setLoading(false);
-          return;
-        }
 
         // 2. 获取用户的所有工单，然后找到指定ID的工单
         console.log('查询用户工单列表...');
