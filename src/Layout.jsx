@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AppHeader from '@/components/layout/AppHeader';
 import GlobalBanner from '@/components/layout/GlobalBanner';
-import GlobalFooter from '@/components/layout/GlobalFooter';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 
@@ -121,21 +120,16 @@ export default function Layout({ children, currentPageName }) {
     return null;
   }
 
-  // 不显示页脚的页面列表
-  const noFooterPages = ['Chat'];
-  const showFooter = !noFooterPages.includes(currentPageName);
-
   return (
     <div
-      className="min-h-screen font-sans flex flex-col"
+      className="min-h-screen font-sans"
       style={{ background: 'var(--bg-primary)' }}
     >
       <AppHeader user={user} />
       <GlobalBanner />
-      <main className="animate-in fade-in duration-500 flex-1">
+      <main className="animate-in fade-in duration-500">
         {children}
       </main>
-      {showFooter && <GlobalFooter />}
     </div>
   );
 }
