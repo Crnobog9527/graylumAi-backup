@@ -55,6 +55,8 @@ export default function Chat() {
   const [editingTitleValue, setEditingTitleValue] = useState('');
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [debugInfo, setDebugInfo] = useState([]);
+  const [isExporting, setIsExporting] = useState(false);
+  const [canExport, setCanExport] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
