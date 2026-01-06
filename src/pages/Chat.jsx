@@ -585,6 +585,42 @@ export default function Chat() {
     setFileContents(prev => prev.filter((_, i) => i !== index));
   };
 
+  // 导出当前对话
+  const handleExportConversation = async () => {
+    if (!currentConversation) {
+      alert('请先选择一个对话');
+      return;
+    }
+    
+    setIsExporting(true);
+    try {
+      const { data } = await base44.functions.invoke('exportConversations', {
+        conversation_ids: [currentConversation.id],
+        format: 'markdown'
+      });
+      
+      // 创建下载
+      const blob = new Blob([data], { type: 'text/markdown;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentConversation.title || '对话记录'}_${format(new Date(), 'yyyyMMdd_HHmm')}.md`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      const errorData = error.response?.data || {};
+      if (errorData.upgrade_required) {
+        alert('您当前的会员等级不支持导出功能，请升级会员');
+      } else {
+        alert('导出失败: ' + (errorData.error || error.message));
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Group conversations by date
   const groupedConversations = React.useMemo(() => {
     const groups = { today: [], yesterday: [], thisWeek: [], older: [] };
