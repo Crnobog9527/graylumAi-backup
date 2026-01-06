@@ -65,6 +65,7 @@ export function UserProfileHeader({ user }) {
 }
 
 export function CreditsAndSubscriptionCards({ user }) {
+  const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
   const credits = user?.credits || 0;
   const totalUsed = user?.total_credits_used || 0;
   const totalPurchased = user?.total_credits_purchased || 0;
@@ -105,33 +106,34 @@ export function CreditsAndSubscriptionCards({ user }) {
   const isFreeTier = subscriptionTier === 'free';
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      {/* Credits Card */}
-      <div
-        className="rounded-2xl p-6 transition-all duration-300"
-        style={{
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border-primary)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-        }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>积分余额</h3>
-          <Coins className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
-        </div>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Credits Card */}
         <div
-          className="text-4xl font-bold mb-2"
+          className="rounded-2xl p-6 transition-all duration-300"
           style={{
-            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-primary)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
           }}
         >
-          {credits.toLocaleString()}
-        </div>
-        <div className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>本月已消耗 {Math.round(monthlyUsed).toLocaleString()} 积分</div>
-        <Link to={createPageUrl('Credits')}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>积分余额</h3>
+            <Coins className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+          </div>
+          <div
+            className="text-4xl font-bold mb-2"
+            style={{
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}
+          >
+            {credits.toLocaleString()}
+          </div>
+          <div className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>本月已消耗 {Math.round(monthlyUsed).toLocaleString()} 积分</div>
           <Button
+            onClick={() => setCreditsDialogOpen(true)}
             className="w-full gap-2"
             style={{
               background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
@@ -142,28 +144,27 @@ export function CreditsAndSubscriptionCards({ user }) {
             <Plus className="h-4 w-4" />
             购买加油包
           </Button>
-        </Link>
-      </div>
+        </div>
 
-      {/* Subscription Card */}
-      <div
-        className="rounded-2xl p-6 transition-all duration-300"
-        style={{
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border-primary)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-        }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>订阅状态</h3>
-          <Crown className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
-        </div>
-        <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{tierLabels[subscriptionTier]}</div>
-        <div className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>
-          {isFreeTier ? '升级会员享受更多权益' : '感谢您的支持'}
-        </div>
-        <Link to={createPageUrl('Credits')}>
+        {/* Subscription Card */}
+        <div
+          className="rounded-2xl p-6 transition-all duration-300"
+          style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-primary)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+          }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>订阅状态</h3>
+            <Crown className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+          </div>
+          <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{tierLabels[subscriptionTier]}</div>
+          <div className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>
+            {isFreeTier ? '升级会员享受更多权益' : '感谢您的支持'}
+          </div>
           <Button
+            onClick={() => setCreditsDialogOpen(true)}
             className="w-full gap-2"
             style={{
               background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
@@ -183,9 +184,15 @@ export function CreditsAndSubscriptionCards({ user }) {
               </>
             )}
           </Button>
-        </Link>
+        </div>
       </div>
-    </div>
+
+      <CreditsDialog 
+        open={creditsDialogOpen} 
+        onOpenChange={setCreditsDialogOpen} 
+        user={user} 
+      />
+    </>
   );
 }
 
