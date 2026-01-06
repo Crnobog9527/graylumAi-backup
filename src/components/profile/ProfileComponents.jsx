@@ -347,10 +347,10 @@ export function SubscriptionCard({ user }) {
                   <span className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>免费</span>
                 ) : billingCycle === 'yearly' ? (
                   <div className="flex flex-col items-center gap-1">
-                    {/* 原价划线 */}
+                    {/* 原价划线（月价格） */}
                     <div className="flex items-center gap-2">
                       <span className="text-sm line-through" style={{ color: 'var(--text-disabled)' }}>
-                        ${plan.price.monthly * 12}/年
+                        ${plan.price.monthly.toFixed(2)}/月
                       </span>
                       <span
                         className="text-xs px-1.5 py-0.5 rounded"
@@ -359,7 +359,7 @@ export function SubscriptionCard({ user }) {
                         省{Math.round((1 - price / (plan.price.monthly * 12)) * 100)}%
                       </span>
                     </div>
-                    {/* 年付价格 */}
+                    {/* 年付价格（每月均摊） */}
                     <div className="flex items-baseline justify-center gap-1">
                       <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>$</span>
                       <span
@@ -372,12 +372,12 @@ export function SubscriptionCard({ user }) {
                           WebkitTextFillColor: 'transparent'
                         }}
                       >
-                        {(price / 12).toFixed(1)}
+                        {(price / 12).toFixed(2)}
                       </span>
                       <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>/月</span>
                     </div>
                     <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                      年付共 ${price}
+                      年付共 ${price.toFixed(2)}
                     </span>
                   </div>
                 ) : (
@@ -393,7 +393,7 @@ export function SubscriptionCard({ user }) {
                         WebkitTextFillColor: 'transparent'
                       }}
                     >
-                      {price}
+                      {price.toFixed(2)}
                     </span>
                     <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>/月</span>
                   </div>
