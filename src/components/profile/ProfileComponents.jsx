@@ -90,7 +90,7 @@ function CreditPackagesSection({ onBuyClick }) {
               </div>
             )}
             <div className="text-lg font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
-              ${pkg.price}
+              ${pkg.price.toFixed(2)}
             </div>
             <Button
               onClick={onBuyClick}
