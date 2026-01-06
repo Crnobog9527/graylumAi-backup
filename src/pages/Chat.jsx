@@ -1375,8 +1375,8 @@ function MessageBubble({ message, isStreaming, user }) {
   }
 
   return (
-    <div className="flex gap-4 py-4 message-bubble">
-      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-300" style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
+    <div className="flex gap-4 py-4">
+      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
         <Bot className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
       </div>
       <div className="flex-1 min-w-0">
