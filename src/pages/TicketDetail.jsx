@@ -22,26 +22,29 @@ export default function TicketDetail() {
 
   const ticketId = new URLSearchParams(location.search).get('id');
 
-  const { data: user } = useQuery({
+  // 1. 首先获取用户数据
+  const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['user'],
     queryFn: () => base44.auth.me(),
   });
 
-  const { data: ticket, isLoading, isError } = useQuery({
-    queryKey: ['ticket', ticketId],
+  // 2. 用户数据加载后再获取工单数据
+  const { data: ticket, isLoading: ticketLoading, isError } = useQuery({
+    queryKey: ['user-ticket', ticketId],
     queryFn: async () => {
       // 使用 filter 而非 get，以便 RLS 规则正确应用
       const tickets = await base44.entities.Ticket.filter({ id: ticketId });
       return tickets.length > 0 ? tickets[0] : null;
     },
-    enabled: !!ticketId,
+    enabled: !!ticketId && !!user,
     retry: false,
   });
 
+  // 3. 获取回复数据
   const { data: replies = [] } = useQuery({
     queryKey: ['ticket-replies', ticketId],
     queryFn: () => base44.entities.TicketReply.filter({ ticket_id: ticketId }, '-created_date'),
-    enabled: !!ticketId,
+    enabled: !!ticketId && !!user,
   });
 
   const addReplyMutation = useMutation({

@@ -15,13 +15,11 @@ import {
 import { toast } from "sonner";
 import {
   statusOptions,
-  priorityOptions,
   categoryMap
 } from '@/constants/ticketConstants';
 import {
   LoadingSpinner,
   TicketStatusBadge,
-  TicketPriorityBadge,
   TicketReplyList,
   TicketReplyForm
 } from '@/components/tickets';
@@ -34,25 +32,33 @@ export default function AdminTicketDetail() {
 
   const ticketId = new URLSearchParams(location.search).get('id');
 
-  const { data: ticket, isLoading } = useQuery({
-    queryKey: ['ticket', ticketId],
+  // 1. 首先获取用户数据
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ['user'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  // 2. 用户数据加载后再获取工单数据
+  const { data: ticket, isLoading: ticketLoading } = useQuery({
+    queryKey: ['admin-ticket', ticketId],
     queryFn: async () => {
       const tickets = await base44.entities.Ticket.filter({ id: ticketId });
       return tickets.length > 0 ? tickets[0] : null;
     },
-    enabled: !!ticketId && user?.role === 'admin',
+    enabled: !!ticketId && !!user && user.role === 'admin',
   });
 
+  // 3. 获取回复数据
   const { data: replies = [] } = useQuery({
     queryKey: ['ticket-replies', ticketId],
     queryFn: () => base44.entities.TicketReply.filter({ ticket_id: ticketId }, '-created_date'),
-    enabled: !!ticketId && user?.role === 'admin',
+    enabled: !!ticketId && !!user && user.role === 'admin',
   });
 
   const updateTicketMutation = useMutation({
     mutationFn: (data) => base44.entities.Ticket.update(ticketId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['ticket', ticketId]);
+      queryClient.invalidateQueries(['admin-ticket', ticketId]);
       toast.success('工单已更新');
     }
   });
@@ -76,14 +82,9 @@ export default function AdminTicketDetail() {
     onSuccess: () => {
       setReplyMessage('');
       queryClient.invalidateQueries(['ticket-replies', ticketId]);
-      queryClient.invalidateQueries(['ticket', ticketId]);
+      queryClient.invalidateQueries(['admin-ticket', ticketId]);
       toast.success('回复已发送');
     }
-  });
-
-  const { data: user, isLoading: userLoading } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => base44.auth.me(),
   });
 
   // 等待用户数据加载
@@ -91,6 +92,7 @@ export default function AdminTicketDetail() {
     return <LoadingSpinner />;
   }
 
+  // 检查权限
   if (!user || user.role !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
@@ -102,16 +104,25 @@ export default function AdminTicketDetail() {
     );
   }
 
-  if (isLoading) {
+  // 等待工单数据加载
+  if (ticketLoading) {
     return <LoadingSpinner />;
   }
 
+  // 工单不存在
   if (!ticket) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
         <div className="text-center">
           <AlertCircle className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
           <p style={{ color: 'var(--text-secondary)' }}>工单不存在</p>
+          <Button
+            variant="outline"
+            onClick={() => navigate(createPageUrl('AdminTickets'))}
+            className="mt-4"
+          >
+            返回工单列表
+          </Button>
         </div>
       </div>
     );
@@ -205,7 +216,6 @@ export default function AdminTicketDetail() {
               <div className="flex items-center gap-3 mb-3 flex-wrap">
                 <span className="text-sm font-mono" style={{ color: 'var(--text-tertiary)' }}>{ticket.ticket_number}</span>
                 <TicketStatusBadge status={ticket.status} />
-                <TicketPriorityBadge priority={ticket.priority} />
               </div>
               <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>{ticket.title}</h1>
               <div className="flex items-center gap-4 text-sm flex-wrap" style={{ color: 'var(--text-tertiary)' }}>
@@ -219,7 +229,7 @@ export default function AdminTicketDetail() {
           </div>
 
           {/* Admin Controls */}
-          <div className="pt-4 grid grid-cols-1 md:grid-cols-3 gap-4" style={{ borderTop: '1px solid var(--border-primary)' }}>
+          <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4" style={{ borderTop: '1px solid var(--border-primary)' }}>
             <div>
               <label className="text-sm font-medium mb-2 block" style={{ color: 'var(--text-secondary)' }}>更改状态</label>
               <Select
@@ -231,25 +241,6 @@ export default function AdminTicketDetail() {
                 </SelectTrigger>
                 <SelectContent style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}>
                   {statusOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block" style={{ color: 'var(--text-secondary)' }}>更改优先级</label>
-              <Select
-                value={ticket.priority}
-                onValueChange={(value) => updateTicketMutation.mutate({ priority: value })}
-              >
-                <SelectTrigger style={inputStyle}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}>
-                  {priorityOptions.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -271,7 +262,7 @@ export default function AdminTicketDetail() {
                 </SelectTrigger>
                 <SelectContent style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}>
                   <SelectItem value="unassigned">未分配</SelectItem>
-                  <SelectItem value="simonni@grayscalegroup.cn">simonni@grayscalegroup.cn</SelectItem>
+                  <SelectItem value={user.email}>{user.email}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
