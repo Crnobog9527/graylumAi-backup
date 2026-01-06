@@ -411,6 +411,7 @@ export function QuickActionsCard({ user, onNavigateToTickets }) {
             background: 'var(--bg-primary)',
             border: '1px solid var(--border-primary)'
           }}
+          onClick={() => onNavigateToTickets && onNavigateToTickets()}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.3)';
             e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
@@ -432,10 +433,10 @@ export function QuickActionsCard({ user, onNavigateToTickets }) {
             <span className="w-2 h-2 rounded-full" style={{ background: 'var(--success)' }}></span>
             在线反馈
           </div>
-          <Link to={createPageUrl('CreateTicket')} className="text-sm font-medium flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
+          <div className="text-sm font-medium flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
             立即咨询
             <span>→</span>
-          </Link>
+          </div>
         </div>
       </div>
 
