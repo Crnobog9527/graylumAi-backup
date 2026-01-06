@@ -356,39 +356,10 @@ export function CreditStatsCard({ user }) {
           </Button>
         </div>
 
-        <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--border-primary)' }}>
-          <h4 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>最近积分变动</h4>
-          <div className="space-y-3">
-            {transactions.slice(0, 5).map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center"
-                    style={{
-                      background: tx.amount > 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                      border: `1px solid ${tx.amount > 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
-                    }}
-                  >
-                    <Zap className="h-4 w-4" style={{ color: tx.amount > 0 ? 'var(--success)' : 'var(--error)' }} />
-                  </div>
-                  <div>
-                    <div style={{ color: 'var(--text-primary)' }}>{tx.description?.slice(0, 30) || tx.type}</div>
-                    <div className="text-xs" style={{ color: 'var(--text-disabled)' }}>
-                      {format(new Date(tx.created_date), 'MM-dd HH:mm')}
-                    </div>
-                  </div>
-                </div>
-                <div
-                  className="font-medium"
-                  style={{ color: tx.amount > 0 ? 'var(--success)' : 'var(--error)' }}
-                >
-                  {tx.amount > 0 ? '+' : ''}{tx.amount}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
+
+      {/* 积分加油包 */}
+      <CreditPackagesSection onBuyClick={() => setCreditsDialogOpen(true)} />
 
       <CreditsDialog 
         open={creditsDialogOpen} 
