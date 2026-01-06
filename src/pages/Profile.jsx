@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { ProfileSidebar, SubscriptionCard, CreditStatsCard, CreditRecordsCard, OrderHistory, UsageHistoryCard, SecuritySettingsCard } from '@/components/profile/ProfileComponents';
@@ -9,7 +9,17 @@ import { Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function Profile() {
-  const [activeTab, setActiveTab] = useState('profile');
+  // 从 URL 参数读取初始 tab
+  const getInitialTab = () => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && ['profile', 'subscription', 'credits', 'history', 'security', 'tickets'].includes(tab)) {
+      return tab;
+    }
+    return 'profile';
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [ticketInitialView, setTicketInitialView] = useState('list');
   const [localUser, setLocalUser] = useState(null);
 
