@@ -427,18 +427,6 @@ export function CreditStatsCard({ user }) {
             </div>
           </div>
 
-          <Button
-            onClick={() => setCreditsDialogOpen(true)}
-            className="rounded-full px-6 gap-2"
-            style={{
-              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-              color: 'var(--bg-primary)',
-              boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
-            }}
-          >
-            <Zap className="h-4 w-4" />
-            购买加油包
-          </Button>
         </div>
 
       </div>
