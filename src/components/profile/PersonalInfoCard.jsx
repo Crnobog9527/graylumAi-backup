@@ -307,7 +307,6 @@ export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) 
             style={{
               background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
               color: 'var(--bg-primary)',
-              boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
             }}
           >
             {isFreeTier ? (
