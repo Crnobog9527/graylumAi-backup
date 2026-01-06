@@ -15,14 +15,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  priorityOptions,
   categoryOptions,
   categoryMap
 } from '@/constants/ticketConstants';
 import {
   LoadingSpinner,
-  TicketStatusBadge,
-  TicketPriorityBadge
+  TicketStatusBadge
 } from '@/components/tickets';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import { LanguageProvider, useLanguage } from '../components/admin/LanguageContext';
@@ -31,7 +29,6 @@ function AdminTicketsContent() {
   const { t } = useLanguage();
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('active');
-  const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -71,7 +68,6 @@ function AdminTicketsContent() {
 
   const filterTickets = (ticketList) => {
     return ticketList.filter((ticket) => {
-      if (priorityFilter !== 'all' && ticket.priority !== priorityFilter) return false;
       if (categoryFilter !== 'all' && ticket.category !== categoryFilter) return false;
 
       if (searchQuery) {
@@ -137,20 +133,6 @@ function AdminTicketsContent() {
                 <Filter className="h-4 w-4 text-slate-400" />
                 <span className="text-sm text-slate-600">筛选：</span>
               </div>
-
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="优先级" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部优先级</SelectItem>
-                  {priorityOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
 
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-[140px]">
@@ -258,7 +240,6 @@ function TicketTable({ tickets }) {
               <th className="text-left py-3 px-4 text-sm font-medium text-slate-600">用户</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-slate-600">分类</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-slate-600">状态</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-slate-600">优先级</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-slate-600">创建时间</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-slate-600">操作</th>
             </tr>
@@ -283,9 +264,6 @@ function TicketTable({ tickets }) {
                 </td>
                 <td className="py-3 px-4">
                   <TicketStatusBadge status={ticket.status} />
-                </td>
-                <td className="py-3 px-4">
-                  <TicketPriorityBadge priority={ticket.priority} showLabel={false} />
                 </td>
                 <td className="py-3 px-4">
                   <span className="text-sm text-slate-500">
