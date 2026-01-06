@@ -22,16 +22,28 @@ export default function TicketDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
+  const [ticketId, setTicketId] = useState(null);
 
-  // 获取URL参数
-  const urlParams = new URLSearchParams(window.location.search);
-  const ticketId = urlParams.get('id');
+  // 获取URL参数 - 在useEffect中解析以确保正确获取
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    console.log('URL解析 - 完整URL:', window.location.href);
+    console.log('URL解析 - search:', window.location.search);
+    console.log('URL解析 - ticketId:', id);
+    setTicketId(id);
+  }, []);
 
   // 加载所有数据
   useEffect(() => {
+    // 等待ticketId被设置
+    if (ticketId === null) {
+      return;
+    }
+    
     const loadData = async () => {
       console.log('=== TicketDetail loadData ===');
-      console.log('ticketId from URL:', ticketId);
+      console.log('ticketId:', ticketId);
       
       setLoading(true);
       setError(null);
