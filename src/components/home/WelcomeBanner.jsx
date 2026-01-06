@@ -28,7 +28,7 @@ export default function WelcomeBanner({ user }) {
       style={{
         background: 'var(--bg-secondary)',
         borderRadius: 'var(--radius-2xl)',
-        animation: 'fadeInUp 0.6s ease forwards'
+        contain: 'layout paint',
       }}
     >
       <div>
