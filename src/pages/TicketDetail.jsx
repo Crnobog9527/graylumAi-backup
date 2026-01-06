@@ -29,7 +29,11 @@ export default function TicketDetail() {
 
   const { data: ticket, isLoading, isError } = useQuery({
     queryKey: ['ticket', ticketId],
-    queryFn: () => base44.entities.Ticket.get(ticketId),
+    queryFn: async () => {
+      // 使用 filter 而非 get，以便 RLS 规则正确应用
+      const tickets = await base44.entities.Ticket.filter({ id: ticketId });
+      return tickets.length > 0 ? tickets[0] : null;
+    },
     enabled: !!ticketId,
     retry: false,
   });
