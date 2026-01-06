@@ -31,17 +31,25 @@ function AdminTicketDetailContent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [replyMessage, setReplyMessage] = useState('');
+  const [user, setUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(true);
 
-  // 使用 useMemo 确保 ticketId 稳定
-  const ticketId = React.useMemo(() => {
-    return new URLSearchParams(location.search).get('id');
-  }, [location.search]);
+  const ticketId = new URLSearchParams(location.search).get('id');
 
-  // 1. 首先获取用户数据
-  const { data: user, isLoading: userLoading } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => base44.auth.me(),
-  });
+  // 1. 首先获取用户数据 - 使用 useState 确保稳定
+  React.useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await base44.auth.me();
+        setUser(userData);
+      } catch (e) {
+        setUser(null);
+      } finally {
+        setUserLoading(false);
+      }
+    };
+    loadUser();
+  }, []);
 
   // 2. 用户数据加载后再获取工单数据
   const { data: ticket, isLoading: ticketLoading, isError, error } = useQuery({
@@ -64,7 +72,7 @@ function AdminTicketDetailContent() {
       console.log('找到工单:', tickets[0]);
       return tickets[0];
     },
-    enabled: !!ticketId && !!user && user?.role === 'admin',
+    enabled: !!ticketId && !!user && user.role === 'admin',
     retry: false,
     staleTime: 1000 * 60 * 5, // 5分钟内不重新获取
     refetchOnWindowFocus: false, // 防止窗口聚焦时重新获取
