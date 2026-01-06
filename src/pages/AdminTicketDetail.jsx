@@ -34,11 +34,6 @@ export default function AdminTicketDetail() {
 
   const ticketId = new URLSearchParams(location.search).get('id');
 
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => base44.auth.me(),
-  });
-
   const { data: ticket, isLoading } = useQuery({
     queryKey: ['ticket', ticketId],
     queryFn: async () => {
