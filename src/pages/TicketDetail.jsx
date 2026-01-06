@@ -30,13 +30,13 @@ export default function TicketDetail() {
 
   // 2. 用户数据加载后再获取工单数据
   const { data: ticket, isLoading: ticketLoading, isError } = useQuery({
-    queryKey: ['user-ticket', ticketId],
+    queryKey: ['user-ticket', ticketId, user?.email],
     queryFn: async () => {
-      // 使用 filter 而非 get，以便 RLS 规则正确应用
-      const tickets = await base44.entities.Ticket.filter({ id: ticketId });
-      return tickets.length > 0 ? tickets[0] : null;
+      // 获取当前用户的工单列表，然后找到匹配的工单
+      const tickets = await base44.entities.Ticket.filter({ user_email: user.email });
+      return tickets.find(t => t.id === ticketId) || null;
     },
-    enabled: !!ticketId && !!user,
+    enabled: !!ticketId && !!user?.email,
     retry: false,
   });
 

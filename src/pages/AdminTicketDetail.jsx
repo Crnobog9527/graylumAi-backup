@@ -44,8 +44,9 @@ function AdminTicketDetailContent() {
   const { data: ticket, isLoading: ticketLoading } = useQuery({
     queryKey: ['admin-ticket', ticketId],
     queryFn: async () => {
-      const tickets = await base44.entities.Ticket.filter({ id: ticketId });
-      return tickets.length > 0 ? tickets[0] : null;
+      // 管理员获取所有工单，然后找到匹配的
+      const tickets = await base44.entities.Ticket.list();
+      return tickets.find(t => t.id === ticketId) || null;
     },
     enabled: !!ticketId && !!user && user.role === 'admin',
   });
