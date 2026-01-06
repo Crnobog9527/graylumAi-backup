@@ -249,11 +249,11 @@ export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Credits Card */}
         <div
-          className="rounded-2xl p-6 transition-all duration-300 flex flex-col"
+          className="rounded-2xl p-6 flex flex-col"
           style={{
             background: 'var(--bg-secondary)',
             border: '1px solid var(--border-primary)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+            contain: 'layout paint',
           }}
         >
           <div className="flex items-center justify-between mb-4">
@@ -277,7 +277,6 @@ export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) 
             style={{
               background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
               color: 'var(--bg-primary)',
-              boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
             }}
           >
             <Plus className="h-4 w-4" />
@@ -287,11 +286,11 @@ export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) 
 
         {/* Subscription Card */}
         <div
-          className="rounded-2xl p-6 transition-all duration-300 flex flex-col"
+          className="rounded-2xl p-6 flex flex-col"
           style={{
             background: 'var(--bg-secondary)',
             border: '1px solid var(--border-primary)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+            contain: 'layout paint',
           }}
         >
           <div className="flex items-center justify-between mb-4">
