@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, Wand2, GripVertical, Bot } from 'lucide-react';
+import { Plus, Pencil, Trash2, GripVertical, Bot } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { iconMap, iconOptions, getIconColor } from '../components/modules/iconConfig';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -59,20 +60,7 @@ const colors = [
   { value: 'rose', label: 'Rose' },
 ];
 
-const icons = [
-  { value: 'Sparkles', label: 'Sparkles' },
-  { value: 'PenTool', label: 'Pen' },
-  { value: 'Video', label: 'Video' },
-  { value: 'Megaphone', label: 'Marketing' },
-  { value: 'Code', label: 'Code' },
-  { value: 'BarChart3', label: 'Chart' },
-  { value: 'Lightbulb', label: 'Idea' },
-  { value: 'Briefcase', label: 'Business' },
-  { value: 'FileText', label: 'Document' },
-  { value: 'Palette', label: 'Design' },
-  { value: 'Rocket', label: 'Rocket' },
-  { value: 'Target', label: 'Target' },
-];
+
 
 const initialFormData = {
   title: '',
