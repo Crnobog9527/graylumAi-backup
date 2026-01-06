@@ -4,32 +4,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Send, AlertCircle, Clock, CheckCircle, XCircle, User, Shield, Loader2, Paperclip } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ArrowLeft, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from "sonner";
-
-const statusMap = {
-  pending: { label: '待处理', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock },
-  in_progress: { label: '处理中', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: AlertCircle },
-  resolved: { label: '已解决', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle },
-  closed: { label: '已关闭', color: 'bg-slate-100 text-slate-800 border-slate-200', icon: XCircle }
-};
-
-const priorityMap = {
-  low: { label: '低', color: 'text-slate-500' },
-  medium: { label: '中', color: 'text-blue-600' },
-  high: { label: '高', color: 'text-orange-600' },
-  urgent: { label: '紧急', color: 'text-red-600' }
-};
-
-const categoryMap = {
-  technical_support: '技术支持',
-  feature_request: '功能建议',
-  bug_report: 'Bug反馈',
-  account_issue: '账户问题',
-  other: '其他'
-};
+import {
+  LoadingSpinner,
+  TicketInfo,
+  TicketReplyList,
+  TicketReplyForm,
+  TicketClosedNotice
+} from '@/components/tickets';
 
 export default function TicketDetail() {
   const location = useLocation();
@@ -65,7 +48,6 @@ export default function TicketDetail() {
         is_admin_reply: false
       });
 
-      // Update ticket's updated_date
       await base44.entities.Ticket.update(ticketId, {
         updated_date: new Date().toISOString()
       });
@@ -104,11 +86,7 @@ export default function TicketDetail() {
   };
 
   if (isLoading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!ticket) {
@@ -121,8 +99,6 @@ export default function TicketDetail() {
       </div>
     );
   }
-
-  const StatusIcon = statusMap[ticket.status].icon;
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
@@ -140,157 +116,40 @@ export default function TicketDetail() {
         </div>
 
         {/* Ticket Info */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-sm font-mono text-slate-500">{ticket.ticket_number}</span>
-                <span className={cn(
-                  "px-2.5 py-1 rounded-full text-xs font-medium border inline-flex items-center gap-1.5",
-                  statusMap[ticket.status].color
-                )}>
-                  <StatusIcon className="h-3 w-3" />
-                  {statusMap[ticket.status].label}
-                </span>
-                <span className={cn("text-sm font-medium", priorityMap[ticket.priority].color)}>
-                  {priorityMap[ticket.priority].label}优先级
-                </span>
-              </div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-2">{ticket.title}</h1>
-              <div className="flex items-center gap-4 text-sm text-slate-500">
-                <span>{categoryMap[ticket.category]}</span>
-                <span>•</span>
-                <span>创建于 {new Date(ticket.created_date).toLocaleString('zh-CN')}</span>
-              </div>
-            </div>
-            {ticket.status === 'resolved' && (
-              <Button
-                onClick={() => closeTicketMutation.mutate()}
-                disabled={closeTicketMutation.isPending}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {closeTicketMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                )}
-                确认解决
-              </Button>
-            )}
-          </div>
-
-          <div className="border-t border-slate-200 pt-4">
-            <h3 className="text-sm font-medium text-slate-700 mb-2">问题描述</h3>
-            <p className="text-slate-600 whitespace-pre-wrap">{ticket.description}</p>
-          </div>
-
-          {ticket.attachments && ticket.attachments.length > 0 && (
-            <div className="border-t border-slate-200 pt-4 mt-4">
-              <h3 className="text-sm font-medium text-slate-700 mb-2">附件</h3>
-              <div className="space-y-2">
-                {ticket.attachments.map((file, index) => (
-                  <a
-                    key={index}
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 p-2 bg-slate-50 rounded hover:bg-slate-100 transition-colors"
-                  >
-                    <Paperclip className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm text-blue-600">{file.name}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
+        <TicketInfo ticket={ticket}>
+          {ticket.status === 'resolved' && (
+            <Button
+              onClick={() => closeTicketMutation.mutate()}
+              disabled={closeTicketMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {closeTicketMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle className="h-4 w-4 mr-2" />
+              )}
+              确认解决
+            </Button>
           )}
-        </div>
+        </TicketInfo>
 
         {/* Replies */}
         <div className="space-y-4 mb-6">
           <h2 className="text-lg font-semibold text-slate-900">回复记录</h2>
-          
-          {replies.length === 0 ? (
-            <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
-              <p className="text-slate-500">暂无回复</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {replies.map((reply) => (
-                <div
-                  key={reply.id}
-                  className={cn(
-                    "bg-white rounded-lg border p-4",
-                    reply.is_admin_reply ? "border-blue-200 bg-blue-50/50" : "border-slate-200"
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center",
-                      reply.is_admin_reply ? "bg-blue-100" : "bg-slate-100"
-                    )}>
-                      {reply.is_admin_reply ? (
-                        <Shield className="h-5 w-5 text-blue-600" />
-                      ) : (
-                        <User className="h-5 w-5 text-slate-600" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-medium text-slate-900">
-                          {reply.is_admin_reply ? '客服' : '我'}
-                        </span>
-                        {reply.is_admin_reply && (
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
-                            官方回复
-                          </span>
-                        )}
-                        <span className="text-xs text-slate-500">
-                          {new Date(reply.created_date).toLocaleString('zh-CN')}
-                        </span>
-                      </div>
-                      <p className="text-slate-700 whitespace-pre-wrap">{reply.message}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <TicketReplyList replies={replies} isAdmin={false} />
         </div>
 
         {/* Reply Form */}
-        {ticket.status !== 'closed' && (
-          <form onSubmit={handleReplySubmit} className="bg-white rounded-lg border border-slate-200 p-4">
-            <h3 className="text-sm font-medium text-slate-900 mb-3">添加回复</h3>
-            <Textarea
-              value={replyMessage}
-              onChange={(e) => setReplyMessage(e.target.value)}
-              placeholder="输入您的回复..."
-              className="mb-3 min-h-[120px]"
-              maxLength={1000}
-            />
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">{replyMessage.length}/1000</span>
-              <Button
-                type="submit"
-                disabled={addReplyMutation.isPending || !replyMessage.trim()}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {addReplyMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4 mr-2" />
-                )}
-                发送回复
-              </Button>
-            </div>
-          </form>
-        )}
-
-        {ticket.status === 'closed' && (
-          <div className="bg-slate-100 rounded-lg border border-slate-200 p-4 text-center">
-            <XCircle className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-            <p className="text-slate-600">此工单已关闭，无法继续回复</p>
-          </div>
+        {ticket.status !== 'closed' ? (
+          <TicketReplyForm
+            replyMessage={replyMessage}
+            setReplyMessage={setReplyMessage}
+            onSubmit={handleReplySubmit}
+            isPending={addReplyMutation.isPending}
+            isAdmin={false}
+          />
+        ) : (
+          <TicketClosedNotice />
         )}
       </div>
     </div>
