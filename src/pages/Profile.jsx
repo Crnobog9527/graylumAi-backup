@@ -151,7 +151,7 @@ export default function Profile() {
                     <UserProfileHeader user={user} />
                     <CreditsAndSubscriptionCards user={user} />
                     <UsageStatsCard user={user} />
-                    <QuickActionsCard user={user} onNavigateToTickets={handleNavigateToCreateTicket} />
+                    <QuickActionsCard user={user} onNavigateToTickets={handleNavigateToCreateTicket} onNavigateToSecurity={handleNavigateToSecurity} />
                   </>
                 )}
 
