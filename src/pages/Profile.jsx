@@ -164,7 +164,14 @@ export default function Profile() {
 
                 {activeTab === 'security' && <SecuritySettingsCard user={user} />}
 
-                {activeTab === 'tickets' && <TicketsPanel user={user} key={activeTab} />}
+                {activeTab === 'tickets' && (
+                  <TicketsPanel 
+                    user={user} 
+                    key={`${activeTab}-${ticketInitialView}`}
+                    initialView={ticketInitialView}
+                    onViewChange={(v) => setTicketInitialView(v)}
+                  />
+                )}
              </div>
           </div>
         </div>
