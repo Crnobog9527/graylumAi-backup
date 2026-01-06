@@ -455,6 +455,35 @@ function CreateTicketForm({ user, onBack, onSuccess }) {
   const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
 
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    try {
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) {
+          toast.error('只支持上传图片文件');
+          continue;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error('图片大小不能超过5MB');
+          continue;
+        }
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        setAttachments(prev => [...prev, { name: file.name, url: file_url }]);
+      }
+    } catch (error) {
+      toast.error('上传失败，请重试');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const createMutation = useMutation({
     mutationFn: async (data) => {
       const today = new Date();
@@ -466,7 +495,8 @@ function CreateTicketForm({ user, onBack, onSuccess }) {
         ...data,
         ticket_number: ticketNumber,
         user_email: user.email,
-        status: 'pending'
+        status: 'pending',
+        attachments: attachments
       });
     },
     onSuccess: () => {
