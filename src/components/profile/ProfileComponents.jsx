@@ -552,14 +552,8 @@ export function CreditStatsCard({ user }) {
 
       </div>
 
-      {/* 积分加油包 */}
-      <CreditPackagesSection onBuyClick={() => setCreditsDialogOpen(true)} />
-
-      <CreditsDialog 
-        open={creditsDialogOpen} 
-        onOpenChange={setCreditsDialogOpen} 
-        user={user} 
-      />
+      {/* 每日消耗趋势图 */}
+      <DailyUsageTrendChart transactions={transactions} />
     </>
   );
 }
