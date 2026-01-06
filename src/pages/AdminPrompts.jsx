@@ -49,16 +49,7 @@ const categories = [
   { value: 'other', label: '其他' },
 ];
 
-const colors = [
-  { value: 'violet', label: 'Violet' },
-  { value: 'blue', label: 'Blue' },
-  { value: 'emerald', label: 'Emerald' },
-  { value: 'orange', label: 'Orange' },
-  { value: 'pink', label: 'Pink' },
-  { value: 'amber', label: 'Amber' },
-  { value: 'cyan', label: 'Cyan' },
-  { value: 'rose', label: 'Rose' },
-];
+
 
 
 
