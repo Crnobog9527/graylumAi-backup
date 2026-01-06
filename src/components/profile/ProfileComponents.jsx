@@ -296,12 +296,7 @@ export function SubscriptionCard({ user }) {
           >
             按年
           </button>
-          <span
-            className="text-xs px-2 py-0.5 rounded-full"
-            style={{ background: 'rgba(34, 197, 94, 0.2)', color: 'var(--success)' }}
-          >
-            省20%
-          </span>
+
         </div>
       </div>
 
