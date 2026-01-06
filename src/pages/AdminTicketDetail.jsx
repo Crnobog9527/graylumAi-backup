@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -30,51 +30,41 @@ function AdminTicketDetailContent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [replyMessage, setReplyMessage] = useState('');
+  const [user, setUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(true);
 
-  // 从URL获取ticketId - 使用window.location确保获取最新值
+  // 从URL获取ticketId
   const ticketId = new URLSearchParams(window.location.search).get('id');
-  
-  console.log('=== AdminTicketDetail 渲染 ===');
-  console.log('window.location.search:', window.location.search);
-  console.log('ticketId:', ticketId);
 
-  // 1. 首先获取用户数据
-  const { data: user, isLoading: userLoading } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => base44.auth.me(),
-  });
+  // 使用 useEffect 获取用户数据，确保稳定
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await base44.auth.me();
+        setUser(userData);
+      } catch (e) {
+        setUser(null);
+      } finally {
+        setUserLoading(false);
+      }
+    };
+    loadUser();
+  }, []);
 
-  // 检查是否满足查询条件
-  const canQuery = !!ticketId && !!user && user?.role === 'admin';
-
-  // 2. 用户数据加载后再获取工单数据
-  const { data: ticket, isLoading: ticketLoading, isError, error } = useQuery({
+  // 获取工单数据
+  const { data: ticket, isLoading: ticketLoading } = useQuery({
     queryKey: ['admin-ticket', ticketId],
     queryFn: async () => {
-      console.log('=== 管理员端工单查询开始 ===');
-      console.log('ticketId:', ticketId);
-      console.log('user:', user);
-      
-      // 直接通过ID过滤获取工单
       const tickets = await base44.entities.Ticket.filter({ id: ticketId });
-      console.log('查询返回结果:', tickets);
-      console.log('结果数量:', tickets.length);
-      
       if (tickets.length === 0) {
-        console.log('未找到工单');
         return null;
       }
-      
-      console.log('找到工单:', tickets[0]);
       return tickets[0];
     },
-    enabled: canQuery,
-    retry: false,
-    staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: false,
+    enabled: !!ticketId && !!user && user.role === 'admin',
   });
 
-  // 3. 获取回复数据
+  // 获取回复数据
   const { data: replies = [] } = useQuery({
     queryKey: ['ticket-replies', ticketId],
     queryFn: () => base44.entities.TicketReply.filter({ ticket_id: ticketId }, '-created_date'),
@@ -156,8 +146,8 @@ function AdminTicketDetailContent() {
     );
   }
 
-  // 等待工单数据加载 - 包括初始 undefined 状态
-  if (ticketLoading || (!ticket && canQuery)) {
+  // 等待工单数据加载
+  if (ticketLoading) {
     return (
       <div className="flex min-h-screen bg-slate-50">
         <AdminSidebar currentPage="AdminTickets" />
@@ -168,8 +158,8 @@ function AdminTicketDetailContent() {
     );
   }
 
-  // 工单不存在 - 只有明确返回 null 时才显示
-  if (ticket === null) {
+  // 工单不存在
+  if (!ticket) {
     return (
       <div className="flex min-h-screen bg-slate-50">
         <AdminSidebar currentPage="AdminTickets" />
