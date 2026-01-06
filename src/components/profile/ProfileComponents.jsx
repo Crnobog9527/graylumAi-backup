@@ -109,6 +109,8 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
 }
 
 export function SubscriptionCard({ user }) {
+  const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
+  
   const { data: membershipPlans = [] } = useQuery({
     queryKey: ['membership-plans'],
     queryFn: () => base44.entities.MembershipPlan.filter({ is_active: true }, 'sort_order'),
@@ -131,45 +133,46 @@ export function SubscriptionCard({ user }) {
   const isFreeTier = subscriptionTier === 'free';
 
   return (
-    <div
-      className="rounded-2xl p-6 md:p-8 mb-6 transition-all duration-300"
-      style={{
-        background: 'var(--bg-secondary)',
-        border: '1px solid var(--border-primary)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-      }}
-    >
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div
-            className="p-2 rounded-lg"
-            style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}
-          >
-            <Crown className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+    <>
+      <div
+        className="rounded-2xl p-6 md:p-8 mb-6 transition-all duration-300"
+        style={{
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-primary)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+        }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div
+              className="p-2 rounded-lg"
+              style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}
+            >
+              <Crown className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+            </div>
+            <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>当前订阅</h3>
           </div>
-          <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>当前订阅</h3>
+          <div
+            className="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium"
+            style={{
+              background: isFreeTier ? 'var(--bg-primary)' : 'rgba(34, 197, 94, 0.1)',
+              color: isFreeTier ? 'var(--text-tertiary)' : 'var(--success)',
+              border: `1px solid ${isFreeTier ? 'var(--border-primary)' : 'rgba(34, 197, 94, 0.3)'}`
+            }}
+          >
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ background: isFreeTier ? 'var(--text-disabled)' : 'var(--success)' }}
+            ></span>
+            {isFreeTier ? '未订阅' : '订阅中'}
+          </div>
         </div>
-        <div
-          className="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium"
-          style={{
-            background: isFreeTier ? 'var(--bg-primary)' : 'rgba(34, 197, 94, 0.1)',
-            color: isFreeTier ? 'var(--text-tertiary)' : 'var(--success)',
-            border: `1px solid ${isFreeTier ? 'var(--border-primary)' : 'rgba(34, 197, 94, 0.3)'}`
-          }}
-        >
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{ background: isFreeTier ? 'var(--text-disabled)' : 'var(--success)' }}
-          ></span>
-          {isFreeTier ? '未订阅' : '订阅中'}
-        </div>
-      </div>
 
-      {isFreeTier ? (
-        <div className="text-center py-8">
-          <div className="mb-6" style={{ color: 'var(--text-secondary)' }}>您当前是免费用户，升级会员享受更多权益</div>
-          <Link to={createPageUrl('Credits')}>
+        {isFreeTier ? (
+          <div className="text-center py-8">
+            <div className="mb-6" style={{ color: 'var(--text-secondary)' }}>您当前是免费用户，升级会员享受更多权益</div>
             <Button
+              onClick={() => setCreditsDialogOpen(true)}
               className="gap-2"
               style={{
                 background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
@@ -180,56 +183,55 @@ export function SubscriptionCard({ user }) {
               <Crown className="h-4 w-4" />
               升级会员
             </Button>
-          </Link>
-        </div>
-      ) : (
-        <div className="flex flex-col lg:flex-row gap-8">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{tierLabels[subscriptionTier]}</h2>
-              {tierBadges[subscriptionTier] && (
-                <span
-                  className="text-xs px-2 py-0.5 rounded font-medium"
-                  style={{ background: 'rgba(255, 215, 0, 0.1)', color: 'var(--color-primary)' }}
-                >
-                  {tierBadges[subscriptionTier]}
-                </span>
-              )}
-            </div>
-            <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-              感谢您的支持！
-            </p>
-
-            <div className="space-y-3">
-              <div className="text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>套餐权益</div>
-              {[
-                "更多积分配额",
-                "所有核心功能",
-                "优先响应速度",
-                "专属客服"
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <CheckCircle2 className="h-4 w-4" style={{ color: 'var(--success)' }} />
-                  {item}
-                </div>
-              ))}
-            </div>
           </div>
-
-          <div className="lg:w-80 flex flex-col gap-4">
-            <div
-              className="rounded-xl p-4 flex items-center justify-between mb-2"
-              style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}
-            >
-              <div>
-                <div className="font-medium" style={{ color: 'var(--text-primary)' }}>自动续费</div>
-                <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>开启后，到期前自动扣费续订</div>
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{tierLabels[subscriptionTier]}</h2>
+                {tierBadges[subscriptionTier] && (
+                  <span
+                    className="text-xs px-2 py-0.5 rounded font-medium"
+                    style={{ background: 'rgba(255, 215, 0, 0.1)', color: 'var(--color-primary)' }}
+                  >
+                    {tierBadges[subscriptionTier]}
+                  </span>
+                )}
               </div>
-              <Switch />
+              <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+                感谢您的支持！
+              </p>
+
+              <div className="space-y-3">
+                <div className="text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>套餐权益</div>
+                {[
+                  "更多积分配额",
+                  "所有核心功能",
+                  "优先响应速度",
+                  "专属客服"
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <CheckCircle2 className="h-4 w-4" style={{ color: 'var(--success)' }} />
+                    {item}
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <Link to={createPageUrl('Credits')}>
+            <div className="lg:w-80 flex flex-col gap-4">
+              <div
+                className="rounded-xl p-4 flex items-center justify-between mb-2"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}
+              >
+                <div>
+                  <div className="font-medium" style={{ color: 'var(--text-primary)' }}>自动续费</div>
+                  <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>开启后，到期前自动扣费续订</div>
+                </div>
+                <Switch />
+              </div>
+
               <Button
+                onClick={() => setCreditsDialogOpen(true)}
                 className="w-full h-11 text-base gap-2"
                 style={{
                   background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
@@ -240,10 +242,9 @@ export function SubscriptionCard({ user }) {
                 <RefreshCw className="h-4 w-4" />
                 立即续费
               </Button>
-            </Link>
 
-            <Link to={createPageUrl('Credits')}>
               <Button
+                onClick={() => setCreditsDialogOpen(true)}
                 variant="outline"
                 className="w-full h-11"
                 style={{
@@ -254,11 +255,17 @@ export function SubscriptionCard({ user }) {
               >
                 ↑ 升级套餐
               </Button>
-            </Link>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+
+      <CreditsDialog 
+        open={creditsDialogOpen} 
+        onOpenChange={setCreditsDialogOpen} 
+        user={user} 
+      />
+    </>
   );
 }
 
