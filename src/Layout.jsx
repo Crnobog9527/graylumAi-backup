@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AppHeader from '@/components/layout/AppHeader';
+import GlobalBanner from '@/components/layout/GlobalBanner';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 
@@ -125,6 +126,7 @@ export default function Layout({ children, currentPageName }) {
       style={{ background: 'var(--bg-primary)' }}
     >
       <AppHeader user={user} />
+      <GlobalBanner />
       <main className="animate-in fade-in duration-500">
         {children}
       </main>

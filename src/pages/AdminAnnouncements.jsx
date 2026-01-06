@@ -50,6 +50,7 @@ const initialAnnouncementForm = {
   publish_date: '',
   expire_date: '',
   is_active: true,
+  is_global_banner: false,
   sort_order: 0,
 };
 
@@ -302,6 +303,7 @@ function AdminAnnouncementsContent() {
         publish_date: announcement.publish_date || '',
         expire_date: announcement.expire_date || '',
         is_active: announcement.is_active !== false,
+        is_global_banner: announcement.is_global_banner || false,
         sort_order: announcement.sort_order || 0,
       });
     } else {
@@ -400,6 +402,9 @@ function AdminAnnouncementsContent() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-slate-900">{announcement.title}</span>
+                            {announcement.is_global_banner && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-violet-100 text-violet-600">全站横幅</span>
+                            )}
                             {announcement.tag && (
                               <span className={`text-xs px-2 py-0.5 rounded ${colorInfo.class}`}>
                                 {announcement.tag}
@@ -747,6 +752,20 @@ function AdminAnnouncementsContent() {
                     onCheckedChange={(checked) => setAnnouncementForm({ ...announcementForm, is_active: checked })}
                   />
                   <Label>启用此公告</Label>
+                </div>
+              </div>
+
+              {/* 全站横幅开关 */}
+              <div className="p-4 rounded-lg bg-violet-50 border border-violet-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base text-violet-900">设为全站横幅公告</Label>
+                    <p className="text-sm text-violet-600 mt-1">开启后，此公告将显示在导航栏下方，所有页面可见，用户可手动关闭</p>
+                  </div>
+                  <Switch
+                    checked={announcementForm.is_global_banner}
+                    onCheckedChange={(checked) => setAnnouncementForm({ ...announcementForm, is_global_banner: checked })}
+                  />
                 </div>
               </div>
             </div>
