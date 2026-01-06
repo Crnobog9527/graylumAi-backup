@@ -133,9 +133,7 @@ export default function UpdatesSection() {
               className="card card-clickable group p-8 flex flex-col h-full"
               style={{
                 borderRadius: 'var(--radius-2xl)',
-                animation: `fadeInUp 0.6s ease forwards`,
-                animationDelay: `${index * 0.1}s`,
-                opacity: 0
+                contain: 'layout paint',
               }}
             >
               {/* 头部 - 图标和标签 */}
