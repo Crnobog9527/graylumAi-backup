@@ -27,7 +27,93 @@ import { zhCN } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-// 每日积分消耗趋势图组件
+// 积分加油包购买组件（用于订阅管理页面）
+function CreditPackagesSection({ onBuyClick }) {
+  const { data: packages = [] } = useQuery({
+    queryKey: ['credit-packages'],
+    queryFn: () => base44.entities.CreditPackage.filter({ is_active: true }, 'sort_order'),
+  });
+
+  if (packages.length === 0) return null;
+
+  return (
+    <div
+      className="rounded-2xl p-6 md:p-8 mt-6 transition-all duration-300"
+      style={{
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border-primary)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+      }}
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <div
+          className="p-2 rounded-lg"
+          style={{ background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.2)' }}
+        >
+          <Package className="h-5 w-5" style={{ color: 'rgba(139, 92, 246, 1)' }} />
+        </div>
+        <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>积分加油包</h3>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {packages.map((pkg) => (
+          <div
+            key={pkg.id}
+            className="relative p-4 rounded-xl text-center transition-all duration-300"
+            style={{
+              background: 'var(--bg-primary)',
+              border: pkg.is_popular ? '2px solid rgba(59, 130, 246, 0.5)' : '1px solid var(--border-primary)',
+              boxShadow: pkg.is_popular ? '0 0 20px rgba(59, 130, 246, 0.2)' : 'none'
+            }}
+          >
+            {pkg.is_popular && (
+              <div
+                className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium"
+                style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#3B82F6', border: '1px solid rgba(59, 130, 246, 0.3)' }}
+              >
+                ⭐ 热门
+              </div>
+            )}
+            <div className="flex items-center justify-center gap-1 mb-2 mt-2">
+              <Zap className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
+              <span
+                className="text-2xl font-bold"
+                style={{
+                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}
+              >
+                {pkg.credits.toLocaleString()}
+              </span>
+            </div>
+            {pkg.bonus_credits > 0 && (
+              <div className="text-xs mb-2" style={{ color: 'var(--success)' }}>
+                +{pkg.bonus_credits} 赠送
+              </div>
+            )}
+            <div className="text-lg font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
+              ${pkg.price.toFixed(1)}
+            </div>
+            <Button
+              onClick={onBuyClick}
+              size="sm"
+              className="w-full gap-2"
+              style={{
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                color: 'var(--bg-primary)'
+              }}
+            >
+              🚀 购买
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 每日积分消耗趋势图组件（用于积分记录页面）
 function DailyUsageTrendChart({ transactions }) {
   // 获取最近14天的数据
   const chartData = useMemo(() => {
