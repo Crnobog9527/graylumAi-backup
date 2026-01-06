@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from "sonner";
 import {
-  LoadingSpinner,
   TicketInfo,
   TicketReplyList,
   TicketReplyForm,
@@ -16,68 +15,61 @@ import {
 
 export default function TicketDetail() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [replyMessage, setReplyMessage] = useState('');
-  const [debugInfo, setDebugInfo] = useState(null);
-
-  // 使用window.location确保获取最新值
-  const ticketId = new URLSearchParams(window.location.search).get('id');
   
-  console.log('=== TicketDetail 渲染 ===');
-  console.log('window.location.search:', window.location.search);
-  console.log('ticketId:', ticketId);
+  const [user, setUser] = useState(null);
+  const [ticket, setTicket] = useState(null);
+  const [replies, setReplies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [replyMessage, setReplyMessage] = useState('');
 
-  // 1. 首先获取用户数据
-  const { data: user, isLoading: userLoading } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => base44.auth.me(),
-  });
+  // 获取URL参数
+  const urlParams = new URLSearchParams(window.location.search);
+  const ticketId = urlParams.get('id');
 
-  // 检查是否满足查询条件
-  const canQuery = !!ticketId && !!user;
-
-  // 2. 用户数据加载后再获取工单数据
-  const { data: ticket, isLoading: ticketLoading, isError, error } = useQuery({
-    queryKey: ['user-ticket', ticketId],
-    queryFn: async () => {
-      console.log('=== 用户端工单查询开始 ===');
-      console.log('ticketId:', ticketId);
-      console.log('user:', user);
+  // 加载所有数据
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
       
-      // 直接通过ID过滤获取工单（RLS会自动验证权限）
-      const tickets = await base44.entities.Ticket.filter({ id: ticketId });
-      console.log('查询返回结果:', tickets);
-      console.log('结果数量:', tickets.length);
-      
-      if (tickets.length === 0) {
-        console.log('未找到工单');
-        return null;
+      try {
+        // 1. 获取用户
+        const userData = await base44.auth.me();
+        setUser(userData);
+
+        if (!ticketId) {
+          setError('无效的工单ID');
+          setLoading(false);
+          return;
+        }
+
+        // 2. 获取工单（RLS会自动验证权限）
+        const tickets = await base44.entities.Ticket.filter({ id: ticketId });
+        if (tickets.length === 0) {
+          setError('工单不存在或无权访问');
+          setLoading(false);
+          return;
+        }
+        setTicket(tickets[0]);
+
+        // 3. 获取回复
+        const repliesData = await base44.entities.TicketReply.filter(
+          { ticket_id: ticketId }, 
+          '-created_date'
+        );
+        setReplies(repliesData);
+
+      } catch (e) {
+        console.error('加载数据失败:', e);
+        setError('加载失败');
+      } finally {
+        setLoading(false);
       }
-      
-      console.log('找到工单:', tickets[0]);
-      return tickets[0];
-    },
-    enabled: canQuery,
-    retry: false,
-    staleTime: 1000 * 60 * 5, // 5分钟内不重新获取
-    refetchOnWindowFocus: false, // 防止窗口聚焦时重新获取
-  });
+    };
 
-  // 调试：监控ticket状态变化
-  React.useEffect(() => {
-    console.log('=== ticket状态变化 ===');
-    console.log('ticketLoading:', ticketLoading);
-    console.log('isError:', isError);
-    console.log('error:', error);
-    console.log('ticket:', ticket);
-  }, [ticket, ticketLoading, isError, error]);
-
-  // 3. 获取回复数据
-  const { data: replies = [] } = useQuery({
-    queryKey: ['ticket-replies', ticketId],
-    queryFn: () => base44.entities.TicketReply.filter({ ticket_id: ticketId }, '-created_date'),
-    enabled: !!ticketId && !!user,
-  });
+    loadData();
+  }, [ticketId]);
 
   const addReplyMutation = useMutation({
     mutationFn: async (message) => {
@@ -94,10 +86,14 @@ export default function TicketDetail() {
 
       return reply;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       setReplyMessage('');
-      queryClient.invalidateQueries(['ticket-replies', ticketId]);
-      queryClient.invalidateQueries(['ticket', ticketId]);
+      // 重新获取回复
+      const repliesData = await base44.entities.TicketReply.filter(
+        { ticket_id: ticketId }, 
+        '-created_date'
+      );
+      setReplies(repliesData);
       toast.success('回复已发送');
     },
     onError: () => {
@@ -110,8 +106,12 @@ export default function TicketDetail() {
       status: 'closed',
       resolved_date: new Date().toISOString()
     }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['ticket', ticketId]);
+    onSuccess: async () => {
+      // 重新获取工单
+      const tickets = await base44.entities.Ticket.filter({ id: ticketId });
+      if (tickets.length > 0) {
+        setTicket(tickets[0]);
+      }
       toast.success('工单已关闭');
     }
   });
@@ -125,57 +125,25 @@ export default function TicketDetail() {
     addReplyMutation.mutate(replyMessage);
   };
 
-  // 等待用户数据加载
-  if (userLoading) {
-    return <LoadingSpinner />;
-  }
-
-  // 如果没有ticketId，显示错误
-  if (!ticketId) {
+  // 加载中
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
-          <p style={{ color: 'var(--text-secondary)' }} className="mb-4">无效的工单ID</p>
-          <Button
-            variant="outline"
-            onClick={() => navigate(createPageUrl('Tickets'))}
-            className="mt-4"
-          >
-            返回工单列表
-          </Button>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--color-primary)' }} />
       </div>
     );
   }
 
-  // 等待工单数据加载
-  if (ticketLoading || (!ticket && canQuery)) {
-    return <LoadingSpinner />;
-  }
-
-  // 工单不存在 - 只有明确返回 null 时才显示
-  if (isError || ticket === null) {
+  // 错误状态
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
-        <div className="text-center max-w-2xl mx-auto p-6">
+        <div className="text-center">
           <AlertCircle className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
-          <p style={{ color: 'var(--text-secondary)' }} className="mb-4">工单不存在</p>
-          
-          {/* 调试信息 */}
-          {debugInfo && (
-            <div className="text-left p-4 rounded-lg mt-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}>
-              <h3 className="font-bold mb-2" style={{ color: 'var(--color-primary)' }}>调试信息：</h3>
-              <pre className="text-xs overflow-auto" style={{ color: 'var(--text-secondary)' }}>
-{JSON.stringify(debugInfo, null, 2)}
-              </pre>
-            </div>
-          )}
-          
+          <p style={{ color: 'var(--text-secondary)' }} className="mb-4">{error}</p>
           <Button
             variant="outline"
             onClick={() => navigate(createPageUrl('Tickets'))}
-            className="mt-4"
           >
             返回工单列表
           </Button>
@@ -200,13 +168,6 @@ export default function TicketDetail() {
           style={{
             background: 'radial-gradient(circle, rgba(139,92,246,0.6) 0%, transparent 70%)',
             animation: 'floatSoft 20s ease-in-out infinite',
-          }}
-        />
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: 'linear-gradient(rgba(255,215,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,215,0,0.1) 1px, transparent 1px)',
-            backgroundSize: '50px 50px',
           }}
         />
       </div>
