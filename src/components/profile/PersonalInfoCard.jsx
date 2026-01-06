@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Pencil, Crown, Coins, Plus, RefreshCw, Key, Link2, Users, Headphones, MessageCircle, Code, PenTool, Camera, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import AvatarCropper from './AvatarCropper';
 import { Progress } from "@/components/ui/progress";
 import { format, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 import InviteDialog from '../invite/InviteDialog';
@@ -13,6 +14,8 @@ import CreditsDialog from './CreditsDialog';
 
 export function UserProfileHeader({ user, onUserUpdate }) {
   const [uploading, setUploading] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
   const registerDate = user?.created_date ? format(new Date(user.created_date), 'yyyy年M月d日') : '-';
 
@@ -24,26 +27,37 @@ export function UserProfileHeader({ user, onUserUpdate }) {
   };
   const subscriptionTier = user?.subscription_tier || 'free';
 
-  const handleAvatarUpload = async (e) => {
+  const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024) {
       return;
     }
 
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedImage(reader.result);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedFile) => {
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: croppedFile });
       await base44.auth.updateMe({ avatar_url: file_url });
       onUserUpdate && onUserUpdate({ ...user, avatar_url: file_url });
     } catch (error) {
       console.error('Upload failed:', error);
     } finally {
       setUploading(false);
+      setSelectedImage(null);
     }
   };
 
@@ -75,8 +89,14 @@ export function UserProfileHeader({ user, onUserUpdate }) {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={handleAvatarUpload}
+              onChange={handleFileSelect}
               className="hidden"
+            />
+            <AvatarCropper
+              open={cropperOpen}
+              onOpenChange={setCropperOpen}
+              imageSrc={selectedImage}
+              onCropComplete={handleCropComplete}
             />
             <button
               onClick={() => fileInputRef.current?.click()}
