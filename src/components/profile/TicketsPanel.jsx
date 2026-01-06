@@ -689,7 +689,7 @@ function CreateTicketForm({ user, onBack, onSuccess }) {
 }
 
 // 主组件
-export default function TicketsPanel({ user, initialView = 'list' }) {
+export default function TicketsPanel({ user, initialView = 'list', onViewChange }) {
   const [view, setView] = useState(initialView); // 'list' | 'detail' | 'create'
   const [selectedTicket, setSelectedTicket] = useState(null);
 
@@ -699,23 +699,28 @@ export default function TicketsPanel({ user, initialView = 'list' }) {
     enabled: !!user?.email,
   });
 
+  const changeView = (newView) => {
+    setView(newView);
+    onViewChange && onViewChange(newView);
+  };
+
   const handleSelectTicket = (ticket) => {
     setSelectedTicket(ticket);
-    setView('detail');
+    changeView('detail');
   };
 
   const handleBack = () => {
-    setView('list');
+    changeView('list');
     setSelectedTicket(null);
     refetch();
   };
 
   const handleCreateNew = () => {
-    setView('create');
+    changeView('create');
   };
 
   const handleCreateSuccess = () => {
-    setView('list');
+    changeView('list');
     refetch();
   };
 
