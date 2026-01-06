@@ -194,7 +194,7 @@ export function ProfileSidebar({ activeTab, onTabChange, onLogout }) {
 }
 
 export function SubscriptionCard({ user }) {
-  const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
   
   const { data: membershipPlans = [] } = useQuery({
     queryKey: ['membership-plans'],
@@ -202,155 +202,199 @@ export function SubscriptionCard({ user }) {
   });
 
   const subscriptionTier = user?.subscription_tier || 'free';
-  const tierLabels = {
-    free: '免费用户',
-    basic: '基础会员',
-    pro: '专业会员',
-    enterprise: '企业会员'
-  };
-  const tierBadges = {
-    free: '',
-    basic: 'Basic',
-    pro: 'Pro',
-    enterprise: 'Enterprise'
-  };
-
   const isFreeTier = subscriptionTier === 'free';
 
+  // 会员等级配置
+  const planConfigs = {
+    free: {
+      name: '免费会员',
+      price: { monthly: 0, yearly: 0 },
+      features: ['注册赠送100积分（一次性）', '对话历史保存5天'],
+      recommended: false,
+      highlight: false
+    },
+    pro: {
+      name: '进阶会员',
+      price: { monthly: 9.9, yearly: 95 },
+      features: ['月度积分1500积分', '购买加油包享受95折', '对话历史保存1个月'],
+      recommended: false,
+      highlight: false
+    },
+    gold: {
+      name: '黄金会员',
+      price: { monthly: 29.9, yearly: 287 },
+      features: ['月度积分5500积分', '购买加油包享受9折', '对话历史保存1个月'],
+      recommended: true,
+      highlight: true
+    }
+  };
+
+  // 合并数据库中的会员计划
+  const displayPlans = membershipPlans.length > 0 
+    ? membershipPlans.map(plan => ({
+        ...plan,
+        ...planConfigs[plan.level] || {},
+        price: {
+          monthly: plan.monthly_price || planConfigs[plan.level]?.price?.monthly || 0,
+          yearly: plan.yearly_price || planConfigs[plan.level]?.price?.yearly || 0
+        },
+        features: plan.features?.length > 0 ? plan.features : planConfigs[plan.level]?.features || []
+      }))
+    : Object.entries(planConfigs).map(([level, config]) => ({
+        level,
+        name: config.name,
+        ...config
+      }));
+
+  const handleSelectPlan = (plan) => {
+    // 这里可以跳转到支付页面或显示支付弹窗
+    console.log('Selected plan:', plan);
+  };
+
   return (
-    <>
-      <div
-        className="rounded-2xl p-6 md:p-8 mb-6 transition-all duration-300"
-        style={{
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border-primary)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-        }}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div
-              className="p-2 rounded-lg"
-              style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}
-            >
-              <Crown className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
-            </div>
-            <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>当前订阅</h3>
-          </div>
+    <div
+      className="rounded-2xl p-6 md:p-8 mb-6 transition-all duration-300"
+      style={{
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border-primary)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
           <div
-            className="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium"
-            style={{
-              background: isFreeTier ? 'var(--bg-primary)' : 'rgba(34, 197, 94, 0.1)',
-              color: isFreeTier ? 'var(--text-tertiary)' : 'var(--success)',
-              border: `1px solid ${isFreeTier ? 'var(--border-primary)' : 'rgba(34, 197, 94, 0.3)'}`
-            }}
+            className="p-2 rounded-lg"
+            style={{ background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.2)' }}
           >
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ background: isFreeTier ? 'var(--text-disabled)' : 'var(--success)' }}
-            ></span>
-            {isFreeTier ? '未订阅' : '订阅中'}
+            <Crown className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
           </div>
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>会员订阅</h3>
         </div>
 
-        {isFreeTier ? (
-          <div className="text-center py-8">
-            <div className="mb-6" style={{ color: 'var(--text-secondary)' }}>您当前是免费用户，升级会员享受更多权益</div>
-            <Button
-              onClick={() => setCreditsDialogOpen(true)}
-              className="gap-2"
+        {/* Billing Toggle */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+            style={{
+              background: billingCycle === 'monthly' ? 'rgba(255, 215, 0, 0.2)' : 'transparent',
+              color: billingCycle === 'monthly' ? 'var(--color-primary)' : 'var(--text-tertiary)',
+              border: billingCycle === 'monthly' ? '1px solid rgba(255, 215, 0, 0.3)' : '1px solid transparent'
+            }}
+          >
+            按月
+          </button>
+          <button
+            onClick={() => setBillingCycle('yearly')}
+            className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+            style={{
+              background: billingCycle === 'yearly' ? 'rgba(255, 215, 0, 0.2)' : 'transparent',
+              color: billingCycle === 'yearly' ? 'var(--color-primary)' : 'var(--text-tertiary)',
+              border: billingCycle === 'yearly' ? '1px solid rgba(255, 215, 0, 0.3)' : '1px solid transparent'
+            }}
+          >
+            按年
+          </button>
+          <span
+            className="text-xs px-2 py-0.5 rounded-full"
+            style={{ background: 'rgba(34, 197, 94, 0.2)', color: 'var(--success)' }}
+          >
+            省20%
+          </span>
+        </div>
+      </div>
+
+      {/* Plans Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {displayPlans.map((plan) => {
+          const isCurrentPlan = plan.level === subscriptionTier || (plan.level === 'free' && isFreeTier);
+          const isHighlight = plan.recommended || plan.highlight;
+          const price = billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly;
+          
+          return (
+            <div
+              key={plan.level || plan.id}
+              className="relative rounded-xl p-5 transition-all duration-300"
               style={{
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                color: 'var(--bg-primary)',
-                boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
+                background: isHighlight ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)' : 'var(--bg-primary)',
+                border: isHighlight ? '2px solid rgba(139, 92, 246, 0.5)' : '1px solid var(--border-primary)',
+                boxShadow: isHighlight ? '0 0 30px rgba(139, 92, 246, 0.2)' : 'none'
               }}
             >
-              <Crown className="h-4 w-4" />
-              升级会员
-            </Button>
-          </div>
-        ) : (
-          <div className="flex flex-col lg:flex-row gap-8">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{tierLabels[subscriptionTier]}</h2>
-                {tierBadges[subscriptionTier] && (
-                  <span
-                    className="text-xs px-2 py-0.5 rounded font-medium"
-                    style={{ background: 'rgba(255, 215, 0, 0.1)', color: 'var(--color-primary)' }}
-                  >
-                    {tierBadges[subscriptionTier]}
-                  </span>
+              {/* Recommended Badge */}
+              {plan.recommended && (
+                <div
+                  className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(99, 102, 241, 0.3) 100%)', 
+                    color: '#A78BFA', 
+                    border: '1px solid rgba(139, 92, 246, 0.4)' 
+                  }}
+                >
+                  ✨ 推荐
+                </div>
+              )}
+
+              {/* Plan Name */}
+              <h4 className="text-center font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                {plan.name}
+              </h4>
+
+              {/* Price */}
+              <div className="text-center mb-4">
+                {price === 0 ? (
+                  <span className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>免费</span>
+                ) : (
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>$</span>
+                    <span
+                      className="text-3xl font-bold"
+                      style={{
+                        background: isHighlight 
+                          ? 'linear-gradient(135deg, #A78BFA 0%, #818CF8 100%)' 
+                          : 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent'
+                      }}
+                    >
+                      {price}
+                    </span>
+                    <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>/{billingCycle === 'monthly' ? '月' : '年'}</span>
+                  </div>
                 )}
               </div>
-              <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-                感谢您的支持！
-              </p>
 
-              <div className="space-y-3">
-                <div className="text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>套餐权益</div>
-                {[
-                  "更多积分配额",
-                  "所有核心功能",
-                  "优先响应速度",
-                  "专属客服"
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    <CheckCircle2 className="h-4 w-4" style={{ color: 'var(--success)' }} />
-                    {item}
+              {/* Features */}
+              <div className="space-y-2 mb-5">
+                {plan.features?.map((feature, idx) => (
+                  <div key={idx} className="flex items-start gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" style={{ color: 'var(--success)' }} />
+                    <span style={{ color: 'var(--text-secondary)' }}>{feature}</span>
                   </div>
                 ))}
               </div>
-            </div>
 
-            <div className="lg:w-80 flex flex-col gap-4">
-              <div
-                className="rounded-xl p-4 flex items-center justify-between mb-2"
-                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}
-              >
-                <div>
-                  <div className="font-medium" style={{ color: 'var(--text-primary)' }}>自动续费</div>
-                  <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>开启后，到期前自动扣费续订</div>
-                </div>
-                <Switch />
-              </div>
-
+              {/* Action Button */}
               <Button
-                onClick={() => setCreditsDialogOpen(true)}
-                className="w-full h-11 text-base gap-2"
+                onClick={() => handleSelectPlan(plan)}
+                className="w-full"
+                disabled={isCurrentPlan}
                 style={{
-                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                  color: 'var(--bg-primary)',
-                  boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
+                  background: isCurrentPlan 
+                    ? 'var(--bg-tertiary)' 
+                    : 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                  color: isCurrentPlan ? 'var(--text-tertiary)' : 'var(--bg-primary)',
+                  cursor: isCurrentPlan ? 'default' : 'pointer'
                 }}
               >
-                <RefreshCw className="h-4 w-4" />
-                立即续费
-              </Button>
-
-              <Button
-                onClick={() => setCreditsDialogOpen(true)}
-                variant="outline"
-                className="w-full h-11"
-                style={{
-                  background: 'transparent',
-                  borderColor: 'rgba(255, 215, 0, 0.3)',
-                  color: 'var(--color-primary)'
-                }}
-              >
-                ↑ 升级套餐
+                {isCurrentPlan ? '当前套餐' : '选择'}
               </Button>
             </div>
-          </div>
-        )}
+          );
+        })}
       </div>
-
-      <CreditsDialog 
-        open={creditsDialogOpen} 
-        onOpenChange={setCreditsDialogOpen} 
-        user={user} 
-      />
-    </>
+    </div>
   );
 }
 
