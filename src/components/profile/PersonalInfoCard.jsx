@@ -287,7 +287,7 @@ export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) 
 
         {/* Subscription Card */}
         <div
-          className="rounded-2xl p-6 transition-all duration-300"
+          className="rounded-2xl p-6 transition-all duration-300 flex flex-col"
           style={{
             background: 'var(--bg-secondary)',
             border: '1px solid var(--border-primary)',
@@ -299,7 +299,7 @@ export function CreditsAndSubscriptionCards({ user, onNavigateToSubscription }) 
             <Crown className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
           </div>
           <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{tierLabels[subscriptionTier]}</div>
-          <div className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>
+          <div className="text-sm mb-4 flex-1" style={{ color: 'var(--text-tertiary)' }}>
             {isFreeTier ? '升级会员享受更多权益' : '感谢您的支持'}
           </div>
           <Button
