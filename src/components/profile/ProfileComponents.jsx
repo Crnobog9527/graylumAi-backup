@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   User, CreditCard, History, Shield, LogOut,
   Crown, Zap, Clock, ChevronRight, ChevronLeft,
-  CheckCircle2, RefreshCw, Settings, Wallet, Package, Mail, Lock, Loader2, Headphones, X
+  CheckCircle2, RefreshCw, Settings, Wallet, Package, Mail, Lock, Loader2, Headphones, X, TrendingDown
 } from 'lucide-react';
 import CreditsDialog from './CreditsDialog';
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subDays, eachDayOfInterval } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 function CreditPackagesSection({ onBuyClick }) {
   const { data: packages = [] } = useQuery({
