@@ -105,29 +105,10 @@ export default function Profile() {
         />
       </div>
 
-      {/* 动画样式 */}
+      {/* 动画样式 - 精简 */}
       <style>{`
-        @keyframes pulseGlow {
-          0%, 100% { opacity: 0.8; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.1); }
-        }
-        @keyframes floatSoft {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(-30px, -20px); }
-        }
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideInLeft {
-          from { opacity: 0; transform: translateX(-20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        .animate-fadeInUp {
-          animation: fadeInUp 0.5s ease forwards;
-        }
-        .animate-slideInLeft {
-          animation: slideInLeft 0.4s ease forwards;
+        .card-hover:hover {
+          border-color: rgba(255, 215, 0, 0.3) !important;
         }
       `}</style>
 
