@@ -158,7 +158,7 @@ export default function Profile() {
 
                 {activeTab === 'security' && <SecuritySettingsCard user={user} />}
 
-                {activeTab === 'tickets' && <TicketsPanel user={user} />}
+                {activeTab === 'tickets' && <TicketsPanel user={user} key={activeTab} />}
              </div>
           </div>
         </div>
