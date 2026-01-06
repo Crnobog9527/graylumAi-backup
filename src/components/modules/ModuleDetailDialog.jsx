@@ -66,12 +66,12 @@ export default function ModuleDetailDialog({ module, open, onOpenChange }) {
             <div 
               className="p-4 rounded-2xl shrink-0"
               style={{ 
-                background: 'linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(255,180,0,0.08) 100%)',
-                border: '1px solid rgba(255, 215, 0, 0.25)',
-                boxShadow: '0 8px 24px rgba(255,215,0,0.15)'
+                background: `linear-gradient(135deg, ${iconColor}25 0%, ${iconColor}12 100%)`,
+                border: `1px solid ${iconColor}40`,
+                boxShadow: `0 8px 24px ${iconColor}20`
               }}
             >
-              <Icon className="h-8 w-8" style={{ color: 'var(--color-primary)' }} />
+              <Icon className="h-8 w-8" style={{ color: iconColor }} />
             </div>
             <div className="flex-1 min-w-0">
               <DialogHeader className="p-0 space-y-1">
