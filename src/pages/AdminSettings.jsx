@@ -207,6 +207,7 @@ function AdminSettingsContent() {
             <TabsTrigger value="checkin">签到福利</TabsTrigger>
             <TabsTrigger value="referral">邀请奖励</TabsTrigger>
             <TabsTrigger value="features">{t('features')}</TabsTrigger>
+            <TabsTrigger value="membership">会员权限</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
