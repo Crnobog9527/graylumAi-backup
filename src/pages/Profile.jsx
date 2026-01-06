@@ -17,6 +17,10 @@ export default function Profile() {
     setActiveTab('tickets');
   };
 
+  const handleNavigateToSecurity = () => {
+    setActiveTab('security');
+  };
+
   const { data: user, isLoading } = useQuery({
     queryKey: ['user'],
     queryFn: () => base44.auth.me().catch(() => null),
