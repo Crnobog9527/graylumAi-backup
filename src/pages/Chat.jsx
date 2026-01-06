@@ -815,22 +815,16 @@ export default function Chat() {
       </div>
 
       {/* Main Chat Area */}
-      <div className={cn("flex-1 flex flex-col relative overflow-hidden", showDebugPanel && "mr-80")} style={{ background: 'linear-gradient(180deg, rgba(18,18,20,1) 0%, rgba(25,25,30,1) 50%, rgba(20,20,25,1) 100%)' }}>
-        {/* 微妙背景动效 */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+      <div className={cn("flex-1 flex flex-col relative overflow-hidden", showDebugPanel && "mr-80")} style={{ background: 'var(--bg-primary)' }}>
+        {/* 静态背景光晕 */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0, contain: 'layout paint' }}>
           <div 
             className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 rounded-full opacity-[0.08] blur-[100px]"
-            style={{ 
-              background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
-              animation: 'float 20s ease-in-out infinite'
-            }}
+            style={{ background: 'var(--color-primary)' }}
           />
           <div 
-            className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.35] blur-[120px]"
-            style={{ 
-              background: 'radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)',
-              animation: 'float 25s ease-in-out infinite reverse'
-            }}
+            className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.15] blur-[120px]"
+            style={{ background: 'var(--color-secondary)' }}
           />
         </div>
         {/* Chat Header */}
