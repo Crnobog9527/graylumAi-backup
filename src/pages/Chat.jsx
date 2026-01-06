@@ -1327,16 +1327,15 @@ function MessageBubble({ message, isStreaming, user }) {
 
   if (isUser) {
     return (
-      <div className="flex justify-end py-4 message-bubble">
+      <div className="flex justify-end py-4">
         <div className="max-w-[80%] space-y-2">
           {/* 用户文字消息 */}
           {displayContent && (
             <div 
-              className="rounded-2xl rounded-tr-md px-4 py-3 transition-all duration-300 hover:shadow-lg"
+              className="rounded-2xl rounded-tr-md px-4 py-3"
               style={{ 
                 background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
                 color: 'var(--bg-primary)',
-                boxShadow: '0 4px 15px rgba(255, 215, 0, 0.2)'
               }}
             >
               <p className="whitespace-pre-wrap leading-relaxed font-medium">{displayContent}</p>
