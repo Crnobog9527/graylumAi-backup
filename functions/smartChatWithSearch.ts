@@ -284,7 +284,8 @@ Deno.serve(async (req) => {
     let beforeCompressionTokens = 0;
     let afterCompressionTokens = 0;
 
-    if (summaryToUse && conversationMessages.length > 8) {
+    // 【优化】提高使用摘要的门槛，从8条改为12条，确保更多上下文被保留
+    if (summaryToUse && conversationMessages.length > 12) {
       // 有摘要且消息较多时，使用摘要 + 最近消息
       const coveredCount = summaryToUse.covered_messages * 2; // 转换为消息数（一问一答=2条）
       const recentMessages = conversationMessages.slice(coveredCount);
@@ -294,11 +295,23 @@ Deno.serve(async (req) => {
         .slice(0, coveredCount)
         .reduce((sum, m) => sum + estimateTokens((m.content || m.text) || ''), 0);
 
-      // 添加摘要作为系统消息
-      const summaryMessage = `[对话历史摘要 - 前${summaryToUse.covered_messages}轮]\n${summaryToUse.summary_text}`;
+      // 【优化】增强摘要的上下文提示，明确告诉AI这是历史摘要
+      const summaryMessage = `[重要：以下是之前对话的摘要，请基于这些信息继续对话]
+
+【对话历史摘要 - 前${summaryToUse.covered_messages}轮】
+${summaryToUse.summary_text}
+
+[摘要结束，以下是最近的对话]`;
+      
       apiMessages.push({
         role: 'user',
         content: summaryMessage
+      });
+      
+      // 添加一个AI确认消息，帮助建立上下文
+      apiMessages.push({
+        role: 'assistant',
+        content: '我已经理解了之前的对话背景和您的要求，请继续。'
       });
 
       // 计算压缩后的 token 数（摘要）
@@ -563,14 +576,16 @@ Deno.serve(async (req) => {
     }
     
     // 步骤6：检查是否需要触发压缩
+    // 【优化】提高压缩触发门槛，从16条改为24条，保留更多原始上下文
     const messageCount = conversationMessages.length + 2; // +2 = 当前一问一答
-    if (messageCount >= 16 && messageCount % 8 === 0) { // 每8轮检查一次
+    if (messageCount >= 24 && messageCount % 12 === 0) { // 每12条消息（6轮）检查一次
       console.log('[smartChatWithSearch] Triggering compression check for', messageCount / 2, 'rounds');
       try {
         // 异步触发压缩，不等待结果
+        // 【优化】保留最近6轮（12条消息）而不是4轮
         base44.functions.invoke('compressConversation', {
           conversation_id: finalConversationId,
-          messages_to_compress: messageCount - 8 // 保留最近4轮
+          messages_to_compress: messageCount - 12 // 保留最近6轮
         }).catch(err => console.log('[smartChatWithSearch] Compression failed:', err.message));
       } catch (e) {
         console.log('[smartChatWithSearch] Compression trigger skipped:', e.message);
