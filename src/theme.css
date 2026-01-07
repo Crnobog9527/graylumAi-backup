@@ -72,9 +72,15 @@
      2. 字体系统 (Typography)
      ------------------------------------------ */
 
-  /* 字体族 */
-  --font-primary: 'Inter', 'Microsoft YaHei', 'PingFang SC', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  /* 字体族 - 优化的回退栈确保快速渲染
+     1. Inter: 主要字体 (通过 Google Fonts 加载，font-display: swap)
+     2. 系统字体栈: 确保字体加载前立即显示文字
+     3. 中文字体: 针对中文内容优化 */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                  'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+                  'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas',
+               'Liberation Mono', 'Menlo', monospace;
 
   /* 字体大小 - 标题 */
   --text-h1: 2rem;               /* 32px - 页面主标题 */
