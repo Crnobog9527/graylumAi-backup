@@ -1,5 +1,5 @@
 import React, { memo, useState, useCallback, useMemo } from 'react';
-import { MessageSquare, Bot, Copy, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { MessageSquare, Bot, Copy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from 'react-markdown';
@@ -115,15 +115,6 @@ const MessageActions = memo(function MessageActions({ onCopy }) {
         onClick={onCopy}
       >
         <Copy className="h-3.5 w-3.5" />
-      </Button>
-      <Button variant="ghost" size="icon" className="h-7 w-7 hover:opacity-80" style={{ color: 'var(--text-tertiary)' }}>
-        <RefreshCw className="h-3.5 w-3.5" />
-      </Button>
-      <Button variant="ghost" size="icon" className="h-7 w-7 hover:opacity-80" style={{ color: 'var(--text-tertiary)' }}>
-        <ThumbsUp className="h-3.5 w-3.5" />
-      </Button>
-      <Button variant="ghost" size="icon" className="h-7 w-7 hover:opacity-80" style={{ color: 'var(--text-tertiary)' }}>
-        <ThumbsDown className="h-3.5 w-3.5" />
       </Button>
     </div>
   );
