@@ -111,9 +111,10 @@ export function useChatState() {
   
   // 分组对话
   const groupedConversations = useMemo(() => {
-    const today = moment().startOf('day');
-    const yesterday = moment().subtract(1, 'day').startOf('day');
-    const weekAgo = moment().subtract(7, 'days').startOf('day');
+    const now = new Date();
+    const today = startOfDay(now);
+    const yesterday = startOfDay(subDays(now, 1));
+    const weekAgo = startOfDay(subDays(now, 7));
     
     const groups = {
       today: [],
@@ -123,12 +124,12 @@ export function useChatState() {
     };
     
     conversations.forEach(conv => {
-      const date = moment(conv.updated_date || conv.created_date);
-      if (date.isSameOrAfter(today)) {
+      const date = new Date(conv.updated_date || conv.created_date);
+      if (isSameDay(date, now) || isAfter(date, today)) {
         groups.today.push(conv);
-      } else if (date.isSameOrAfter(yesterday)) {
+      } else if (isSameDay(date, yesterday) || (isAfter(date, yesterday) && !isAfter(date, today))) {
         groups.yesterday.push(conv);
-      } else if (date.isSameOrAfter(weekAgo)) {
+      } else if (isAfter(date, weekAgo)) {
         groups.thisWeek.push(conv);
       } else {
         groups.older.push(conv);
