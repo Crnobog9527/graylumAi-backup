@@ -95,7 +95,9 @@ export default function Marketplace() {
         className="absolute -top-20 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full opacity-70 blur-[120px]"
         style={{
           background: `radial-gradient(circle, var(--color-primary) 0%, rgba(255,180,0,0.5) 40%, transparent 70%)`,
-          animation: 'pulseGlow 12s ease-in-out infinite'
+          animation: 'pulseGlow 12s ease-in-out infinite',
+          willChange: 'transform, opacity',
+          contain: 'layout paint'
         }} />
 
 
@@ -104,7 +106,9 @@ export default function Marketplace() {
         className="absolute bottom-0 -left-32 w-[600px] h-[600px] rounded-full opacity-50 blur-[110px]"
         style={{
           background: `linear-gradient(45deg, rgba(99,102,241,0.8) 0%, rgba(139,92,246,0.6) 50%, transparent 100%)`,
-          animation: 'driftDiagonal 28s ease-in-out infinite'
+          animation: 'driftDiagonal 28s ease-in-out infinite',
+          willChange: 'transform',
+          contain: 'layout paint'
         }} />
 
 
@@ -113,7 +117,9 @@ export default function Marketplace() {
         className="absolute -bottom-20 -right-20 w-[500px] h-[500px] rounded-full opacity-45 blur-[100px]"
         style={{
           background: `radial-gradient(circle, rgba(34,197,94,0.7) 0%, rgba(20,184,166,0.5) 50%, transparent 80%)`,
-          animation: 'driftCorner 24s ease-in-out infinite reverse'
+          animation: 'driftCorner 24s ease-in-out infinite reverse',
+          willChange: 'transform, opacity',
+          contain: 'layout paint'
         }} />
 
 
@@ -122,17 +128,19 @@ export default function Marketplace() {
         className="absolute top-1/2 right-1/4 w-[400px] h-[400px] rounded-full opacity-35 blur-[90px]"
         style={{
           background: `radial-gradient(circle, var(--color-secondary) 0%, transparent 60%)`,
-          animation: 'floatSoft 20s ease-in-out infinite'
+          animation: 'floatSoft 20s ease-in-out infinite',
+          willChange: 'transform, opacity',
+          contain: 'layout paint'
         }} />
 
 
-      {/* 6. 斜向网格纹理 */}
+      {/* 6. 斜向网格纹理 - 静态版本，避免 background-position 动画 */}
       <div
         className="absolute inset-0 opacity-[0.02]"
         style={{
           backgroundImage: `linear-gradient(30deg, rgba(255,215,0,0.15) 1px, transparent 1px), linear-gradient(-30deg, rgba(255,215,0,0.15) 1px, transparent 1px)`,
           backgroundSize: '60px 60px',
-          animation: 'gridDrift 80s linear infinite'
+          contain: 'layout paint'
         }} />
 
 
@@ -141,7 +149,9 @@ export default function Marketplace() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background: 'linear-gradient(180deg, transparent 0%, rgba(255,215,0,0.05) 50%, transparent 100%)',
-          animation: 'scanVertical 20s ease-in-out infinite'
+          animation: 'scanVertical 20s ease-in-out infinite',
+          willChange: 'transform, opacity',
+          contain: 'layout paint'
         }} />
 
 
@@ -185,8 +195,9 @@ export default function Marketplace() {
         }} />
 
 
-      {/* 动画样式定义 - 功能市场专属 */}
+      {/* 动画样式定义 - GPU 加速优化版 */}
       <style>{`
+        /* GPU 加速动画 - 仅使用 transform 和 opacity */
         @keyframes pulseGlow {
           0%, 100% { opacity: 0.4; transform: translateX(-50%) scale(1); }
           50% { opacity: 0.6; transform: translateX(-50%) scale(1.08); }
@@ -203,10 +214,6 @@ export default function Marketplace() {
         @keyframes floatSoft {
           0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.2; }
           50% { transform: translate(-30px, 20px) scale(1.1); opacity: 0.3; }
-        }
-        @keyframes gridDrift {
-          0% { background-position: 0 0; }
-          100% { background-position: 60px 60px; }
         }
         @keyframes scanVertical {
           0%, 100% { transform: translateY(-100%); opacity: 0; }
@@ -229,20 +236,26 @@ export default function Marketplace() {
           from { opacity: 0; }
           to { opacity: 1; }
         }
+
+        /* GPU 加速提示 */
         .module-card-animate {
           animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          will-change: transform, opacity;
         }
         .animate-slideUp {
           animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           opacity: 0;
+          will-change: transform, opacity;
         }
         .animate-fadeIn {
           animation: fadeIn 0.6s ease forwards;
+          will-change: opacity;
         }
         .animate-pulse {
           animation: twinkle 2s ease-in-out infinite;
+          will-change: transform, opacity;
         }
-        
+
         /* 滚动条美化 */
         .no-scrollbar::-webkit-scrollbar {
           display: none;
