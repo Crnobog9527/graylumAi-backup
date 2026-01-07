@@ -30,7 +30,8 @@ Deno.serve(async (req) => {
     }
     
     const messages = conversation.messages || [];
-    const messagesToCompress = messages_to_compress || messages.length - 8; // 保留最近4轮
+    // 【优化】增加保留的消息数量，从4轮改为6轮（12条消息）
+    const messagesToCompress = messages_to_compress || messages.length - 12; // 保留最近6轮
     
     if (messagesToCompress <= 0) {
       return Response.json({ error: 'No messages to compress' }, { status: 400 });
@@ -43,20 +44,49 @@ Deno.serve(async (req) => {
     
     const originalTokens = estimateTokens(conversationText);
     
-    // 构建摘要提示词
-    const summaryPrompt = `你是一个专业的对话摘要助手。请为以下对话生成结构化摘要。
+    // 【优化】增强摘要提示词，确保关键指令和上下文被完整保留
+    const summaryPrompt = `你是一个专业的对话摘要助手。请为以下对话生成**高质量结构化摘要**。
 
-要求：
-1. 主要讨论的主题（用简洁的列表形式）
-2. 用户的关键需求、偏好和背景信息
-3. 重要的技术细节或上下文信息
-4. 未完成的任务或待解决的问题
-5. AI 提供的重要建议或方案
+**核心原则：宁多勿少，关键信息必须完整保留**
 
-对话内容（共 ${oldMessages.length / 2} 轮）：
+**必须保留的内容（按重要性排序）：**
+1. **用户的核心指令和要求**：用户明确要求AI做什么、怎么做、以什么格式输出
+2. **角色设定和人设**：如果用户要求AI扮演某个角色或专家身份
+3. **输出格式要求**：用户指定的任何格式、结构、风格要求
+4. **创作主题和背景**：正在讨论或创作的具体内容、主题、背景设定
+5. **已完成的内容概要**：AI已经输出了什么（如小说章节、代码模块等）
+6. **待完成的任务**：用户还期望完成什么
+7. **用户的偏好和反馈**：用户表达的喜好、不满、修改意见
+
+**输出格式：**
+【角色/人设】（如有）
+...
+
+【核心任务】
+...
+
+【输出要求】
+- 格式：...
+- 风格：...
+- 其他：...
+
+【已完成内容】
+- 第X部分：...概要...
+- 第Y部分：...概要...
+
+【待完成任务】
+...
+
+【用户偏好/反馈】
+...
+
+【关键上下文】
+...
+
+对话内容（共 ${Math.floor(oldMessages.length / 2)} 轮）：
 ${conversationText}
 
-请以结构化格式输出摘要，保留所有关键信息，删除重复和不重要的内容。摘要应该让 AI 能够继续对话而不丢失上下文。`;
+**重要：摘要必须足够详细，让AI在没有原始对话的情况下，仍能准确继续执行用户的任务和要求。**`;
 
     // 调用 Haiku 生成摘要
     const openRouterKey = Deno.env.get('OPENROUTER_API_KEY');
