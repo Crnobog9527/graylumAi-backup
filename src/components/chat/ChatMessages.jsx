@@ -217,11 +217,6 @@ const MessageBubble = memo(function MessageBubble({ message, isStreaming }) {
 
         <div className="flex items-center gap-4 mt-3 text-xs" style={{ color: 'var(--text-disabled)' }}>
           <span>{formattedTime}</span>
-          <TokenInfo
-            creditsUsed={message.credits_used}
-            inputTokens={message.input_tokens}
-            outputTokens={message.output_tokens}
-          />
           <MessageActions onCopy={handleCopy} />
         </div>
       </div>
