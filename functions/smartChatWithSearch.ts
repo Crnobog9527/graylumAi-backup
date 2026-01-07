@@ -104,7 +104,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const { conversation_id, message, system_prompt, image_files } = await req.json();
+    const requestData = await req.json();
+    let conversation_id = requestData.conversation_id;
+    const { message, system_prompt, image_files } = requestData;
     console.log('[smartChatWithSearch] User:', user.email, 'Message:', message?.slice(0, 50));
     
     if (!message) {
