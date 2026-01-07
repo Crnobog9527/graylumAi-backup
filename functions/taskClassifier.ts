@@ -147,13 +147,23 @@ Deno.serve(async (req) => {
     
     console.log('[taskClassifier] isContinuation:', isContinuation, 'sessionTaskType:', sessionTaskType);
     
-    // 如果是续写指令且有会话任务类型，则继承原任务类型
+    // 【优化1】稳定性原则：多轮对话中尽量保持模型一致
+    // 如果已有会话任务类型，优先继承（不仅限于续写指令）
     let taskType;
     let shouldUpdateSessionTaskType = false;
+    let inheritedFromSession = false;
     
-    if (isContinuation && sessionTaskType) {
+    // 判断是否应该继承会话任务类型
+    // 条件：1. 是续写指令 2. 对话轮次>=3 且 有会话任务类型（保持上下文连贯）
+    const shouldInheritTaskType = sessionTaskType && (
+      isContinuation || 
+      conversationLength >= 3  // 多轮对话中保持稳定
+    );
+    
+    if (shouldInheritTaskType) {
       taskType = sessionTaskType;
-      console.log('[taskClassifier] 继承会话任务类型:', taskType);
+      inheritedFromSession = true;
+      console.log('[taskClassifier] 继承会话任务类型:', taskType, '(对话轮次:', conversationLength, ')');
     } else {
       // 否则正常判断任务类型
       taskType = classifyTaskByKeywords(message);
@@ -170,11 +180,22 @@ Deno.serve(async (req) => {
     // 步骤3：选择基础模型
     let recommendedModel = selectModelForTask(taskType);
     
-    // 步骤4：根据复杂度调整模型选择
-    if (complexity >= 4 && recommendedModel === 'haiku') {
+    // 【优化2】降低模型切换的激进程度
+    // 只在复杂度显著提升时才升级模型，避免频繁切换
+    if (complexity >= 5 && recommendedModel === 'haiku') {
       recommendedModel = 'sonnet';
-    } else if (complexity >= 5 && recommendedModel === 'sonnet') {
+    } else if (complexity >= 7 && recommendedModel === 'sonnet') {
       recommendedModel = 'opus';
+    }
+    
+    // 【优化3】如果是继承的任务类型，优先保持原模型级别
+    // 这确保了复杂创作任务不会因为简单的续写指令而降级模型
+    if (inheritedFromSession && conversationLength >= 3) {
+      // 保持至少 sonnet 级别，确保复杂指令能被正确处理
+      if (recommendedModel === 'haiku') {
+        recommendedModel = 'sonnet';
+        console.log('[taskClassifier] 保持模型稳定性，升级到 sonnet');
+      }
     }
     
     // 步骤5：映射到实际模型ID
@@ -190,9 +211,10 @@ Deno.serve(async (req) => {
       recommended_model: recommendedModel,
       model_id: modelMap[recommendedModel],
       confidence: complexity >= 3 ? 0.7 : 0.9,
-      reason: `任务类型: ${taskType}, 复杂度: ${complexity}, 对话轮次: ${conversationLength}${isContinuation ? ' (续写)' : ''}`,
+      reason: `任务类型: ${taskType}, 复杂度: ${complexity}, 对话轮次: ${conversationLength}${isContinuation ? ' (续写)' : ''}${inheritedFromSession ? ' (继承)' : ''}`,
       should_update_session_task_type: shouldUpdateSessionTaskType,
-      is_continuation: isContinuation
+      is_continuation: isContinuation,
+      inherited_from_session: inheritedFromSession
     });
     
   } catch (error) {
