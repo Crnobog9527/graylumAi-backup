@@ -2,21 +2,10 @@
    GraylumAI 组件样式库 (Component Library)
    ============================================
 
-   文件说明：
-   这是项目的可复用组件样式库，基于 theme.css 中定义的变量。
-   所有组件都包含：
-   - 基础样式
-   - 悬停效果
-   - 活跃/聚焦状态
-   - 禁用状态
-   - 响应式设计
+   精简版 - 仅包含实际使用的组件样式
+   其他样式由 Tailwind CSS 和 shadcn/ui 提供
 
-   使用方法：
-   1. 确保已导入 theme.css
-   2. 在元素上添加对应的 class
-   3. 可组合使用多个 class
-
-   更新日期：2026-01-05
+   更新日期：2026-01-07
    ============================================ */
 
 
@@ -24,59 +13,39 @@
    第一部分：按钮组件 (Buttons)
    ============================================ */
 
-/* ------------------------------------------
-   1.1 按钮基础样式
-   ------------------------------------------ */
-
 .btn {
-  /* 布局 */
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-sm);
-
-  /* 尺寸 */
   padding: var(--space-sm) var(--space-lg);
   min-height: 40px;
-
-  /* 字体 */
   font-family: var(--font-primary);
   font-size: var(--text-body);
   font-weight: var(--font-medium);
   line-height: 1;
   text-decoration: none;
   white-space: nowrap;
-
-  /* 形状 */
   border-radius: var(--radius-md);
   border: 1px solid transparent;
-
-  /* 交互 */
   cursor: pointer;
   user-select: none;
   transition: transform var(--transition-normal), box-shadow var(--transition-normal), background-color var(--transition-normal);
-
-  /* 默认样式 */
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
-
-  /* GPU 加速提示 */
   will-change: transform;
   transform: translateZ(0);
 }
 
-/* 按钮悬停 */
 .btn:hover {
   background-color: var(--bg-elevated);
   transform: translateY(-1px);
 }
 
-/* 按钮活跃 */
 .btn:active {
   transform: translateY(0);
 }
 
-/* 按钮禁用 */
 .btn:disabled,
 .btn.disabled {
   opacity: 0.5;
@@ -84,11 +53,7 @@
   pointer-events: none;
 }
 
-
-/* ------------------------------------------
-   1.2 主要按钮 - 金色，用于主要操作
-   ------------------------------------------ */
-
+/* 主要按钮 - 金色 */
 .btn-primary {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   color: var(--text-inverse);
@@ -106,11 +71,7 @@
   box-shadow: var(--shadow-glow-sm);
 }
 
-
-/* ------------------------------------------
-   1.3 次要按钮 - 深色背景，金色边框
-   ------------------------------------------ */
-
+/* 次要按钮 - 金色边框 */
 .btn-secondary {
   background-color: transparent;
   color: var(--color-primary);
@@ -126,82 +87,6 @@
   background-color: var(--color-primary-20);
 }
 
-
-/* ------------------------------------------
-   1.4 轮廓按钮 - 透明背景，白色边框
-   ------------------------------------------ */
-
-.btn-outline {
-  background-color: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--border-primary);
-}
-
-.btn-outline:hover {
-  border-color: var(--text-secondary);
-  background-color: var(--bg-secondary);
-}
-
-
-/* ------------------------------------------
-   1.5 幽灵按钮 - 完全透明，仅文字
-   ------------------------------------------ */
-
-.btn-ghost {
-  background-color: transparent;
-  color: var(--text-secondary);
-  border: none;
-}
-
-.btn-ghost:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-secondary);
-}
-
-
-/* ------------------------------------------
-   1.6 危险按钮 - 红色，用于删除等操作
-   ------------------------------------------ */
-
-.btn-danger {
-  background-color: var(--error);
-  color: var(--text-primary);
-  border: none;
-}
-
-.btn-danger:hover {
-  background-color: #DC2626;
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
-}
-
-
-/* ------------------------------------------
-   1.7 成功按钮 - 绿色，用于确认操作
-   ------------------------------------------ */
-
-.btn-success {
-  background-color: var(--success);
-  color: var(--text-inverse);
-  border: none;
-}
-
-.btn-success:hover {
-  background-color: #16A34A;
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
-}
-
-
-/* ------------------------------------------
-   1.8 按钮尺寸变体
-   ------------------------------------------ */
-
-/* 小按钮 */
-.btn-sm {
-  padding: var(--space-xs) var(--space-md);
-  min-height: 32px;
-  font-size: var(--text-small);
-}
-
 /* 大按钮 */
 .btn-lg {
   padding: var(--space-md) var(--space-xl);
@@ -209,38 +94,10 @@
   font-size: var(--text-h4);
 }
 
-/* 全宽按钮 */
-.btn-block {
-  width: 100%;
-}
-
-/* 圆形按钮 - 用于图标 */
-.btn-icon {
-  padding: var(--space-sm);
-  min-height: auto;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-full);
-}
-
-.btn-icon.btn-sm {
-  width: 32px;
-  height: 32px;
-}
-
-.btn-icon.btn-lg {
-  width: 48px;
-  height: 48px;
-}
-
 
 /* ============================================
    第二部分：卡片组件 (Cards)
    ============================================ */
-
-/* ------------------------------------------
-   2.1 卡片基础样式
-   ------------------------------------------ */
 
 .card {
   background-color: var(--bg-secondary);
@@ -248,18 +105,15 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
-  /* GPU 加速提示 */
   will-change: transform;
   transform: translateZ(0);
 }
 
-/* 卡片悬停效果 */
 .card:hover {
   border-color: var(--border-secondary);
   box-shadow: var(--shadow-md);
 }
 
-/* 可点击的卡片 */
 .card-clickable {
   cursor: pointer;
 }
@@ -269,7 +123,6 @@
   box-shadow: var(--shadow-lg);
 }
 
-/* 金色边框卡片 - 用于重要内容 */
 .card-featured {
   border-color: var(--color-primary);
   box-shadow: var(--shadow-glow-sm);
@@ -279,18 +132,11 @@
   box-shadow: var(--shadow-glow);
 }
 
-
-/* ------------------------------------------
-   2.2 卡片内部结构
-   ------------------------------------------ */
-
-/* 卡片头部 */
 .card-header {
   padding: var(--space-lg);
   border-bottom: 1px solid var(--border-primary);
 }
 
-/* 卡片标题 */
 .card-title {
   font-size: var(--text-h3);
   font-weight: var(--font-semibold);
@@ -298,391 +144,26 @@
   margin: 0;
 }
 
-/* 卡片副标题 */
 .card-subtitle {
   font-size: var(--text-small);
   color: var(--text-secondary);
   margin-top: var(--space-xs);
 }
 
-/* 卡片主体 */
 .card-body {
   padding: var(--space-lg);
 }
 
-/* 卡片底部 */
 .card-footer {
   padding: var(--space-md) var(--space-lg);
   border-top: 1px solid var(--border-primary);
   background-color: var(--bg-primary);
 }
 
-/* 卡片图片 */
-.card-image {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-}
-
 
 /* ============================================
-   第三部分：表单组件 (Forms)
+   第三部分：标题组件 (Headings)
    ============================================ */
-
-/* ------------------------------------------
-   3.1 表单组
-   ------------------------------------------ */
-
-.form-group {
-  margin-bottom: var(--space-lg);
-}
-
-
-/* ------------------------------------------
-   3.2 表单标签
-   ------------------------------------------ */
-
-.form-label {
-  display: block;
-  font-size: var(--text-small);
-  font-weight: var(--font-medium);
-  color: var(--text-secondary);
-  margin-bottom: var(--space-sm);
-}
-
-/* 必填标记 */
-.form-label.required::after {
-  content: ' *';
-  color: var(--error);
-}
-
-
-/* ------------------------------------------
-   3.3 输入框
-   ------------------------------------------ */
-
-.form-input {
-  width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--text-body);
-  color: var(--text-primary);
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  transition: var(--transition-fast);
-}
-
-/* 输入框占位符 */
-.form-input::placeholder {
-  color: var(--text-tertiary);
-}
-
-/* 输入框悬停 */
-.form-input:hover {
-  border-color: var(--border-secondary);
-}
-
-/* 输入框聚焦 */
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-20);
-}
-
-/* 输入框禁用 */
-.form-input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background-color: var(--bg-secondary);
-}
-
-/* 输入框错误状态 */
-.form-input.error {
-  border-color: var(--error);
-}
-
-.form-input.error:focus {
-  box-shadow: 0 0 0 3px var(--error-bg);
-}
-
-/* 输入框成功状态 */
-.form-input.success {
-  border-color: var(--success);
-}
-
-
-/* ------------------------------------------
-   3.4 文本域
-   ------------------------------------------ */
-
-.form-textarea {
-  min-height: 120px;
-  resize: vertical;
-}
-
-
-/* ------------------------------------------
-   3.5 选择框
-   ------------------------------------------ */
-
-.form-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23B0B0B0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right var(--space-md) center;
-  padding-right: var(--space-xl);
-}
-
-
-/* ------------------------------------------
-   3.6 复选框和单选框
-   ------------------------------------------ */
-
-.form-checkbox,
-.form-radio {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-sm);
-  cursor: pointer;
-  font-size: var(--text-body);
-  color: var(--text-primary);
-}
-
-.form-checkbox input,
-.form-radio input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--color-primary);
-  cursor: pointer;
-}
-
-
-/* ------------------------------------------
-   3.7 表单提示文字
-   ------------------------------------------ */
-
-.form-hint {
-  font-size: var(--text-xs);
-  color: var(--text-tertiary);
-  margin-top: var(--space-xs);
-}
-
-.form-error {
-  font-size: var(--text-xs);
-  color: var(--error);
-  margin-top: var(--space-xs);
-}
-
-
-/* ============================================
-   第四部分：布局组件 (Layout)
-   ============================================ */
-
-/* ------------------------------------------
-   4.1 容器
-   ------------------------------------------ */
-
-.container {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 var(--space-lg);
-}
-
-/* 不同宽度容器 */
-.container-sm {
-  max-width: 640px;
-}
-
-.container-md {
-  max-width: 768px;
-}
-
-.container-lg {
-  max-width: 1024px;
-}
-
-.container-xl {
-  max-width: 1280px;
-}
-
-.container-full {
-  max-width: 100%;
-}
-
-
-/* ------------------------------------------
-   4.2 Flexbox 布局
-   ------------------------------------------ */
-
-.flex {
-  display: flex;
-}
-
-.flex-inline {
-  display: inline-flex;
-}
-
-/* 方向 */
-.flex-row {
-  flex-direction: row;
-}
-
-.flex-col {
-  flex-direction: column;
-}
-
-/* 主轴对齐 */
-.justify-start {
-  justify-content: flex-start;
-}
-
-.justify-center {
-  justify-content: center;
-}
-
-.justify-end {
-  justify-content: flex-end;
-}
-
-.justify-between {
-  justify-content: space-between;
-}
-
-.justify-around {
-  justify-content: space-around;
-}
-
-/* 交叉轴对齐 */
-.items-start {
-  align-items: flex-start;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.items-end {
-  align-items: flex-end;
-}
-
-.items-stretch {
-  align-items: stretch;
-}
-
-/* 间隙 */
-.gap-xs {
-  gap: var(--space-xs);
-}
-
-.gap-sm {
-  gap: var(--space-sm);
-}
-
-.gap-md {
-  gap: var(--space-md);
-}
-
-.gap-lg {
-  gap: var(--space-lg);
-}
-
-.gap-xl {
-  gap: var(--space-xl);
-}
-
-/* 换行 */
-.flex-wrap {
-  flex-wrap: wrap;
-}
-
-.flex-nowrap {
-  flex-wrap: nowrap;
-}
-
-/* 增长和收缩 */
-.flex-1 {
-  flex: 1;
-}
-
-.flex-auto {
-  flex: auto;
-}
-
-.flex-none {
-  flex: none;
-}
-
-
-/* ------------------------------------------
-   4.3 Grid 网格布局
-   ------------------------------------------ */
-
-.grid {
-  display: grid;
-  gap: var(--space-lg);
-}
-
-/* 列数 */
-.grid-cols-1 {
-  grid-template-columns: repeat(1, 1fr);
-}
-
-.grid-cols-2 {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.grid-cols-3 {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.grid-cols-4 {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-/* 响应式网格 - 移动端自动变为单列 */
-@media (max-width: 640px) {
-  .grid-cols-2,
-  .grid-cols-3,
-  .grid-cols-4 {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* 响应式网格 - 平板端 */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .grid-cols-3,
-  .grid-cols-4 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-
-/* ------------------------------------------
-   4.4 分隔线
-   ------------------------------------------ */
-
-.divider {
-  height: 1px;
-  background-color: var(--border-primary);
-  margin: var(--space-lg) 0;
-}
-
-.divider-vertical {
-  width: 1px;
-  height: 100%;
-  background-color: var(--border-primary);
-  margin: 0 var(--space-md);
-}
-
-
-/* ============================================
-   第五部分：文字组件 (Typography)
-   ============================================ */
-
-/* ------------------------------------------
-   5.1 标题
-   ------------------------------------------ */
 
 .heading-1 {
   font-size: var(--text-h1);
@@ -717,51 +198,11 @@
 }
 
 
-/* ------------------------------------------
-   5.2 文字颜色
-   ------------------------------------------ */
+/* ============================================
+   第四部分：文字样式 (Typography)
+   ============================================ */
 
-.text-primary {
-  color: var(--text-primary);
-}
-
-.text-secondary {
-  color: var(--text-secondary);
-}
-
-.text-muted {
-  color: var(--text-tertiary);
-}
-
-.text-disabled {
-  color: var(--text-disabled);
-}
-
-.text-gold {
-  color: var(--color-primary);
-}
-
-.text-success {
-  color: var(--success);
-}
-
-.text-warning {
-  color: var(--warning);
-}
-
-.text-error {
-  color: var(--error);
-}
-
-.text-info {
-  color: var(--info);
-}
-
-
-/* ------------------------------------------
-   5.3 渐变文字 - 金色渐变效果
-   ------------------------------------------ */
-
+/* 金色渐变文字 */
 .text-gradient {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   -webkit-background-clip: text;
@@ -770,86 +211,8 @@
 }
 
 
-/* ------------------------------------------
-   5.4 文字大小
-   ------------------------------------------ */
-
-.text-xs {
-  font-size: var(--text-xs);
-}
-
-.text-sm {
-  font-size: var(--text-small);
-}
-
-.text-base {
-  font-size: var(--text-body);
-}
-
-.text-lg {
-  font-size: var(--text-h4);
-}
-
-.text-xl {
-  font-size: var(--text-h3);
-}
-
-.text-2xl {
-  font-size: var(--text-h2);
-}
-
-.text-3xl {
-  font-size: var(--text-h1);
-}
-
-
-/* ------------------------------------------
-   5.5 文字对齐
-   ------------------------------------------ */
-
-.text-left {
-  text-align: left;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.text-right {
-  text-align: right;
-}
-
-
-/* ------------------------------------------
-   5.6 文字截断
-   ------------------------------------------ */
-
-/* 单行截断 */
-.text-truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 多行截断 - 2行 */
-.text-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* 多行截断 - 3行 */
-.text-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-
 /* ============================================
-   第六部分：徽章组件 (Badges)
+   第五部分：徽章组件 (Badges)
    ============================================ */
 
 .badge {
@@ -862,165 +225,20 @@
   white-space: nowrap;
 }
 
-/* 默认徽章 */
 .badge-default {
   background-color: var(--bg-tertiary);
   color: var(--text-secondary);
 }
 
-/* 主要徽章 - 金色 */
 .badge-primary {
   background-color: var(--color-primary-20);
   color: var(--color-primary);
 }
 
-/* 成功徽章 */
-.badge-success {
-  background-color: var(--success-bg);
-  color: var(--success);
-}
-
-/* 警告徽章 */
-.badge-warning {
-  background-color: var(--warning-bg);
-  color: var(--warning);
-}
-
-/* 错误徽章 */
-.badge-error {
-  background-color: var(--error-bg);
-  color: var(--error);
-}
-
-/* 信息徽章 */
-.badge-info {
-  background-color: var(--info-bg);
-  color: var(--info);
-}
-
 
 /* ============================================
-   第七部分：提示组件 (Alerts)
+   第六部分：骨架屏 (Skeleton)
    ============================================ */
-
-.alert {
-  padding: var(--space-md) var(--space-lg);
-  border-radius: var(--radius-md);
-  border-left: 4px solid;
-  margin-bottom: var(--space-md);
-}
-
-.alert-success {
-  background-color: var(--success-bg);
-  border-color: var(--success);
-  color: var(--success);
-}
-
-.alert-warning {
-  background-color: var(--warning-bg);
-  border-color: var(--warning);
-  color: var(--warning);
-}
-
-.alert-error {
-  background-color: var(--error-bg);
-  border-color: var(--error);
-  color: var(--error);
-}
-
-.alert-info {
-  background-color: var(--info-bg);
-  border-color: var(--info);
-  color: var(--info);
-}
-
-
-/* ============================================
-   第八部分：头像组件 (Avatar)
-   ============================================ */
-
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-full);
-  background-color: var(--bg-tertiary);
-  color: var(--text-secondary);
-  font-weight: var(--font-medium);
-  overflow: hidden;
-}
-
-.avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* 头像尺寸 */
-.avatar-sm {
-  width: 32px;
-  height: 32px;
-  font-size: var(--text-xs);
-}
-
-.avatar-lg {
-  width: 56px;
-  height: 56px;
-  font-size: var(--text-h4);
-}
-
-.avatar-xl {
-  width: 80px;
-  height: 80px;
-  font-size: var(--text-h2);
-}
-
-/* 头像边框 */
-.avatar-bordered {
-  border: 2px solid var(--color-primary);
-}
-
-
-/* ============================================
-   第九部分：加载组件 (Loading)
-   ============================================ */
-
-/* ------------------------------------------
-   9.1 旋转加载器
-   ------------------------------------------ */
-
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--bg-tertiary);
-  border-top-color: var(--color-primary);
-  border-radius: var(--radius-full);
-  animation: spin 0.8s linear infinite;
-}
-
-.spinner-sm {
-  width: 16px;
-  height: 16px;
-}
-
-.spinner-lg {
-  width: 40px;
-  height: 40px;
-  border-width: 3px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-
-/* ------------------------------------------
-   9.2 骨架屏 - GPU 加速版本
-   ------------------------------------------ */
 
 .skeleton {
   position: relative;
@@ -1029,17 +247,11 @@
   border-radius: var(--radius-sm);
 }
 
-/* 使用伪元素 + transform 实现 GPU 加速的骨架屏动画 */
 .skeleton::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--bg-elevated) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, var(--bg-elevated) 50%, transparent 100%);
   transform: translateX(-100%);
   animation: skeleton-loading 1.5s ease-in-out infinite;
   will-change: transform;
@@ -1067,182 +279,19 @@
   height: 200px;
 }
 
-/* GPU 加速的骨架屏动画 - 使用 transform 替代 background-position */
 @keyframes skeleton-loading {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 
 /* ============================================
-   第十部分：工具类 (Utilities)
+   第七部分：容器 (Container)
    ============================================ */
 
-/* ------------------------------------------
-   10.1 显示控制
-   注意：使用 ds- 前缀避免与 Tailwind 类名冲突
-   ------------------------------------------ */
-
-.ds-hidden {
-  display: none !important;
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
 }
-
-.ds-visible {
-  visibility: visible;
-}
-
-.ds-invisible {
-  visibility: hidden;
-}
-
-
-/* ------------------------------------------
-   10.2 间距工具类
-   注意：使用 ds- 前缀避免与 Tailwind 类名冲突
-   ------------------------------------------ */
-
-/* 外边距 */
-.ds-m-0 { margin: 0; }
-.ds-m-xs { margin: var(--space-xs); }
-.ds-m-sm { margin: var(--space-sm); }
-.ds-m-md { margin: var(--space-md); }
-.ds-m-lg { margin: var(--space-lg); }
-.ds-m-xl { margin: var(--space-xl); }
-
-.ds-mt-0 { margin-top: 0; }
-.ds-mt-xs { margin-top: var(--space-xs); }
-.ds-mt-sm { margin-top: var(--space-sm); }
-.ds-mt-md { margin-top: var(--space-md); }
-.ds-mt-lg { margin-top: var(--space-lg); }
-.ds-mt-xl { margin-top: var(--space-xl); }
-
-.ds-mb-0 { margin-bottom: 0; }
-.ds-mb-xs { margin-bottom: var(--space-xs); }
-.ds-mb-sm { margin-bottom: var(--space-sm); }
-.ds-mb-md { margin-bottom: var(--space-md); }
-.ds-mb-lg { margin-bottom: var(--space-lg); }
-.ds-mb-xl { margin-bottom: var(--space-xl); }
-
-/* 内边距 */
-.ds-p-0 { padding: 0; }
-.ds-p-xs { padding: var(--space-xs); }
-.ds-p-sm { padding: var(--space-sm); }
-.ds-p-md { padding: var(--space-md); }
-.ds-p-lg { padding: var(--space-lg); }
-.ds-p-xl { padding: var(--space-xl); }
-
-
-/* ------------------------------------------
-   10.3 圆角工具类
-   注意：使用 ds- 前缀避免与 Tailwind 类名冲突
-   ------------------------------------------ */
-
-.ds-rounded-none { border-radius: var(--radius-none); }
-.ds-rounded-sm { border-radius: var(--radius-sm); }
-.ds-rounded-md { border-radius: var(--radius-md); }
-.ds-rounded-lg { border-radius: var(--radius-lg); }
-.ds-rounded-xl { border-radius: var(--radius-xl); }
-.ds-rounded-full { border-radius: var(--radius-full); }
-
-
-/* ------------------------------------------
-   10.4 阴影工具类
-   注意：使用 ds- 前缀避免与 Tailwind 类名冲突
-   ------------------------------------------ */
-
-.ds-shadow-none { box-shadow: none; }
-.ds-shadow-sm { box-shadow: var(--shadow-sm); }
-.ds-shadow-md { box-shadow: var(--shadow-md); }
-.ds-shadow-lg { box-shadow: var(--shadow-lg); }
-.ds-shadow-glow { box-shadow: var(--shadow-glow); }
-
-
-/* ------------------------------------------
-   10.5 过渡动画工具类
-   注意：使用 ds- 前缀避免与 Tailwind 类名冲突
-   ------------------------------------------ */
-
-.ds-transition-none { transition: none; }
-.ds-transition-fast { transition: var(--transition-fast); }
-.ds-transition-normal { transition: var(--transition-normal); }
-.ds-transition-slow { transition: var(--transition-slow); }
-
-
-/* ============================================
-   第十一部分：响应式隐藏/显示
-   注意：使用 ds- 前缀避免与 Tailwind 类名冲突
-   ============================================ */
-
-/* 仅在移动端显示 */
-.ds-show-mobile {
-  display: none;
-}
-
-@media (max-width: 640px) {
-  .ds-show-mobile {
-    display: block;
-  }
-
-  .ds-hide-mobile {
-    display: none !important;
-  }
-}
-
-/* 仅在桌面端显示 */
-.ds-show-desktop {
-  display: none;
-}
-
-@media (min-width: 1025px) {
-  .ds-show-desktop {
-    display: block;
-  }
-
-  .ds-hide-desktop {
-    display: none !important;
-  }
-}
-
-
-/* ============================================
-   使用示例
-   ============================================
-
-   1. 按钮组合:
-      <button class="btn btn-primary btn-lg">
-        大金色按钮
-      </button>
-
-   2. 卡片组合:
-      <div class="card card-clickable">
-        <div class="card-header">
-          <h3 class="card-title">标题</h3>
-        </div>
-        <div class="card-body">内容</div>
-      </div>
-
-   3. 表单组合:
-      <div class="form-group">
-        <label class="form-label required">邮箱</label>
-        <input class="form-input" type="email">
-        <span class="form-hint">请输入有效邮箱</span>
-      </div>
-
-   4. 布局组合:
-      <div class="container">
-        <div class="grid grid-cols-3 gap-lg">
-          <div class="card">卡片1</div>
-          <div class="card">卡片2</div>
-          <div class="card">卡片3</div>
-        </div>
-      </div>
-
-   5. 文字组合:
-      <h1 class="heading-1 text-gradient">渐变标题</h1>
-      <p class="text-secondary text-sm">次要描述文字</p>
-
-   ============================================ */
