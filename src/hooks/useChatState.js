@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { isToday, isYesterday, differenceInDays } from 'date-fns';
+import { chatAPI } from '@/utils/chatAPI';
+import { batchDeleteConversations } from '@/utils/batchRequest';
 
 // 估算token数量 (约4字符=1token)
 function estimateTokens(text) {
@@ -127,6 +129,8 @@ export function useChatState() {
     onSuccess: (newConv) => {
       setCurrentConversation(newConv);
       queryClient.invalidateQueries(['conversations']);
+      // 清除对话列表缓存以获取最新数据
+      chatAPI.invalidateConversationList(user?.email);
     },
   });
 
@@ -137,12 +141,19 @@ export function useChatState() {
         setCurrentConversation(updatedConv);
       }
       queryClient.invalidateQueries(['conversations']);
+      // 清除更新对话的缓存
+      chatAPI.invalidateConversation(updatedConv.id);
     },
   });
 
   const deleteConversationMutation = useMutation({
     mutationFn: (id) => base44.entities.Conversation.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(['conversations']),
+    onSuccess: (_, deletedId) => {
+      queryClient.invalidateQueries(['conversations']);
+      // 清除已删除对话的缓存
+      chatAPI.invalidateConversation(deletedId);
+      chatAPI.invalidateConversationList(user?.email);
+    },
   });
 
   const updateUserMutation = useMutation({
@@ -160,17 +171,32 @@ export function useChatState() {
   }, [currentConversation, deleteConversationMutation]);
 
   const handleBatchDelete = useCallback(async () => {
-    for (const convId of selectedConversations) {
-      if (currentConversation?.id === convId) {
-        setCurrentConversation(null);
-        setMessages([]);
-      }
-      await base44.entities.Conversation.delete(convId);
+    // 如果当前对话在删除列表中，先清空
+    if (selectedConversations.includes(currentConversation?.id)) {
+      setCurrentConversation(null);
+      setMessages([]);
     }
+
+    // 使用批量删除优化
+    const { succeeded, failed } = await batchDeleteConversations(
+      selectedConversations,
+      (id) => base44.entities.Conversation.delete(id)
+    );
+
+    // 清除已删除对话的缓存
+    for (const id of succeeded) {
+      chatAPI.invalidateConversation(id);
+    }
+
+    if (failed.length > 0) {
+      console.error('部分对话删除失败:', failed);
+    }
+
     setSelectedConversations([]);
     setIsSelectMode(false);
     queryClient.invalidateQueries(['conversations']);
-  }, [selectedConversations, currentConversation, queryClient]);
+    chatAPI.invalidateConversationList(user?.email);
+  }, [selectedConversations, currentConversation, queryClient, user?.email]);
 
   const toggleSelectConversation = useCallback((convId) => {
     setSelectedConversations(prev =>
@@ -242,7 +268,8 @@ export function useChatState() {
 
   const handleSelectConversation = useCallback(async (conv) => {
     try {
-      const freshConv = await base44.entities.Conversation.get(conv.id);
+      // 使用带缓存的 API 获取对话
+      const freshConv = await chatAPI.getConversationHistory(conv.id);
       setCurrentConversation(freshConv);
       setMessages(freshConv.messages || []);
       setSelectedModule(null);
@@ -254,6 +281,7 @@ export function useChatState() {
       console.error('对话加载失败:', e);
       setCurrentConversation(null);
       setMessages([]);
+      chatAPI.invalidateConversation(conv.id);
       queryClient.invalidateQueries(['conversations']);
       alert('该对话已被删除或不存在');
     }
@@ -360,11 +388,12 @@ export function useChatState() {
           }));
       }
 
-      const { data: result } = await base44.functions.invoke('smartChatWithSearch', {
-        conversation_id: currentConversation?.id,
+      // 使用 chatAPI 发送消息（自动去重防止重复请求）
+      const { data: result } = await chatAPI.sendMessage({
+        conversationId: currentConversation?.id,
         message: messageToSend,
-        system_prompt: systemPrompt || undefined,
-        image_files: imageFiles
+        systemPrompt: systemPrompt || undefined,
+        imageFiles: imageFiles
       });
 
       if (result.error) {
