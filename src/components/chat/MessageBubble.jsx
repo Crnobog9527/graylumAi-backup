@@ -73,12 +73,7 @@ export default function MessageBubble({ message }) {
           </Button>
         )}
         
-        {message.credits_used > 0 && !isUser && (
-          <div className="mt-1.5 text-xs text-slate-400 flex items-center gap-1">
-            <Sparkles className="h-3 w-3" />
-            {message.credits_used} credits used
-          </div>
-        )}
+
       </div>
     </div>
   );
