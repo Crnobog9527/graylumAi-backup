@@ -126,9 +126,9 @@ function AdminSettingsContent() {
         saveSettingMutation.mutateAsync({ key, value: data.value, id: data.id })
       );
       await Promise.all(promises);
-      toast.success('Settings saved successfully');
+      toast.success('设置保存成功');
     } catch (error) {
-      toast.error('Failed to save settings');
+      toast.error('保存设置失败');
     } finally {
       setSaving(false);
     }
