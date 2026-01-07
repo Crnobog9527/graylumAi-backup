@@ -1,5 +1,5 @@
 import React, { memo, useState, useCallback, useMemo } from 'react';
-import { MessageSquare, Bot, Copy } from 'lucide-react';
+import { MessageSquare, Bot, Copy, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from 'react-markdown';
@@ -103,20 +103,18 @@ const UserMessageBubble = memo(function UserMessageBubble({ displayContent, atta
   );
 });
 
-// AI 消息操作按钮组
-const MessageActions = memo(function MessageActions({ onCopy }) {
+// AI 消息复制按钮
+const CopyButton = memo(function CopyButton({ onCopy, copied }) {
   return (
-    <div className="flex items-center gap-1 ml-auto">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7 hover:opacity-80"
-        style={{ color: 'var(--text-tertiary)' }}
-        onClick={onCopy}
-      >
-        <Copy className="h-3.5 w-3.5" />
-      </Button>
-    </div>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-7 w-7 hover:opacity-80 ml-auto"
+      style={{ color: copied ? 'var(--success)' : 'var(--text-tertiary)' }}
+      onClick={onCopy}
+    >
+      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+    </Button>
   );
 });
 
@@ -208,7 +206,8 @@ const MessageBubble = memo(function MessageBubble({ message, isStreaming }) {
 
         <div className="flex items-center gap-4 mt-3 text-xs" style={{ color: 'var(--text-disabled)' }}>
           <span>{formattedTime}</span>
-          <MessageActions onCopy={handleCopy} />
+          {copied && <span style={{ color: 'var(--success)' }}>已复制</span>}
+          <CopyButton onCopy={handleCopy} copied={copied} />
         </div>
       </div>
     </div>
