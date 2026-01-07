@@ -1,22 +1,27 @@
-import Admin from './pages/Admin';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminFinance from './pages/AdminFinance';
-import AdminInvitations from './pages/AdminInvitations';
-import AdminModels from './pages/AdminModels';
-import AdminPackages from './pages/AdminPackages';
-import AdminPrompts from './pages/AdminPrompts';
-import AdminSettings from './pages/AdminSettings';
-import AdminTickets from './pages/AdminTickets';
-import AdminTransactions from './pages/AdminTransactions';
-import AdminUsers from './pages/AdminUsers';
-import Chat from './pages/Chat';
-import Home from './pages/Home';
-import Marketplace from './pages/Marketplace';
-import Profile from './pages/Profile';
-import Templates from './pages/Templates';
-import AdminAnnouncements from './pages/AdminAnnouncements';
-import __Layout from './Layout.jsx';
+import { lazy } from 'react';
 
+// 懒加载所有页面组件
+const Admin = lazy(() => import('./pages/Admin'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminFinance = lazy(() => import('./pages/AdminFinance'));
+const AdminInvitations = lazy(() => import('./pages/AdminInvitations'));
+const AdminModels = lazy(() => import('./pages/AdminModels'));
+const AdminPackages = lazy(() => import('./pages/AdminPackages'));
+const AdminPrompts = lazy(() => import('./pages/AdminPrompts'));
+const AdminSettings = lazy(() => import('./pages/AdminSettings'));
+const AdminTickets = lazy(() => import('./pages/AdminTickets'));
+const AdminTransactions = lazy(() => import('./pages/AdminTransactions'));
+const AdminUsers = lazy(() => import('./pages/AdminUsers'));
+const AdminAnnouncements = lazy(() => import('./pages/AdminAnnouncements'));
+const AdminFeatured = lazy(() => import('./pages/AdminFeatured'));
+const Chat = lazy(() => import('./pages/Chat'));
+const Home = lazy(() => import('./pages/Home'));
+const Marketplace = lazy(() => import('./pages/Marketplace'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Templates = lazy(() => import('./pages/Templates'));
+
+// Layout 保持静态导入（布局组件不需要懒加载）
+import __Layout from './Layout.jsx';
 
 export const PAGES = {
     "Admin": Admin,
@@ -36,6 +41,7 @@ export const PAGES = {
     "Profile": Profile,
     "Templates": Templates,
     "AdminAnnouncements": AdminAnnouncements,
+    "AdminFeatured": AdminFeatured,
 }
 
 export const pagesConfig = {
