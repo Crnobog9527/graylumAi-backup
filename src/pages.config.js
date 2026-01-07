@@ -1,22 +1,24 @@
-import Admin from './pages/Admin';
-import AdminAnnouncements from './pages/AdminAnnouncements';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminFinance from './pages/AdminFinance';
-import AdminInvitations from './pages/AdminInvitations';
-import AdminModels from './pages/AdminModels';
-import AdminPackages from './pages/AdminPackages';
-import AdminPrompts from './pages/AdminPrompts';
-import AdminSettings from './pages/AdminSettings';
-import AdminTickets from './pages/AdminTickets';
-import AdminTransactions from './pages/AdminTransactions';
-import AdminUsers from './pages/AdminUsers';
-import Chat from './pages/Chat';
-import Home from './pages/Home';
-import Marketplace from './pages/Marketplace';
-import Profile from './pages/Profile';
-import Templates from './pages/Templates';
+import { lazy } from 'react';
 import __Layout from './Layout.jsx';
 
+// 路由级代码分割 - 使用 React.lazy 实现按需加载
+const Admin = lazy(() => import('./pages/Admin'));
+const AdminAnnouncements = lazy(() => import('./pages/AdminAnnouncements'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminFinance = lazy(() => import('./pages/AdminFinance'));
+const AdminInvitations = lazy(() => import('./pages/AdminInvitations'));
+const AdminModels = lazy(() => import('./pages/AdminModels'));
+const AdminPackages = lazy(() => import('./pages/AdminPackages'));
+const AdminPrompts = lazy(() => import('./pages/AdminPrompts'));
+const AdminSettings = lazy(() => import('./pages/AdminSettings'));
+const AdminTickets = lazy(() => import('./pages/AdminTickets'));
+const AdminTransactions = lazy(() => import('./pages/AdminTransactions'));
+const AdminUsers = lazy(() => import('./pages/AdminUsers'));
+const Chat = lazy(() => import('./pages/Chat'));
+const Home = lazy(() => import('./pages/Home'));
+const Marketplace = lazy(() => import('./pages/Marketplace'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Templates = lazy(() => import('./pages/Templates'));
 
 export const PAGES = {
     "Admin": Admin,
