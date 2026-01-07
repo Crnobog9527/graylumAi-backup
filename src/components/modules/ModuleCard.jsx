@@ -1,44 +1,13 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import React from 'react';
 import { cn } from '@/lib/utils';
-import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { iconMap, getIconColor } from './iconConfig';
 
 import { Bot } from 'lucide-react';
 
 export default function ModuleCard({ module, models = [], className, onShowDetail }) {
-  const [showConfirm, setShowConfirm] = useState(false);
-  const navigate = useNavigate();
   const Icon = iconMap[module.icon] || Bot;
   const iconColor = getIconColor(module.icon);
-
-  const targetUrl = `${createPageUrl('Chat')}?module_id=${module.id}&auto_start=true`;
-
-  const getCreditsPerUse = () => {
-    if (module.model_id) {
-      const assignedModel = models.find(m => m.id === module.model_id);
-      if (assignedModel) {
-        return assignedModel.credits_per_message * (module.credits_multiplier || 1);
-      }
-    }
-    const defaultModel = models[0];
-    const baseCredits = defaultModel?.credits_per_message || 1;
-    return baseCredits * (module.credits_multiplier || 1);
-  };
-
-  const creditsPerUse = getCreditsPerUse();
 
   return (
     <div 
@@ -122,7 +91,7 @@ export default function ModuleCard({ module, models = [], className, onShowDetai
         <Button 
           onClick={(e) => {
             e.stopPropagation();
-            setShowConfirm(true);
+            onShowDetail && onShowDetail();
           }}
           className="w-full font-semibold h-10 rounded-xl transition-all duration-300 hover:scale-[1.03] hover:shadow-lg relative overflow-hidden"
           style={{
@@ -134,53 +103,6 @@ export default function ModuleCard({ module, models = [], className, onShowDetai
           <span className="relative z-10">立即使用</span>
         </Button>
       </div>
-
-      {/* 确认弹窗 */}
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-primary)' }}>
-          <AlertDialogHeader>
-            <AlertDialogTitle style={{ color: 'var(--text-primary)' }}>
-              确认使用「{module.title}」
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p style={{ color: 'var(--text-secondary)' }}>{module.description}</p>
-              <p className="font-medium" style={{ color: 'var(--warning)' }}>
-                点击"确认"以后，将按实际Token消耗计费
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel 
-              style={{ 
-                background: 'var(--bg-primary)', 
-                borderColor: 'var(--border-primary)',
-                color: 'var(--text-secondary)'
-              }}
-            >
-              取消
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={async () => {
-                try {
-                  await base44.entities.PromptModule.update(module.id, {
-                    usage_count: (module.usage_count || 0) + 1
-                  });
-                } catch (e) {
-                  console.error('Failed to update usage count:', e);
-                }
-                navigate(targetUrl);
-              }}
-              style={{
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                color: 'var(--bg-primary)'
-              }}
-            >
-              确认
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
     </div>
   );
 }

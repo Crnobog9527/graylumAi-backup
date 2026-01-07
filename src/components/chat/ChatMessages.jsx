@@ -1,5 +1,5 @@
 import React, { memo, useState, useCallback, useMemo } from 'react';
-import { MessageSquare, Bot, Copy, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { MessageSquare, Bot, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from 'react-markdown';
@@ -72,8 +72,21 @@ const areMessageBubblePropsEqual = (prevProps, nextProps) => {
   return true;
 };
 
+// 长文本折叠阈值（字符数）
+const LONG_TEXT_THRESHOLD = 500;
+const COLLAPSED_PREVIEW_LENGTH = 300;
+
 // 用户消息气泡组件
 const UserMessageBubble = memo(function UserMessageBubble({ displayContent, attachments, time }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const isLongText = displayContent && displayContent.length > LONG_TEXT_THRESHOLD;
+  const shouldCollapse = isLongText && !isExpanded;
+  
+  const visibleContent = shouldCollapse 
+    ? displayContent.slice(0, COLLAPSED_PREVIEW_LENGTH) + '...'
+    : displayContent;
+
   return (
     <div className="flex justify-end py-4">
       <div className="max-w-[80%] space-y-2">
@@ -85,7 +98,26 @@ const UserMessageBubble = memo(function UserMessageBubble({ displayContent, atta
               color: 'var(--bg-primary)',
             }}
           >
-            <p className="whitespace-pre-wrap leading-relaxed font-medium">{displayContent}</p>
+            <p className="whitespace-pre-wrap leading-relaxed font-medium">{visibleContent}</p>
+            {isLongText && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center gap-1 mt-2 text-sm opacity-80 hover:opacity-100 transition-opacity"
+                style={{ color: 'var(--bg-primary)' }}
+              >
+                {isExpanded ? (
+                  <>
+                    <ChevronUp className="h-4 w-4" />
+                    收起
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4" />
+                    展开全文 ({displayContent.length} 字)
+                  </>
+                )}
+              </button>
+            )}
           </div>
         )}
 
@@ -103,29 +135,18 @@ const UserMessageBubble = memo(function UserMessageBubble({ displayContent, atta
   );
 });
 
-// AI 消息操作按钮组
-const MessageActions = memo(function MessageActions({ onCopy }) {
+// AI 消息复制按钮
+const CopyButton = memo(function CopyButton({ onCopy, copied }) {
   return (
-    <div className="flex items-center gap-1 ml-auto">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7 hover:opacity-80"
-        style={{ color: 'var(--text-tertiary)' }}
-        onClick={onCopy}
-      >
-        <Copy className="h-3.5 w-3.5" />
-      </Button>
-      <Button variant="ghost" size="icon" className="h-7 w-7 hover:opacity-80" style={{ color: 'var(--text-tertiary)' }}>
-        <RefreshCw className="h-3.5 w-3.5" />
-      </Button>
-      <Button variant="ghost" size="icon" className="h-7 w-7 hover:opacity-80" style={{ color: 'var(--text-tertiary)' }}>
-        <ThumbsUp className="h-3.5 w-3.5" />
-      </Button>
-      <Button variant="ghost" size="icon" className="h-7 w-7 hover:opacity-80" style={{ color: 'var(--text-tertiary)' }}>
-        <ThumbsDown className="h-3.5 w-3.5" />
-      </Button>
-    </div>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-7 w-7 hover:opacity-80 ml-auto"
+      style={{ color: copied ? 'var(--success)' : 'var(--text-tertiary)' }}
+      onClick={onCopy}
+    >
+      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+    </Button>
   );
 });
 
@@ -217,12 +238,8 @@ const MessageBubble = memo(function MessageBubble({ message, isStreaming }) {
 
         <div className="flex items-center gap-4 mt-3 text-xs" style={{ color: 'var(--text-disabled)' }}>
           <span>{formattedTime}</span>
-          <TokenInfo
-            creditsUsed={message.credits_used}
-            inputTokens={message.input_tokens}
-            outputTokens={message.output_tokens}
-          />
-          <MessageActions onCopy={handleCopy} />
+          {copied && <span style={{ color: 'var(--success)' }}>已复制</span>}
+          <CopyButton onCopy={handleCopy} copied={copied} />
         </div>
       </div>
     </div>

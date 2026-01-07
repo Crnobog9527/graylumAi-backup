@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { PlayCircle, Target, Search, Compass, FileText, Settings, TrendingUp } from 'lucide-react';
+import ModuleDetailDialog from '@/components/modules/ModuleDetailDialog';
 
 /**
  * 六步指南组件
@@ -50,6 +51,8 @@ const steps = [
 ];
 
 export default function SixStepsGuide() {
+  const [showModuleDialog, setShowModuleDialog] = useState(false);
+  
   const { data: systemSettings = [] } = useQuery({
     queryKey: ['system-settings-guide'],
     queryFn: () => base44.entities.SystemSettings.list(),
@@ -57,11 +60,18 @@ export default function SixStepsGuide() {
 
   const guideModuleId = systemSettings.find(s => s.setting_key === 'home_guide_button_module_id')?.setting_value;
 
-  const getButtonLink = () => {
-    if (guideModuleId) {
-      return createPageUrl('Chat') + `?module_id=${guideModuleId}&auto_start=true`;
+  const { data: guideModule } = useQuery({
+    queryKey: ['guide-module', guideModuleId],
+    queryFn: () => base44.entities.PromptModule.get(guideModuleId),
+    enabled: !!guideModuleId,
+  });
+
+  const handleStartAnalysis = () => {
+    if (guideModule) {
+      setShowModuleDialog(true);
+    } else {
+      window.location.href = createPageUrl('Chat');
     }
-    return createPageUrl('Chat');
   };
 
   return (
@@ -168,19 +178,18 @@ export default function SixStepsGuide() {
 
       {/* CTA Buttons - 行动按钮 */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <Link to={getButtonLink()}>
-          <button
-            className="btn btn-primary btn-lg"
-            style={{
-              borderRadius: 'var(--radius-full)',
-              boxShadow: 'var(--shadow-glow)',
-              minWidth: '180px'
-            }}
-          >
-            <PlayCircle className="h-5 w-5 mr-2" />
-            开始分析
-          </button>
-        </Link>
+        <button
+          onClick={handleStartAnalysis}
+          className="btn btn-primary btn-lg"
+          style={{
+            borderRadius: 'var(--radius-full)',
+            boxShadow: 'var(--shadow-glow)',
+            minWidth: '180px'
+          }}
+        >
+          <PlayCircle className="h-5 w-5 mr-2" />
+          开始分析
+        </button>
 
         <Link to={createPageUrl('Chat')}>
           <button
@@ -194,6 +203,13 @@ export default function SixStepsGuide() {
           </button>
         </Link>
       </div>
+
+      {/* 模块详情弹窗 */}
+      <ModuleDetailDialog 
+        module={guideModule} 
+        open={showModuleDialog} 
+        onOpenChange={setShowModuleDialog} 
+      />
     </div>
   );
 }

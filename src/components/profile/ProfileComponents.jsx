@@ -955,7 +955,7 @@ export function UsageHistoryCard({ user }) {
               <div className="min-w-0 flex-1">
                 <div className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{conv.title || '新对话'}</div>
                 <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  {conv.messages?.length || 0} 条消息 · 消耗 {conv.total_credits_used || 0} 积分
+                  {conv.messages?.length || 0} 条消息 · 消耗 {conv.messages?.reduce((sum, msg) => sum + (msg.credits_used || 0), 0) || 0} 积分
                 </div>
               </div>
             </div>
