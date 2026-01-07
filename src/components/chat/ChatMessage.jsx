@@ -83,17 +83,6 @@ const UserAvatar = memo(function UserAvatar({ isUser }) {
   );
 });
 
-// 积分使用显示
-const CreditsDisplay = memo(function CreditsDisplay({ creditsUsed }) {
-  if (!creditsUsed) return null;
-
-  return (
-    <div className="text-xs text-slate-400 mt-2 ml-2">
-      {creditsUsed} credits used
-    </div>
-  );
-});
-
 // 主组件
 const ChatMessage = memo(function ChatMessage({ message, isStreaming }) {
   const [copied, setCopied] = useState(false);
@@ -143,7 +132,7 @@ const ChatMessage = memo(function ChatMessage({ message, isStreaming }) {
           )}
         </div>
 
-        {!isUser && <CreditsDisplay creditsUsed={message.credits_used} />}
+
       </div>
     </div>
   );
