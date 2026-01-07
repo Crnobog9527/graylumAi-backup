@@ -1,5 +1,5 @@
 import React, { memo, useState, useCallback, useMemo } from 'react';
-import { MessageSquare, Bot, Copy, Check } from 'lucide-react';
+import { MessageSquare, Bot, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from 'react-markdown';
@@ -72,8 +72,21 @@ const areMessageBubblePropsEqual = (prevProps, nextProps) => {
   return true;
 };
 
+// 长文本折叠阈值（字符数）
+const LONG_TEXT_THRESHOLD = 500;
+const COLLAPSED_PREVIEW_LENGTH = 300;
+
 // 用户消息气泡组件
 const UserMessageBubble = memo(function UserMessageBubble({ displayContent, attachments, time }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const isLongText = displayContent && displayContent.length > LONG_TEXT_THRESHOLD;
+  const shouldCollapse = isLongText && !isExpanded;
+  
+  const visibleContent = shouldCollapse 
+    ? displayContent.slice(0, COLLAPSED_PREVIEW_LENGTH) + '...'
+    : displayContent;
+
   return (
     <div className="flex justify-end py-4">
       <div className="max-w-[80%] space-y-2">
@@ -85,7 +98,26 @@ const UserMessageBubble = memo(function UserMessageBubble({ displayContent, atta
               color: 'var(--bg-primary)',
             }}
           >
-            <p className="whitespace-pre-wrap leading-relaxed font-medium">{displayContent}</p>
+            <p className="whitespace-pre-wrap leading-relaxed font-medium">{visibleContent}</p>
+            {isLongText && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center gap-1 mt-2 text-sm opacity-80 hover:opacity-100 transition-opacity"
+                style={{ color: 'var(--bg-primary)' }}
+              >
+                {isExpanded ? (
+                  <>
+                    <ChevronUp className="h-4 w-4" />
+                    收起
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4" />
+                    展开全文 ({displayContent.length} 字)
+                  </>
+                )}
+              </button>
+            )}
           </div>
         )}
 
