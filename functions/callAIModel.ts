@@ -14,6 +14,10 @@ const DEFAULT_SYSTEM_PROMPT = `你是一个专业、友好的 AI 助手，致力
 4. 尊重用户隐私和数据安全`;
 
 Deno.serve(async (req) => {
+  console.log('[callAIModel] ========================================');
+  console.log('[callAIModel] VERSION: 2026-01-08-DEBUG-v2');
+  console.log('[callAIModel] ========================================');
+
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
