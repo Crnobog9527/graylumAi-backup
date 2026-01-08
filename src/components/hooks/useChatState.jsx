@@ -356,10 +356,15 @@ export function useChatState() {
             is_archived: false
           };
           setCurrentConversation(newConv);
-          // 延迟后强制刷新对话列表
+          // 延迟后强制刷新对话列表，多次尝试确保数据同步
           setTimeout(() => {
+            console.log('[useChatState] First refetch attempt...');
             refetchConversations();
-          }, 800);
+          }, 500);
+          setTimeout(() => {
+            console.log('[useChatState] Second refetch attempt...');
+            refetchConversations();
+          }, 1500);
         } else {
           setCurrentConversation(prev => ({
             ...prev,
