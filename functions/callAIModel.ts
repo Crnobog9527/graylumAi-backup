@@ -1,5 +1,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
+// ========== 系统提示词常量（启用 Prompt Caching）==========
+const DEFAULT_SYSTEM_PROMPT = `你是一个专业、友好的 AI 助手，致力于帮助用户解决问题。
+
+【重要：模型身份信息】
+当用户询问你的模型版本、型号、具体是什么模型等相关问题时，请统一回答：
+我是 Claude Sonnet 4.5，具体模型版本号是 claude-sonnet-4-5-20250929，发布于2025年9月29日。
+
+【核心原则】
+1. 准确理解用户需求，提供有价值的回答
+2. 保持专业、礼貌、客观的语气
+3. 对于不确定的信息，诚实说明
+4. 尊重用户隐私和数据安全`;
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -11,21 +24,16 @@ Deno.serve(async (req) => {
 
       const { model_id, messages, system_prompt, force_web_search, image_files } = await req.json();
 
-      // 硬编码身份信息
-      const identityInfo = `\n\n【重要：模型身份信息】\n当用户询问你的模型版本、型号、具体是什么模型等相关问题时，请统一回答：\n我是 Claude Sonnet 4.5，具体模型版本号是 claude-sonnet-4-5-20250929，发布于2025年9月29日。`;
-
-      // 将身份信息附加到system_prompt
-      const enhancedSystemPrompt = system_prompt ? `${system_prompt}${identityInfo}` : identityInfo.trim();
+      // 使用传入的 system_prompt，如果为空则使用默认提示词
+      // CRITICAL: 只在首轮对话时使用 system_prompt（由 smartChatWithSearch 控制）
+      const finalSystemPrompt = system_prompt || DEFAULT_SYSTEM_PROMPT;
 
       console.log('[callAIModel] ===== RECEIVED REQUEST =====');
     console.log('[callAIModel] - model_id:', model_id);
     console.log('[callAIModel] - messages count:', messages?.length);
-    console.log('[callAIModel] - enhanced_system_prompt:', enhancedSystemPrompt === undefined ? 'undefined' : enhancedSystemPrompt === null ? 'null' : `"${enhancedSystemPrompt.slice(0, 100)}..."`);
-    console.log('[callAIModel] - system_prompt type:', typeof enhancedSystemPrompt);
-    console.log('[callAIModel] - system_prompt provided:', !!enhancedSystemPrompt);
-    if (enhancedSystemPrompt) {
-      console.log('[callAIModel] - system_prompt length:', enhancedSystemPrompt.length, 'chars, ~', Math.ceil(enhancedSystemPrompt.length / 4), 'tokens');
-    }
+    console.log('[callAIModel] - system_prompt (from caller):', system_prompt ? `"${system_prompt.slice(0, 100)}..."` : 'null (will use DEFAULT)');
+    console.log('[callAIModel] - finalSystemPrompt length:', finalSystemPrompt.length, 'chars, ~', Math.ceil(finalSystemPrompt.length / 4), 'tokens');
+    console.log('[callAIModel] - using_default_prompt:', !system_prompt);
     console.log('[callAIModel] ==============================');
 
     // Token 估算函数 (字符数 / 4)
@@ -140,12 +148,12 @@ Deno.serve(async (req) => {
 
     // 使用模型配置的 input_limit，默认 180000
     const inputLimit = model.input_limit || 180000;
-    
-    // 执行截断（使用增强的system prompt）
-    const { truncatedMsgs: processedMessages, totalTokens } = truncateMessages(messages, enhancedSystemPrompt, inputLimit);
 
-    // 估算输入tokens（使用增强的system prompt）
-    const estimatedInputTokens = calculateTotalTokens(processedMessages, enhancedSystemPrompt);
+    // 执行截断
+    const { truncatedMsgs: processedMessages, totalTokens } = truncateMessages(messages, finalSystemPrompt, inputLimit);
+
+    // 估算输入tokens
+    const estimatedInputTokens = calculateTotalTokens(processedMessages, finalSystemPrompt);
     
     console.log('[callAIModel] After truncation:');
     console.log('[callAIModel] - processedMessages count:', processedMessages.length);
@@ -162,8 +170,8 @@ Deno.serve(async (req) => {
         return m.content;
       }).join('\n\n');
 
-      const finalPrompt = enhancedSystemPrompt 
-        ? `${enhancedSystemPrompt}\n\n${fullPrompt}\n\n请根据上述对话历史，回复用户最后的消息。`
+      const finalPrompt = finalSystemPrompt
+        ? `${finalSystemPrompt}\n\n${fullPrompt}\n\n请根据上述对话历史，回复用户最后的消息。`
         : fullPrompt;
 
       // 只在明确要求时才联网，不自动使用模型配置
@@ -210,13 +218,13 @@ Deno.serve(async (req) => {
 
     const useOpenAIFormat = model.api_endpoint && model.api_endpoint.includes('/chat/completions');
 
-    // CRITICAL: 只有当 enhancedSystemPrompt 有实际内容时才添加
-    const hasValidSystemPrompt = enhancedSystemPrompt && enhancedSystemPrompt.trim().length > 0;
+    // CRITICAL: 只有当 finalSystemPrompt 有实际内容时才添加
+    const hasValidSystemPrompt = finalSystemPrompt && finalSystemPrompt.trim().length > 0;
     console.log('[callAIModel] hasValidSystemPrompt:', hasValidSystemPrompt);
 
     if (hasValidSystemPrompt && !useOpenAIFormat && provider !== 'anthropic') {
-      console.log('[callAIModel] ✓ Adding system prompt to messages, length:', enhancedSystemPrompt.length);
-      formattedMessages.unshift({ role: 'system', content: enhancedSystemPrompt });
+      console.log('[callAIModel] ✓ Adding system prompt to messages, length:', finalSystemPrompt.length);
+      formattedMessages.unshift({ role: 'system', content: finalSystemPrompt });
     } else {
       console.log('[callAIModel] ✗ NOT adding system prompt to messages (will be handled separately)');
     }
@@ -348,9 +356,9 @@ Deno.serve(async (req) => {
 
       // ========== OpenRouter Anthropic 模型调用（支持 Prompt Caching）==========
       if (isOpenRouter) {
-        // 构建带缓存标记的消息（使用增强的system prompt）
-        const { messages: cachedMessages, cacheEnabled, cachedBlocksCount } = 
-          buildCachedMessagesForOpenRouter(processedMessages, enhancedSystemPrompt);
+        // 构建带缓存标记的消息
+        const { messages: cachedMessages, cacheEnabled, cachedBlocksCount } =
+          buildCachedMessagesForOpenRouter(processedMessages, finalSystemPrompt);
 
         const requestBody = {
           model: model.model_id,
@@ -426,16 +434,36 @@ Deno.serve(async (req) => {
       // ========== 官方 Anthropic API ==========
       const anthropicMessages = formattedMessages.filter(m => m.role !== 'system');
 
+      // 构建带缓存的 system 参数
+      const systemTokens = estimateTokens(finalSystemPrompt);
+      const shouldCacheSystem = systemTokens >= CACHE_MIN_TOKENS;
+
       const requestBody = {
         model: model.model_id,
         max_tokens: model.max_tokens || 4096,
-        system: enhancedSystemPrompt || '',
         messages: anthropicMessages
       };
 
+      // 如果系统提示词足够长，启用 Prompt Caching
+      if (finalSystemPrompt) {
+        if (shouldCacheSystem) {
+          requestBody.system = [
+            {
+              type: 'text',
+              text: finalSystemPrompt,
+              cache_control: { type: 'ephemeral' }
+            }
+          ];
+        } else {
+          requestBody.system = finalSystemPrompt;
+        }
+      }
+
       console.log('[callAIModel] ========== ANTHROPIC API REQUEST (Official) ==========');
       console.log('[callAIModel] Model ID:', model.model_id);
-      console.log('[callAIModel] System prompt included:', !!requestBody.system);
+      console.log('[callAIModel] System prompt included:', !!finalSystemPrompt);
+      console.log('[callAIModel] System prompt caching enabled:', shouldCacheSystem);
+      console.log('[callAIModel] System prompt tokens:', systemTokens);
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -451,17 +479,40 @@ Deno.serve(async (req) => {
       const data = await res.json();
       responseText = data.content[0].text;
 
-      // Anthropic返回usage
+      // Anthropic 返回 usage（包含缓存统计）
+      let cachedTokens = 0;
+      let cacheCreationTokens = 0;
+
       if (data.usage) {
         actualInputTokens = data.usage.input_tokens || estimatedInputTokens;
         actualOutputTokens = data.usage.output_tokens || estimateTokens(responseText);
+
+        // 读取缓存统计
+        cachedTokens = data.usage.cache_read_input_tokens || 0;
+        cacheCreationTokens = data.usage.cache_creation_input_tokens || 0;
       } else {
         actualOutputTokens = estimateTokens(responseText);
       }
 
-      // 新计费规则：输入1000tokens=1积分，输出200tokens=1积分
-      const inputCredits = actualInputTokens / 1000;
+      // 新计费规则：输入1000tokens=1积分，输出200tokens=1积分（缓存命中90%折扣）
+      const uncachedInputTokens = actualInputTokens - cachedTokens - cacheCreationTokens;
+      const cachedInputCredits = (cachedTokens / 1000) * 0.1; // 缓存命中90%折扣
+      const cacheCreationCredits = (cacheCreationTokens / 1000) * 1.25; // 缓存写入25%溢价
+      const uncachedInputCredits = uncachedInputTokens / 1000;
+      const inputCredits = cachedInputCredits + cacheCreationCredits + uncachedInputCredits;
       const outputCredits = actualOutputTokens / 200;
+
+      // 计算缓存节省的积分
+      const creditsSaved = cachedTokens > 0 ? (cachedTokens / 1000) * 0.9 : 0;
+
+      console.log('[callAIModel] ===== ANTHROPIC USAGE STATS =====');
+      console.log('[callAIModel] Input tokens:', actualInputTokens);
+      console.log('[callAIModel] - Cached (read):', cachedTokens, `(saved ${creditsSaved.toFixed(3)} credits)`);
+      console.log('[callAIModel] - Cache creation:', cacheCreationTokens);
+      console.log('[callAIModel] - Uncached:', uncachedInputTokens);
+      console.log('[callAIModel] Output tokens:', actualOutputTokens);
+      console.log('[callAIModel] Total credits:', (inputCredits + outputCredits).toFixed(3));
+      console.log('[callAIModel] ===============================');
 
       return Response.json({
         response: responseText,
@@ -471,7 +522,13 @@ Deno.serve(async (req) => {
         output_credits: outputCredits,
         credits_used: inputCredits + outputCredits,
         usage: data.usage || null,
-        web_search_enabled: false
+        web_search_enabled: false,
+        // 缓存统计信息
+        cache_enabled: shouldCacheSystem,
+        cached_tokens: cachedTokens,
+        cache_creation_tokens: cacheCreationTokens,
+        cache_hit_rate: actualInputTokens > 0 ? (cachedTokens / actualInputTokens * 100).toFixed(1) + '%' : '0%',
+        credits_saved_by_cache: creditsSaved
       });
 
     } else if (provider === 'google') {
@@ -491,8 +548,8 @@ Deno.serve(async (req) => {
         }
       };
 
-      if (enhancedSystemPrompt) {
-        requestBody.systemInstruction = { parts: [{ text: enhancedSystemPrompt }] };
+      if (finalSystemPrompt) {
+        requestBody.systemInstruction = { parts: [{ text: finalSystemPrompt }] };
       }
 
       console.log('[callAIModel] ========== GOOGLE GEMINI API REQUEST ==========');
