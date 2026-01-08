@@ -118,15 +118,7 @@ Deno.serve(async (req) => {
     const requestData = await req.json();
     let conversation_id = requestData.conversation_id;
     const { message, system_prompt, image_files } = requestData;
-
-    console.log('[smartChatWithSearch] ===== REQUEST PARAMETERS =====');
-    console.log('[smartChatWithSearch] User:', user.email);
-    console.log('[smartChatWithSearch] Message:', message?.slice(0, 100) + '...');
-    console.log('[smartChatWithSearch] conversation_id:', conversation_id || 'null (new conversation)');
-    console.log('[smartChatWithSearch] system_prompt provided:', 'system_prompt' in requestData);
-    console.log('[smartChatWithSearch] system_prompt value:', system_prompt || 'null/undefined');
-    console.log('[smartChatWithSearch] image_files:', image_files?.length || 0, 'files');
-    console.log('[smartChatWithSearch] ===============================');
+    console.log('[smartChatWithSearch] User:', user.email, 'Message:', message?.slice(0, 50));
     
     if (!message) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
@@ -321,34 +313,23 @@ Deno.serve(async (req) => {
     let conversationMessages = [];
     
     if (conversation_id) {
-      console.log('[smartChatWithSearch] ===== LOADING CONVERSATION =====');
-      console.log('[smartChatWithSearch] Requested conversation_id:', conversation_id);
+      console.log('[smartChatWithSearch] Loading conversation:', conversation_id);
       try {
         const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
-        console.log('[smartChatWithSearch] Query result count:', convs.length);
-
         if (convs.length > 0) {
           conversation = convs[0];
           conversationMessages = conversation.messages || [];
-          console.log('[smartChatWithSearch] ✓ Conversation found!');
-          console.log('[smartChatWithSearch]   - ID:', conversation.id);
-          console.log('[smartChatWithSearch]   - Title:', conversation.title);
-          console.log('[smartChatWithSearch]   - Messages count:', conversationMessages.length);
-          console.log('[smartChatWithSearch]   - Created:', conversation.created_date);
-          console.log('[smartChatWithSearch]   - Updated:', conversation.updated_date);
+          console.log('[smartChatWithSearch] Loaded', conversationMessages.length, 'messages from conversation');
         } else {
-          console.log('[smartChatWithSearch] ✗ Conversation not found in database!');
-          console.log('[smartChatWithSearch] This conversation_id does not exist, treating as new');
+          console.log('[smartChatWithSearch] Conversation not found, treating as new');
           conversation_id = null;
         }
       } catch (e) {
-        console.log('[smartChatWithSearch] ✗ Error loading conversation:', e.message);
-        console.log('[smartChatWithSearch] Stack:', e.stack);
+        console.log('[smartChatWithSearch] Error loading conversation:', e.message, '- treating as new');
         conversation_id = null;
       }
-      console.log('[smartChatWithSearch] ===============================');
     } else {
-      console.log('[smartChatWithSearch] New conversation (no conversation_id provided)');
+      console.log('[smartChatWithSearch] New conversation, no history');
     }
     
     // 构建消息列表 - 使用摘要替换旧消息（如果存在）
@@ -682,42 +663,23 @@ ${summaryToUse.summary_text}
     
     let finalConversationId = conversation_id;
     
-    console.log('[smartChatWithSearch] ===== SAVING CONVERSATION =====');
-    console.log('[smartChatWithSearch] newMessages count:', newMessages.length);
-    console.log('[smartChatWithSearch] Has existing conversation:', !!conversation);
-
     if (conversation) {
-      console.log('[smartChatWithSearch] Mode: UPDATE existing conversation');
-      console.log('[smartChatWithSearch]   - Conversation ID:', conversation.id);
-      console.log('[smartChatWithSearch]   - Old messages count:', conversation.messages?.length || 0);
-      console.log('[smartChatWithSearch]   - New messages count:', newMessages.length);
-
+      console.log('[smartChatWithSearch] Updating conversation');
       const updateData = {
         messages: newMessages,
         total_credits_used: (conversation.total_credits_used || 0) + actualDeducted,
         updated_date: new Date().toISOString()
       };
-
+      
       // 如果需要更新 session_task_type
       if (shouldUpdateSessionTaskType && taskClassification) {
         updateData.session_task_type = taskClassification.task_type;
-        console.log('[smartChatWithSearch]   - Updating session_task_type to:', taskClassification.task_type);
+        console.log('[smartChatWithSearch] Updating session_task_type to:', taskClassification.task_type);
       }
-
-      try {
-        await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
-        console.log('[smartChatWithSearch] ✓ Conversation updated successfully');
-      } catch (e) {
-        console.log('[smartChatWithSearch] ✗ Failed to update conversation:', e.message);
-        console.log('[smartChatWithSearch] Error stack:', e.stack);
-        throw e;
-      }
+      
+      await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
     } else {
-      console.log('[smartChatWithSearch] Mode: CREATE new conversation');
-      console.log('[smartChatWithSearch]   - Title:', message.slice(0, 50));
-      console.log('[smartChatWithSearch]   - Model ID:', selectedModel.id);
-      console.log('[smartChatWithSearch]   - Messages count:', newMessages.length);
-
+      console.log('[smartChatWithSearch] Creating new conversation');
       const createData = {
         title: message.slice(0, 50),
         model_id: selectedModel.id,
@@ -726,26 +688,16 @@ ${summaryToUse.summary_text}
         is_archived: false,  // 确保新对话显示在列表中
         created_by: user.email  // 显式设置 created_by，确保 RLS 规则能匹配
       };
-
+      
       // 如果是创作类任务，记录 session_task_type
       if (shouldUpdateSessionTaskType && taskClassification) {
         createData.session_task_type = taskClassification.task_type;
-        console.log('[smartChatWithSearch]   - Setting initial session_task_type to:', taskClassification.task_type);
+        console.log('[smartChatWithSearch] Setting initial session_task_type to:', taskClassification.task_type);
       }
-
-      try {
-        const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
-        finalConversationId = newConv.id;
-        console.log('[smartChatWithSearch] ✓ New conversation created successfully!');
-        console.log('[smartChatWithSearch]   - New conversation ID:', finalConversationId);
-        console.log('[smartChatWithSearch]   - Saved messages count:', newConv.messages?.length);
-      } catch (e) {
-        console.log('[smartChatWithSearch] ✗ Failed to create conversation:', e.message);
-        console.log('[smartChatWithSearch] Error stack:', e.stack);
-        throw e;
-      }
+      
+      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
+      finalConversationId = newConv.id;
     }
-    console.log('[smartChatWithSearch] ===============================');
     
     // 步骤5：更新Token预算（使用最新的用户余额）
     try {
