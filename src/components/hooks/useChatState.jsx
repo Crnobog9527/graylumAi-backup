@@ -343,20 +343,25 @@ export function useChatState() {
       if (responseData.conversation_id) {
         const convId = responseData.conversation_id;
         if (!currentConversation) {
-          // 新对话
+          // 新对话 - 创建本地对话对象并立即刷新列表
           const newConv = {
             id: convId,
             title: trimmedMessage.slice(0, 50),
-            messages: [...messages, userMessage, assistantMessage]
+            messages: [...messages, userMessage, assistantMessage],
+            created_date: new Date().toISOString(),
+            updated_date: new Date().toISOString(),
+            is_archived: false
           };
           setCurrentConversation(newConv);
+          // 强制立即重新获取对话列表
+          queryClient.refetchQueries({ queryKey: ['conversations'] });
         } else {
           setCurrentConversation(prev => ({
             ...prev,
             messages: [...(prev?.messages || []), userMessage, assistantMessage]
           }));
+          queryClient.invalidateQueries({ queryKey: ['conversations'] });
         }
-        queryClient.invalidateQueries({ queryKey: ['conversations'] });
       }
 
       // 添加调试信息
