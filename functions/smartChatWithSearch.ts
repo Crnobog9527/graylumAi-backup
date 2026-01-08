@@ -120,7 +120,28 @@ Deno.serve(async (req) => {
     if (!message) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
     }
-    
+
+    // 步骤0.5：读取系统设置
+    let enableSmartRouting = true;  // 默认启用
+    let enableSmartSearchDecision = true;  // 默认启用
+
+    try {
+      const settings = await base44.asServiceRole.entities.SystemSettings.list();
+      const settingsMap = {};
+      settings.forEach(s => {
+        settingsMap[s.setting_key] = s.setting_value;
+      });
+
+      enableSmartRouting = settingsMap.enable_smart_routing !== 'false';
+      enableSmartSearchDecision = settingsMap.enable_smart_search_decision !== 'false';
+
+      console.log('[smartChatWithSearch] System settings loaded:');
+      console.log('[smartChatWithSearch]   - Smart routing:', enableSmartRouting);
+      console.log('[smartChatWithSearch]   - Smart search decision:', enableSmartSearchDecision);
+    } catch (e) {
+      console.log('[smartChatWithSearch] Failed to load system settings, using defaults:', e.message);
+    }
+
     // 步骤1：获取模型配置，检查是否启用智能搜索
     console.log('[smartChatWithSearch] Getting AI models...');
     const models = await base44.asServiceRole.entities.AIModel.filter({ is_active: true });
@@ -160,74 +181,96 @@ Deno.serve(async (req) => {
     // 步骤2：智能任务分类和模型选择
     let taskClassification = null;
     let shouldUpdateSessionTaskType = false;
-    try {
-      const classifyRes = await base44.functions.invoke('taskClassifier', {
-        message,
-        conversation_id
-      });
-      
-      if (classifyRes.data && !classifyRes.data.error) {
-        taskClassification = classifyRes.data;
-        shouldUpdateSessionTaskType = taskClassification.should_update_session_task_type;
-        
-        console.log('[smartChatWithSearch] Task classification:', taskClassification.task_type, 
-                    '| Model:', taskClassification.recommended_model,
-                    '| Complexity:', taskClassification.complexity_score,
-                    '| Continuation:', taskClassification.is_continuation);
-        
-        // 根据任务分类结果选择模型（如果有对应的AI模型）
-        if (taskClassification.model_id) {
-          const classifiedModel = models.find(m => 
-            m.model_id === taskClassification.model_id || 
-            m.model_id.includes(taskClassification.recommended_model)
-          );
-          if (classifiedModel && classifiedModel.is_active) {
-            selectedModel = classifiedModel;
-            console.log('[smartChatWithSearch] Switched to classified model:', selectedModel.name);
+
+    if (enableSmartRouting) {
+      console.log('[smartChatWithSearch] Smart routing ENABLED, invoking taskClassifier...');
+      try {
+        const classifyRes = await base44.functions.invoke('taskClassifier', {
+          message,
+          conversation_id
+        });
+
+        if (classifyRes.data && !classifyRes.data.error) {
+          taskClassification = classifyRes.data;
+          shouldUpdateSessionTaskType = taskClassification.should_update_session_task_type;
+
+          console.log('[smartChatWithSearch] Task classification:', taskClassification.task_type,
+                      '| Model:', taskClassification.recommended_model,
+                      '| Complexity:', taskClassification.complexity_score,
+                      '| Continuation:', taskClassification.is_continuation);
+
+          // 根据任务分类结果选择模型（如果有对应的AI模型）
+          if (taskClassification.model_id) {
+            const classifiedModel = models.find(m =>
+              m.model_id === taskClassification.model_id ||
+              m.model_id.includes(taskClassification.recommended_model)
+            );
+            if (classifiedModel && classifiedModel.is_active) {
+              selectedModel = classifiedModel;
+              console.log('[smartChatWithSearch] Switched to classified model:', selectedModel.name);
+            }
           }
         }
+      } catch (e) {
+        console.log('[smartChatWithSearch] Task classification failed:', e.message);
       }
-    } catch (e) {
-      console.log('[smartChatWithSearch] Task classification skipped:', e.message);
+    } else {
+      console.log('[smartChatWithSearch] Smart routing DISABLED, skipping taskClassifier');
     }
     
-    // 步骤3：简化的搜索判断（关键词匹配或URL检测）- 无论模型是否启用联网，都进行判断
-    const lowerMessage = message.toLowerCase();
-    const searchKeywords = [
-      "天气", "股价", "汇率", "比赛", "新闻", "最新", "今天", "昨天", "现在", "当前",
-      "近期", "帮我查", "搜索", "找一下", "谁是", "CEO", "总统", "总理", "价格",
-      "多少钱", "排名", "评分", "weather", "stock", "price", "news", "latest", "today", "current",
-      "search", "查询", "查一下"
-    ];
-    
-    // URL 检测正则
-    const hasUrl = /(https?:\/\/[^\s]+)/.test(message);
-    const hasSearchKeyword = searchKeywords.some(kw => lowerMessage.includes(kw));
-    const shouldSearch = hasSearchKeyword || hasUrl;
-    
+    // 步骤3：简化的搜索判断（关键词匹配或URL检测）
     let decision;
-    if (shouldSearch && selectedModel.enable_web_search) {
-      decision = {
-        need_search: true,
-        search_type: 'general',
-        confidence: 0.9,
-        reason: hasUrl ? '检测到URL链接' : '检测到搜索关键词',
-        decision_level: 'keyword',
-        decision_time_ms: 0,
-        will_use_web_search: true
-      };
-      console.log('[smartChatWithSearch] ✓ Search enabled by', hasUrl ? 'URL detection' : 'keyword match');
+
+    if (enableSmartSearchDecision) {
+      console.log('[smartChatWithSearch] Smart search decision ENABLED, checking keywords...');
+
+      const lowerMessage = message.toLowerCase();
+      const searchKeywords = [
+        "天气", "股价", "汇率", "比赛", "新闻", "最新", "今天", "昨天", "现在", "当前",
+        "近期", "帮我查", "搜索", "找一下", "谁是", "CEO", "总统", "总理", "价格",
+        "多少钱", "排名", "评分", "weather", "stock", "price", "news", "latest", "today", "current",
+        "search", "查询", "查一下"
+      ];
+
+      // URL 检测正则
+      const hasUrl = /(https?:\/\/[^\s]+)/.test(message);
+      const hasSearchKeyword = searchKeywords.some(kw => lowerMessage.includes(kw));
+      const shouldSearch = hasSearchKeyword || hasUrl;
+
+      if (shouldSearch && selectedModel.enable_web_search) {
+        decision = {
+          need_search: true,
+          search_type: 'general',
+          confidence: 0.9,
+          reason: hasUrl ? '检测到URL链接' : '检测到搜索关键词',
+          decision_level: 'keyword',
+          decision_time_ms: 0,
+          will_use_web_search: true
+        };
+        console.log('[smartChatWithSearch] ✓ Search enabled by', hasUrl ? 'URL detection' : 'keyword match');
+      } else {
+        decision = {
+          need_search: false,
+          search_type: 'none',
+          confidence: 0.9,
+          reason: shouldSearch ? 'Web search disabled in model settings' : '未检测到搜索关键词或URL',
+          decision_level: 'keyword',
+          decision_time_ms: 0,
+          will_use_web_search: false
+        };
+        console.log('[smartChatWithSearch] ✗ Search disabled -', decision.reason);
+      }
     } else {
+      console.log('[smartChatWithSearch] Smart search decision DISABLED, search will not be used');
       decision = {
         need_search: false,
         search_type: 'none',
-        confidence: 0.9,
-        reason: shouldSearch ? 'Web search disabled in model settings' : '未检测到搜索关键词或URL',
-        decision_level: 'keyword',
+        confidence: 1.0,
+        reason: 'Smart search decision disabled in system settings',
+        decision_level: 'system',
         decision_time_ms: 0,
         will_use_web_search: false
       };
-      console.log('[smartChatWithSearch] ✗ Search disabled -', decision.reason);
     }
     
     let searchResults = null;
