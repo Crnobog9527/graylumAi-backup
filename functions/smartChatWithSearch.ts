@@ -1,5 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
+// ========== 对话历史管理配置 ==========
+// 原则：在保持上下文记忆的同时降低 token 消耗
+const FULL_HISTORY_LIMIT = 10;          // 10 轮内保持完整历史（20 条消息）
+const RECENT_MESSAGES_COUNT = 6;        // 超过 10 轮后，保留最近 6 条完整消息（3 轮）
+const COMPRESSION_CHECK_INTERVAL = 10;  // 每 10 条消息检查一次是否需要压缩
+const COMPRESSION_TRIGGER_MESSAGES = 20; // >= 20 条消息时触发压缩（10 轮）
+
+// 其他配置
 const CACHE_TTL_MINUTES = 15;
 const SIMILARITY_THRESHOLD = 0.85;
 const WEB_SEARCH_COST = 0.005;
@@ -284,11 +292,13 @@ Deno.serve(async (req) => {
     let beforeCompressionTokens = 0;
     let afterCompressionTokens = 0;
 
-    // 【优化】提高使用摘要的门槛，从8条改为12条，确保更多上下文被保留
-    if (summaryToUse && conversationMessages.length > 12) {
+    // 【优化】使用摘要的门槛：超过完整历史限制时
+    if (summaryToUse && conversationMessages.length > FULL_HISTORY_LIMIT * 2) {
       // 有摘要且消息较多时，使用摘要 + 最近消息
       const coveredCount = summaryToUse.covered_messages * 2; // 转换为消息数（一问一答=2条）
-      const recentMessages = conversationMessages.slice(coveredCount);
+
+      // 保留最近的消息（基于 RECENT_MESSAGES_COUNT）
+      const recentMessages = conversationMessages.slice(-RECENT_MESSAGES_COUNT);
 
       // 计算压缩前的 token 数（完整历史）
       beforeCompressionTokens = conversationMessages
@@ -307,20 +317,72 @@ ${summaryToUse.summary_text}
       // 计算压缩后的 token 数（摘要）
       afterCompressionTokens = estimateTokens(summaryContext);
 
-      // 添加最近的消息，将摘要上下文附加到第一条消息前
+      // 添加最近的消息，启用多级缓存优化
       if (recentMessages.length > 0) {
-        // 第一条消息：附加摘要上下文
+        // 第一条消息：附加摘要上下文 + 启用缓存（摘要部分通常不变）
         const firstMessage = recentMessages[0];
-        apiMessages.push({
-          role: firstMessage.role,
-          content: summaryContext + '\n' + ((firstMessage.content || firstMessage.text) || '')
-        });
+        const firstContent = summaryContext + '\n' + ((firstMessage.content || firstMessage.text) || '');
 
-        // 其余消息：正常添加
-        apiMessages.push(...recentMessages.slice(1).map(m => ({
-          role: m.role,
-          content: (m.content || m.text) || ''
-        })));
+        // 如果摘要足够长，启用缓存
+        if (estimateTokens(summaryContext) >= 1024) {
+          apiMessages.push({
+            role: firstMessage.role,
+            content: [
+              {
+                type: 'text',
+                text: firstContent,
+                cache_control: { type: 'ephemeral' }
+              }
+            ]
+          });
+        } else {
+          apiMessages.push({
+            role: firstMessage.role,
+            content: firstContent
+          });
+        }
+
+        // 其余消息：分为缓存层和非缓存层
+        const remainingMessages = recentMessages.slice(1);
+
+        if (remainingMessages.length > 3) {
+          // 较早的消息（倒数第 4-6 条）：启用缓存
+          const olderRecentMessages = remainingMessages.slice(0, -3);
+          olderRecentMessages.forEach((m, idx) => {
+            const content = (m.content || m.text) || '';
+
+            // 最后一条旧消息添加缓存标记
+            if (idx === olderRecentMessages.length - 1 && estimateTokens(content) >= 128) {
+              apiMessages.push({
+                role: m.role,
+                content: [
+                  {
+                    type: 'text',
+                    text: content,
+                    cache_control: { type: 'ephemeral' }
+                  }
+                ]
+              });
+            } else {
+              apiMessages.push({
+                role: m.role,
+                content: content
+              });
+            }
+          });
+
+          // 最新 3 条消息：不缓存（内容变化频繁）
+          apiMessages.push(...remainingMessages.slice(-3).map(m => ({
+            role: m.role,
+            content: (m.content || m.text) || ''
+          })));
+        } else {
+          // 消息太少，不启用缓存
+          apiMessages.push(...remainingMessages.map(m => ({
+            role: m.role,
+            content: (m.content || m.text) || ''
+          })));
+        }
       }
 
       contextType = '摘要+最近消息';
@@ -579,16 +641,16 @@ ${summaryToUse.summary_text}
     }
     
     // 步骤6：检查是否需要触发压缩
-    // 【优化】提高压缩触发门槛，从16条改为24条，保留更多原始上下文
+    // 使用配置的压缩触发阈值和检查间隔
     const messageCount = conversationMessages.length + 2; // +2 = 当前一问一答
-    if (messageCount >= 24 && messageCount % 12 === 0) { // 每12条消息（6轮）检查一次
+    if (messageCount >= COMPRESSION_TRIGGER_MESSAGES && messageCount % COMPRESSION_CHECK_INTERVAL === 0) {
       console.log('[smartChatWithSearch] Triggering compression check for', messageCount / 2, 'rounds');
       try {
         // 异步触发压缩，不等待结果
-        // 【优化】保留最近6轮（12条消息）而不是4轮
+        // 保留最近的消息（基于 RECENT_MESSAGES_COUNT）
         base44.functions.invoke('compressConversation', {
           conversation_id: finalConversationId,
-          messages_to_compress: messageCount - 12 // 保留最近6轮
+          messages_to_compress: messageCount - RECENT_MESSAGES_COUNT
         }).catch(err => console.log('[smartChatWithSearch] Compression failed:', err.message));
       } catch (e) {
         console.log('[smartChatWithSearch] Compression trigger skipped:', e.message);
