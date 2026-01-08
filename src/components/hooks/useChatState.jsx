@@ -329,18 +329,18 @@ export function useChatState() {
       // 添加 AI 响应
       const assistantMessage = {
         role: 'assistant',
-        content: response.data.response,
+        content: responseData.response || '',
         timestamp: new Date().toISOString(),
-        credits_used: response.data.credits_used,
-        input_tokens: response.data.input_tokens,
-        output_tokens: response.data.output_tokens
+        credits_used: responseData.credits_used,
+        input_tokens: responseData.input_tokens,
+        output_tokens: responseData.output_tokens
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
       // 更新当前对话
-      if (response.data.conversation_id) {
-        const convId = response.data.conversation_id;
+      if (responseData.conversation_id) {
+        const convId = responseData.conversation_id;
         if (!currentConversation) {
           // 新对话
           const newConv = {
