@@ -317,14 +317,14 @@ ${summaryToUse.summary_text}
       // 计算压缩后的 token 数（摘要）
       afterCompressionTokens = estimateTokens(summaryContext);
 
-      // 添加最近的消息，启用多级缓存优化
+      // 添加最近的消息，启用简化的位置缓存策略
       if (recentMessages.length > 0) {
-        // 第一条消息：附加摘要上下文 + 启用缓存（摘要部分通常不变）
+        // 第一条消息：附加摘要上下文 + 如果摘要 >= 1024 tokens 则启用缓存
         const firstMessage = recentMessages[0];
         const firstContent = summaryContext + '\n' + ((firstMessage.content || firstMessage.text) || '');
+        const shouldCacheSummary = estimateTokens(summaryContext) >= 1024;
 
-        // 如果摘要足够长，启用缓存
-        if (estimateTokens(summaryContext) >= 1024) {
+        if (shouldCacheSummary) {
           apiMessages.push({
             role: firstMessage.role,
             content: [
@@ -342,47 +342,33 @@ ${summaryToUse.summary_text}
           });
         }
 
-        // 其余消息：分为缓存层和非缓存层
+        // 其余消息：使用位置缓存策略（倒数第4条消息）
         const remainingMessages = recentMessages.slice(1);
+        const cachePoint = remainingMessages.length - 3; // 倒数第4条消息（从0开始计数）
 
-        if (remainingMessages.length > 3) {
-          // 较早的消息（倒数第 4-6 条）：启用缓存
-          const olderRecentMessages = remainingMessages.slice(0, -3);
-          olderRecentMessages.forEach((m, idx) => {
-            const content = (m.content || m.text) || '';
+        remainingMessages.forEach((m, idx) => {
+          const content = (m.content || m.text) || '';
 
-            // 最后一条旧消息添加缓存标记
-            if (idx === olderRecentMessages.length - 1 && estimateTokens(content) >= 128) {
-              apiMessages.push({
-                role: m.role,
-                content: [
-                  {
-                    type: 'text',
-                    text: content,
-                    cache_control: { type: 'ephemeral' }
-                  }
-                ]
-              });
-            } else {
-              apiMessages.push({
-                role: m.role,
-                content: content
-              });
-            }
-          });
-
-          // 最新 3 条消息：不缓存（内容变化频繁）
-          apiMessages.push(...remainingMessages.slice(-3).map(m => ({
-            role: m.role,
-            content: (m.content || m.text) || ''
-          })));
-        } else {
-          // 消息太少，不启用缓存
-          apiMessages.push(...remainingMessages.map(m => ({
-            role: m.role,
-            content: (m.content || m.text) || ''
-          })));
-        }
+          // 倒数第4条消息：添加缓存标记（稳定边界）
+          if (idx === cachePoint && cachePoint >= 0) {
+            apiMessages.push({
+              role: m.role,
+              content: [
+                {
+                  type: 'text',
+                  text: content,
+                  cache_control: { type: 'ephemeral' }
+                }
+              ]
+            });
+          } else {
+            // 其他消息：不缓存
+            apiMessages.push({
+              role: m.role,
+              content: content
+            });
+          }
+        });
       }
 
       contextType = '摘要+最近消息';

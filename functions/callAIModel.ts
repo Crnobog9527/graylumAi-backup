@@ -57,58 +57,52 @@ Deno.serve(async (req) => {
     };
 
     // 构建带缓存标记的消息（用于 OpenRouter Anthropic）
+    // 简化策略：缓存系统提示词 + 倒数第4条消息（稳定边界）
     const buildCachedMessagesForOpenRouter = (msgs, sysPrompt) => {
       const result = [];
-      const cacheableBlocks = [];
-      
-      // 分析系统提示词
+      let cacheEnabled = false;
+      let cachedBlocksCount = 0;
+
+      // 1. 系统提示词：如果 >= 1024 tokens，启用缓存
       const sysTokens = estimateTokens(sysPrompt);
-      if (sysPrompt && shouldEnableCache(sysPrompt, sysTokens)) {
-        cacheableBlocks.push({ type: 'system', tokens: sysTokens });
-      }
-      
-      // 分析消息中可缓存的内容（只分析较早的消息，最新的用户消息不缓存）
-      msgs.slice(0, -1).forEach((m, idx) => {
-        const tokens = estimateTokens(m.content);
-        if (shouldEnableCache(m.content, tokens)) {
-          cacheableBlocks.push({ type: 'message', index: idx, tokens, role: m.role });
-        }
-      });
-      
-      // 按token数排序，选择最大的几个进行缓存
-      cacheableBlocks.sort((a, b) => b.tokens - a.tokens);
-      const blocksToCache = cacheableBlocks.slice(0, MAX_CACHE_BREAKPOINTS);
-      const cacheIndices = new Set(blocksToCache.filter(b => b.type === 'message').map(b => b.index));
-      const cacheSystem = blocksToCache.some(b => b.type === 'system');
-      
-      // 构建系统消息
+      const shouldCacheSystem = sysPrompt && sysTokens >= CACHE_MIN_TOKENS;
+
       if (sysPrompt) {
-        if (cacheSystem) {
+        if (shouldCacheSystem) {
           result.push({
             role: 'system',
             content: [{ type: 'text', text: sysPrompt, cache_control: { type: 'ephemeral' } }]
           });
+          cacheEnabled = true;
+          cachedBlocksCount++;
         } else {
           result.push({ role: 'system', content: sysPrompt });
         }
       }
-      
-      // 构建对话消息
+
+      // 2. 对话消息：对倒数第4条消息添加缓存标记（稳定部分的边界）
+      // 最新3条消息内容变化频繁，不缓存
+      const cachePoint = msgs.length - 4;
+
       msgs.forEach((m, idx) => {
-        if (cacheIndices.has(idx)) {
+        // 倒数第4条消息：添加缓存标记
+        if (idx === cachePoint && cachePoint >= 0) {
           result.push({
             role: m.role,
             content: [{ type: 'text', text: m.content, cache_control: { type: 'ephemeral' } }]
           });
+          cacheEnabled = true;
+          cachedBlocksCount++;
         } else {
+          // 其他消息：不缓存
           result.push({ role: m.role, content: m.content });
         }
       });
-      
+
       return {
         messages: result,
-        cacheEnabled: blocksToCache.length > 0,
-        cachedBlocksCount: blocksToCache.length
+        cacheEnabled,
+        cachedBlocksCount
       };
     };
 
