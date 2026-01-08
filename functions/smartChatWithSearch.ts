@@ -466,13 +466,37 @@ ${summaryToUse.summary_text}
     
     const modelData = modelRes.data;
     console.log('[smartChatWithSearch] AI response received, web_search_used:', modelData.web_search_enabled);
-    
-    // ========== 新的双轨制结算逻辑 ==========
+
+    // ========== API 性能和成本汇总 ==========
     const inputTokens = modelData.input_tokens || 0;
     const outputTokens = modelData.output_tokens || 0;
     const inputCredits = modelData.input_credits || 0;
     const outputCredits = modelData.output_credits || 0;
     const webSearchUsed = modelData.web_search_enabled || false;
+    const cachedTokens = modelData.cached_tokens || 0;
+    const cacheHitRate = modelData.cache_hit_rate || '0%';
+    const creditsSaved = modelData.credits_saved_by_cache || 0;
+
+    // 打印详细的成本汇总
+    console.log('┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓');
+    console.log('┃  💰 Smart Chat - Cost Summary                   ┃');
+    console.log('┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫');
+    console.log(`┃  📊 Token Usage:`);
+    console.log(`┃    • Input:  ${inputTokens.toLocaleString().padEnd(10)} tokens`);
+    console.log(`┃    • Output: ${outputTokens.toLocaleString().padEnd(10)} tokens`);
+    if (cachedTokens > 0) {
+      console.log(`┃  🔄 Cache Performance:`);
+      console.log(`┃    • Hit:     ${cachedTokens.toLocaleString().padEnd(10)} tokens (${cacheHitRate})`);
+      console.log(`┃    • Saved:   ${creditsSaved.toFixed(4).padEnd(10)} credits`);
+    }
+    console.log(`┃  💳 Credits Consumed:`);
+    console.log(`┃    • Input:  ${inputCredits.toFixed(4).padEnd(10)} credits`);
+    console.log(`┃    • Output: ${outputCredits.toFixed(4).padEnd(10)} credits`);
+    if (webSearchUsed) {
+      console.log(`┃    • Search: ${(0.005).toFixed(4).padEnd(10)} credits`);
+    }
+    console.log(`┃    • Total:  ${(inputCredits + outputCredits + (webSearchUsed ? 0.005 : 0)).toFixed(4).padEnd(10)} credits`);
+    console.log('┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛');
     
     // Token消耗（精确小数）
     const tokenCredits = inputCredits + outputCredits;

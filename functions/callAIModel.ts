@@ -46,14 +46,88 @@ Deno.serve(async (req) => {
     // 判断内容是否适合缓存
     const shouldEnableCache = (content, tokenCount) => {
       if (tokenCount < CACHE_MIN_TOKENS) return false;
-      
+
       // 检测是否包含大文档/RAG/结构化数据的特征
       const hasStructuredData = /\|.*\|.*\|/m.test(content) || // CSV/表格
                                 /```[\s\S]{500,}```/.test(content) || // 大代码块
                                 /<document>|<context>|<reference>/i.test(content); // RAG标记
       const hasRoleCard = /<character>|<persona>|<system_config>/i.test(content);
-      
+
       return tokenCount >= CACHE_MIN_TOKENS || hasStructuredData || hasRoleCard;
+    };
+
+    // ========== API 性能监控和成本统计 ==========
+    const getModelRates = (modelId) => {
+      const lower = (modelId || '').toLowerCase();
+
+      // Sonnet 4.5
+      if (lower.includes('sonnet')) {
+        return { input: 3.0, output: 15.0, cached: 0.3 }; // per 1M tokens
+      }
+
+      // Haiku 4.5
+      if (lower.includes('haiku')) {
+        return { input: 1.0, output: 5.0, cached: 0.1 }; // per 1M tokens
+      }
+
+      // Default to Sonnet pricing
+      return { input: 3.0, output: 15.0, cached: 0.3 };
+    };
+
+    const logAPIPerformance = (modelId, usage, provider = 'anthropic') => {
+      const rates = getModelRates(modelId);
+
+      const inputTokens = usage.input_tokens || 0;
+      const outputTokens = usage.output_tokens || 0;
+      const cacheReadTokens = usage.cache_read_input_tokens || 0;
+      const cacheCreationTokens = usage.cache_creation_input_tokens || 0;
+
+      // 计算成本（美元）
+      const normalInputTokens = inputTokens - cacheReadTokens - cacheCreationTokens;
+      const inputCost = (normalInputTokens / 1000000) * rates.input;
+      const outputCost = (outputTokens / 1000000) * rates.output;
+      const cacheCost = (cacheReadTokens / 1000000) * rates.cached;
+      const cacheCreationCost = (cacheCreationTokens / 1000000) * rates.input * 1.25; // +25% for cache creation
+
+      const totalCost = inputCost + outputCost + cacheCost + cacheCreationCost;
+
+      // 计算节省的成本（如果缓存命中）
+      const wouldBeCost = ((inputTokens - cacheCreationTokens) / 1000000) * rates.input + outputCost;
+      const savedCost = wouldBeCost - totalCost;
+
+      // 缓存命中率
+      const cacheHitRate = inputTokens > 0 ? (cacheReadTokens / inputTokens * 100).toFixed(1) : '0.0';
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(`[API Monitor] ${modelId}`);
+      console.log(`  📊 Token Usage:`);
+      console.log(`    • Input tokens:  ${inputTokens.toLocaleString()}`);
+      console.log(`    • Output tokens: ${outputTokens.toLocaleString()}`);
+
+      if (cacheReadTokens > 0 || cacheCreationTokens > 0) {
+        console.log(`  🔄 Prompt Caching:`);
+        if (cacheReadTokens > 0) {
+          console.log(`    ✅ Cache hit:    ${cacheReadTokens.toLocaleString()} tokens (${cacheHitRate}%)`);
+          console.log(`    💰 Saved:        $${savedCost.toFixed(4)}`);
+        }
+        if (cacheCreationTokens > 0) {
+          console.log(`    🔄 Cache created: ${cacheCreationTokens.toLocaleString()} tokens`);
+        }
+      }
+
+      console.log(`  💵 Cost Breakdown:`);
+      console.log(`    • Normal input:   $${inputCost.toFixed(4)} (${normalInputTokens.toLocaleString()} tokens @ $${rates.input}/M)`);
+      console.log(`    • Output:         $${outputCost.toFixed(4)} (${outputTokens.toLocaleString()} tokens @ $${rates.output}/M)`);
+      if (cacheCost > 0) {
+        console.log(`    • Cached input:   $${cacheCost.toFixed(4)} (${cacheReadTokens.toLocaleString()} tokens @ $${rates.cached}/M)`);
+      }
+      if (cacheCreationCost > 0) {
+        console.log(`    • Cache creation: $${cacheCreationCost.toFixed(4)}`);
+      }
+      console.log(`    • Total:          $${totalCost.toFixed(4)}`);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      return { totalCost, savedCost };
     };
 
     // 构建带缓存标记的消息（用于 OpenRouter Anthropic）
@@ -407,6 +481,16 @@ Deno.serve(async (req) => {
         // 计算缓存节省的积分
         const creditsSaved = cachedTokens > 0 ? (cachedTokens / 1000) * 0.9 : 0;
 
+        // 使用新的性能监控日志
+        if (data.usage) {
+          logAPIPerformance(model.model_id, {
+            input_tokens: actualInputTokens,
+            output_tokens: actualOutputTokens,
+            cache_read_input_tokens: cachedTokens,
+            cache_creation_input_tokens: 0 // OpenRouter doesn't report cache creation separately
+          }, 'openrouter');
+        }
+
         return Response.json({
           response: responseText,
           input_tokens: actualInputTokens,
@@ -499,14 +583,8 @@ Deno.serve(async (req) => {
       // 计算缓存节省的积分
       const creditsSaved = cachedTokens > 0 ? (cachedTokens / 1000) * 0.9 : 0;
 
-      console.log('[callAIModel] ===== ANTHROPIC USAGE STATS =====');
-      console.log('[callAIModel] Input tokens:', actualInputTokens);
-      console.log('[callAIModel] - Cached (read):', cachedTokens, `(saved ${creditsSaved.toFixed(3)} credits)`);
-      console.log('[callAIModel] - Cache creation:', cacheCreationTokens);
-      console.log('[callAIModel] - Uncached:', uncachedInputTokens);
-      console.log('[callAIModel] Output tokens:', actualOutputTokens);
-      console.log('[callAIModel] Total credits:', (inputCredits + outputCredits).toFixed(3));
-      console.log('[callAIModel] ===============================');
+      // 使用新的性能监控日志
+      logAPIPerformance(model.model_id, data.usage, 'anthropic-official');
 
       return Response.json({
         response: responseText,
