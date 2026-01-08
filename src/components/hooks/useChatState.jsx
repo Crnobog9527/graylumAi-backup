@@ -593,8 +593,10 @@ export function useChatState() {
                         is_archived: false
                       };
                       setCurrentConversation(newConv);
-                      // 强制立即重新获取对话列表
-                      queryClient.refetchQueries({ queryKey: ['conversations'] });
+                      // 延迟一点再刷新，确保后端数据已保存
+                      setTimeout(() => {
+                        queryClient.refetchQueries({ queryKey: ['conversations'] });
+                      }, 500);
                     }
                   }
                 }).catch(error => {
