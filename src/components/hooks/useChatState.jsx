@@ -125,17 +125,15 @@ export function useChatState() {
   }, []);
 
   // 获取对话列表
-  const { data: conversations = [] } = useQuery({
+  const { data: conversations = [], refetch: refetchConversations } = useQuery({
     queryKey: ['conversations'],
     queryFn: async () => {
-      const convs = await base44.entities.Conversation.filter(
-        { is_archived: false },
-        '-updated_date',
-        100
-      );
-      return convs;
+      // 获取所有对话，然后在前端过滤掉已归档的
+      const convs = await base44.entities.Conversation.list('-updated_date', 100);
+      // 过滤：is_archived 不为 true 的对话（包括 false、undefined、null）
+      return convs.filter(c => c.is_archived !== true);
     },
-    staleTime: 30000
+    staleTime: 10000  // 缩短缓存时间以更快刷新
   });
 
   // 获取模型列表
