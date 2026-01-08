@@ -1,224 +1,140 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
-// 任务类型定义
-const TASK_TYPES = {
-  // Haiku 适用任务 (低成本)
-  SUMMARIZATION: 'summarization',
-  INTENT_DETECTION: 'intent_detection',
-  KEYWORD_EXTRACTION: 'keyword_extraction',
-  SIMPLE_QA: 'simple_qa',
-  CLASSIFICATION: 'classification',
-  
-  // Sonnet 适用任务 (中等成本，主力模型)
-  CONTENT_CREATION: 'content_creation',
-  CONTENT_EXPANSION: 'content_expansion',
-  DIALOGUE: 'dialogue',
-  EDITING: 'editing',
-  TRANSLATION: 'translation',
-  
-  // Opus 适用任务 (高成本，复杂任务)
-  COMPLEX_ANALYSIS: 'complex_analysis',
-  PROFESSIONAL_WRITING: 'professional_writing',
-  CODE_GENERATION: 'code_generation',
-  RESEARCH: 'research'
+// ========== 简化的双模型路由策略 ==========
+// 原则：宁可多用 Sonnet 保证质量，也不要因误判用 Haiku 导致体验下降
+
+// 模型 ID 映射
+const MODELS = {
+  sonnet: 'claude-sonnet-4-5-20250929',  // 默认主力模型（99% 场景）
+  haiku: 'claude-haiku-4-5-20251001'     // 仅用于极简单场景（1% 场景）
 };
 
-// 模型选择规则
-const MODEL_SELECTION_RULES = {
-  'haiku': ['summarization', 'intent_detection', 'keyword_extraction', 'simple_qa', 'classification'],
-  'sonnet': ['content_creation', 'content_expansion', 'dialogue', 'editing', 'translation'],
-  'opus': ['complex_analysis', 'professional_writing', 'code_generation', 'research']
-};
-
-// 续写关键词列表
-const CONTINUATION_KEYWORDS = [
-  '继续', '接着写', '下一章', '下一段', '继续写', '往下写', '继续创作',
-  '再写一段', '接下去', '下一部分', '接下来', '后续', '续写',
-  'continue', 'keep going', 'go on', 'next chapter', 'next part',
-  'keep writing', 'write more', 'continue writing'
+// 简单确认词列表（仅这些场景使用 Haiku）
+const SIMPLE_CONFIRMATIONS = [
+  '好的', '好', '是的', '是', '知道了', '明白了', '收到', '谢谢', '谢了', '嗯', '啊',
+  'ok', 'okay', 'yes', 'yeah', 'yep', 'sure', 'got it', 'thanks', 'thank you', 'thx'
 ];
 
-// 创作类任务类型（需要记录到会话上下文）
-const CREATIVE_TASK_TYPES = [
-  'content_creation', 'content_expansion', 'professional_writing', 
-  'code_generation', 'complex_analysis'
-];
+// 内部任务关键词（摘要等后台任务）
+const INTERNAL_TASK_KEYWORDS = ['summarize', 'compress', 'extract', 'classify'];
 
-// 关键词匹配规则
-const KEYWORD_PATTERNS = {
-  summarization: ['总结', '摘要', '概括', '简述', 'summarize', 'summary'],
-  intent_detection: ['意图', '想要', '目的', '需求', 'intent', 'purpose'],
-  simple_qa: ['是什么', '什么是', '解释', '定义', 'what is', 'explain'],
-  content_creation: ['写', '创作', '生成', '编写', '制作', '拍摄', '视频', '小说', '文章', '故事', '剧本', '脚本', 'write', 'create', 'generate', 'video', 'novel', 'story', 'script'],
-  content_expansion: ['扩展', '详细', '展开', '补充', 'expand', 'elaborate', 'detail'],
-  editing: ['修改', '优化', '改进', '润色', 'edit', 'improve', 'refine'],
-  translation: ['翻译', '转换', 'translate', 'convert'],
-  complex_analysis: ['分析', '研究', '评估', '深入', 'analyze', 'research', 'evaluate'],
-  code_generation: ['代码', '编程', '函数', '算法', 'code', 'program', 'function', 'algorithm'],
-  professional_writing: ['报告', '论文', '方案', '计划', 'report', 'proposal', 'plan']
-};
-
-// 简单的任务分类（基于关键词匹配）
-const classifyTaskByKeywords = (message) => {
-  const lowerMessage = message.toLowerCase();
-  
-  for (const [taskType, keywords] of Object.entries(KEYWORD_PATTERNS)) {
-    if (keywords.some(kw => lowerMessage.includes(kw))) {
-      return taskType;
+/**
+ * 简化的模型选择函数
+ * @param message - 用户消息内容
+ * @param conversationTurns - 对话轮次（完整往返次数）
+ * @param isInternalTask - 是否为内部任务（摘要、压缩等）
+ * @returns 选择的模型 ID
+ */
+const selectModel = (message: string, conversationTurns: number, isInternalTask: boolean = false): string => {
+  // 规则 1: 内部摘要/压缩任务用 Haiku（用户不可见，只需要提取信息）
+  if (isInternalTask) {
+    const lowerMessage = message.toLowerCase();
+    const isInternalOp = INTERNAL_TASK_KEYWORDS.some(kw => lowerMessage.includes(kw));
+    if (isInternalOp) {
+      console.log('[taskClassifier] Internal task detected, using Haiku');
+      return MODELS.haiku;
     }
   }
-  
-  // 默认返回对话类型
-  return 'dialogue';
-};
 
-// 根据任务类型选择模型
-const selectModelForTask = (taskType) => {
-  for (const [model, tasks] of Object.entries(MODEL_SELECTION_RULES)) {
-    if (tasks.includes(taskType)) {
-      return model;
+  // 规则 2: 多轮对话（>=3 轮）永远用 Sonnet 保持稳定性和上下文理解
+  if (conversationTurns >= 3) {
+    console.log(`[taskClassifier] Multi-turn conversation (${conversationTurns} turns), using Sonnet for stability`);
+    return MODELS.sonnet;
+  }
+
+  const trimmedMessage = message.trim();
+  const lowerMessage = trimmedMessage.toLowerCase();
+
+  // 规则 3: 消息太短且是纯确认词 -> Haiku（极少数场景）
+  if (trimmedMessage.length < 10) {
+    const isSimpleConfirmation = SIMPLE_CONFIRMATIONS.some(word =>
+      lowerMessage === word || lowerMessage === word + '。' || lowerMessage === word + '!'
+    );
+
+    if (isSimpleConfirmation) {
+      console.log('[taskClassifier] Simple confirmation word, using Haiku');
+      return MODELS.haiku;
     }
   }
-  return 'sonnet'; // 默认使用 Sonnet
-};
 
-// 计算消息复杂度
-const calculateComplexity = (message, conversationLength) => {
-  let complexity = 0;
-  
-  // 消息长度因素（降低阈值，增加权重）
-  if (message.length > 300) complexity += 1;
-  if (message.length > 800) complexity += 2;
-  if (message.length > 1500) complexity += 1;
-  
-  // 对话轮次因素
-  if (conversationLength > 10) complexity += 1;
-  
-  // 特殊字符和结构因素
-  if (message.match(/```[\s\S]*```/)) complexity += 2; // 代码块
-  if (message.match(/[一二三四五六七八九十、]+[\s\S]*/)) complexity += 1; // 列表结构
-  
-  // 多个问题标记（表示复杂查询）
-  const questionCount = (message.match(/[？?]/g) || []).length;
-  if (questionCount >= 3) complexity += 2;
-  if (questionCount >= 5) complexity += 1;
-  
-  // 关键词提示复杂度
-  if (message.includes('专业') || message.includes('深入') || message.includes('详细')) complexity += 1;
-  if (message.includes('全面') || message.includes('系统') || message.includes('完整')) complexity += 1;
-  
-  return complexity;
+  // 规则 4: 其他所有情况默认用 Sonnet（保证质量）
+  // 包括：首轮对话、需要理解上下文、需要遵循系统提示词、正常问答等
+  console.log('[taskClassifier] Default to Sonnet for quality assurance');
+  return MODELS.sonnet;
 };
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    
+
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    const { message, conversation_id } = await req.json();
-    
+
+    const { message, conversation_id, is_internal_task } = await req.json();
+
     if (!message) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
     }
-    
-    // 获取会话上下文
-    let conversationLength = 0;
-    let sessionTaskType = null;
-    let conversation = null;
-    
+
+    // 获取会话上下文（计算对话轮次）
+    let conversationTurns = 0;
+
     if (conversation_id) {
-      const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
-      if (convs.length > 0) {
-        conversation = convs[0];
-        conversationLength = (conversation.messages || []).length / 2;
-        sessionTaskType = conversation.session_task_type;
+      try {
+        const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
+        if (convs.length > 0) {
+          const conversation = convs[0];
+          const messages = conversation.messages || [];
+          conversationTurns = Math.floor(messages.length / 2); // 一问一答 = 1 轮
+        }
+      } catch (e) {
+        console.log('[taskClassifier] Failed to load conversation:', e.message);
       }
     }
-    
-    // 检查是否是续写指令
-    const lowerMessage = message.toLowerCase();
-    const isContinuation = CONTINUATION_KEYWORDS.some(kw => 
-      lowerMessage.includes(kw.toLowerCase())
-    );
-    
-    console.log('[taskClassifier] isContinuation:', isContinuation, 'sessionTaskType:', sessionTaskType);
-    
-    // 【优化1】稳定性原则：多轮对话中尽量保持模型一致
-    // 如果已有会话任务类型，优先继承（不仅限于续写指令）
-    let taskType;
-    let shouldUpdateSessionTaskType = false;
-    let inheritedFromSession = false;
-    
-    // 判断是否应该继承会话任务类型
-    // 条件：1. 是续写指令 2. 对话轮次>=3 且 有会话任务类型（保持上下文连贯）
-    const shouldInheritTaskType = sessionTaskType && (
-      isContinuation || 
-      conversationLength >= 3  // 多轮对话中保持稳定
-    );
-    
-    if (shouldInheritTaskType) {
-      taskType = sessionTaskType;
-      inheritedFromSession = true;
-      console.log('[taskClassifier] 继承会话任务类型:', taskType, '(对话轮次:', conversationLength, ')');
-    } else {
-      // 否则正常判断任务类型
-      taskType = classifyTaskByKeywords(message);
-      
-      // 如果是创作类任务，需要更新会话的 session_task_type
-      if (CREATIVE_TASK_TYPES.includes(taskType)) {
-        shouldUpdateSessionTaskType = true;
-      }
-    }
-    
-    // 步骤2：计算复杂度
-    const complexity = calculateComplexity(message, conversationLength);
-    
-    // 步骤3：选择基础模型
-    let recommendedModel = selectModelForTask(taskType);
-    
-    // 【优化2】降低模型切换的激进程度
-    // 只在复杂度显著提升时才升级模型，避免频繁切换
-    if (complexity >= 5 && recommendedModel === 'haiku') {
-      recommendedModel = 'sonnet';
-    } else if (complexity >= 7 && recommendedModel === 'sonnet') {
-      recommendedModel = 'opus';
-    }
-    
-    // 【优化3】如果是继承的任务类型，优先保持原模型级别
-    // 这确保了复杂创作任务不会因为简单的续写指令而降级模型
-    if (inheritedFromSession && conversationLength >= 3) {
-      // 保持至少 sonnet 级别，确保复杂指令能被正确处理
-      if (recommendedModel === 'haiku') {
-        recommendedModel = 'sonnet';
-        console.log('[taskClassifier] 保持模型稳定性，升级到 sonnet');
-      }
-    }
-    
-    // 步骤5：映射到实际模型ID
-    const modelMap = {
-      'haiku': 'claude-3-5-haiku-20241022',
-      'sonnet': 'claude-sonnet-4-20250514',
-      'opus': 'claude-opus-4-20250514'
+
+    // 执行模型选择
+    const selectedModelId = selectModel(message, conversationTurns, is_internal_task || false);
+    const modelType = selectedModelId === MODELS.haiku ? 'haiku' : 'sonnet';
+
+    // 构建响应
+    const response = {
+      task_type: 'dialogue',  // 简化：所有任务统一为 dialogue
+      recommended_model: modelType,
+      model_id: selectedModelId,
+      conversation_turns: conversationTurns,
+      message_length: message.length,
+      reason: `Model: ${modelType}, Turns: ${conversationTurns}, Length: ${message.length}`,
+      // 保持向后兼容的字段
+      complexity_score: conversationTurns >= 3 ? 5 : 1,
+      confidence: 0.95,
+      should_update_session_task_type: false,  // 简化：不再维护 session_task_type
+      is_continuation: false,
+      inherited_from_session: false
     };
-    
-    return Response.json({
-      task_type: taskType,
-      complexity_score: complexity,
-      recommended_model: recommendedModel,
-      model_id: modelMap[recommendedModel],
-      confidence: complexity >= 3 ? 0.7 : 0.9,
-      reason: `任务类型: ${taskType}, 复杂度: ${complexity}, 对话轮次: ${conversationLength}${isContinuation ? ' (续写)' : ''}${inheritedFromSession ? ' (继承)' : ''}`,
-      should_update_session_task_type: shouldUpdateSessionTaskType,
-      is_continuation: isContinuation,
-      inherited_from_session: inheritedFromSession
-    });
-    
+
+    // 详细日志
+    console.log('[taskClassifier] ===== MODEL SELECTION =====');
+    console.log('[taskClassifier] Message preview:', message.substring(0, 50) + (message.length > 50 ? '...' : ''));
+    console.log('[taskClassifier] Conversation turns:', conversationTurns);
+    console.log('[taskClassifier] Message length:', message.length);
+    console.log('[taskClassifier] Is internal task:', is_internal_task || false);
+    console.log('[taskClassifier] Selected model:', modelType, `(${selectedModelId})`);
+    console.log('[taskClassifier] ================================');
+
+    return Response.json(response);
+
   } catch (error) {
-    console.error('Task classifier error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('[taskClassifier] Error:', error);
+
+    // 出错时默认使用 Sonnet（保证质量）
+    return Response.json({
+      task_type: 'dialogue',
+      recommended_model: 'sonnet',
+      model_id: MODELS.sonnet,
+      error: error.message,
+      reason: 'Error occurred, defaulting to Sonnet for safety'
+    });
   }
 });
