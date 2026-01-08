@@ -86,6 +86,7 @@ export function useChatState() {
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const autoSentRef = useRef(false);  // 跟踪是否已经自动发送过
 
   // 获取用户信息
   useEffect(() => {
@@ -513,6 +514,100 @@ export function useChatState() {
       setIsExporting(false);
     }
   }, [currentConversation, messages, canExport]);
+
+  // 处理功能广场模块的自动发送
+  useEffect(() => {
+    // 如果已经自动发送过，直接返回
+    if (autoSentRef.current) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const moduleId = urlParams.get('module_id');
+    const autoStart = urlParams.get('auto_start');
+
+    // 只有当 auto_start=true、有 moduleId、没有当前对话、且消息为空时才自动发送
+    if (autoStart === 'true' && moduleId && !currentConversation && messages.length === 0 && !isStreaming) {
+      autoSentRef.current = true;  // 标记已经触发过
+
+      const autoSendMessage = async () => {
+        try {
+          const modules = await base44.entities.PromptModule.filter({ id: moduleId });
+          if (modules.length > 0) {
+            const module = modules[0];
+            const userPrompt = module.user_prompt_template || '';
+
+            // 清除 URL 中的 auto_start 参数，避免重复触发
+            const newUrl = window.location.pathname + '?module_id=' + moduleId;
+            window.history.replaceState({}, '', newUrl);
+
+            // 如果有用户提示词模板，自动填充并发送
+            if (userPrompt && userPrompt.trim()) {
+              setInputMessage(userPrompt);
+
+              // 使用 setTimeout 确保 inputMessage 更新后再发送
+              setTimeout(() => {
+                // 创建用户消息
+                const userMessage = {
+                  role: 'user',
+                  content: userPrompt,
+                  timestamp: new Date().toISOString()
+                };
+
+                setMessages([userMessage]);
+                setInputMessage('');
+                setIsStreaming(true);
+
+                // 调用 API
+                base44.functions.invoke('smartChatWithSearch', {
+                  message: userPrompt,
+                  conversation_id: null,
+                  system_prompt: module.system_prompt || ''
+                }).then(response => {
+                  const responseData = response.data;
+                  if (responseData && !responseData.error) {
+                    const assistantMessage = {
+                      role: 'assistant',
+                      content: responseData.response || '',
+                      timestamp: new Date().toISOString(),
+                      credits_used: responseData.credits_used,
+                      input_tokens: responseData.input_tokens,
+                      output_tokens: responseData.output_tokens
+                    };
+
+                    setMessages(prev => [...prev, assistantMessage]);
+
+                    // 更新对话
+                    if (responseData.conversation_id) {
+                      const newConv = {
+                        id: responseData.conversation_id,
+                        title: userPrompt.slice(0, 50),
+                        messages: [userMessage, assistantMessage]
+                      };
+                      setCurrentConversation(newConv);
+                      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+                    }
+                  }
+                }).catch(error => {
+                  console.error('Auto-send failed:', error);
+                  setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: `抱歉，发送失败：${error.message}`,
+                    timestamp: new Date().toISOString(),
+                    isError: true
+                  }]);
+                }).finally(() => {
+                  setIsStreaming(false);
+                });
+              }, 100);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to auto-send message:', e);
+        }
+      };
+
+      autoSendMessage();
+    }
+  }, [messages.length, currentConversation, isStreaming, queryClient]);
 
   return {
     // 状态
