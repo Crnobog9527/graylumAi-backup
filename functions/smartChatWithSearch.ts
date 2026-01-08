@@ -444,25 +444,18 @@ ${summaryToUse.summary_text}
     
     // 过滤掉空消息
     apiMessages = apiMessages.filter(m => m.content && m.content.trim().length > 0);
-
+    
     // 计算token估算
-    const totalTokens = apiMessages.reduce((sum, m) => sum + estimateTokens(m.content || ''), 0) +
+    const totalTokens = apiMessages.reduce((sum, m) => sum + estimateTokens(m.content || ''), 0) + 
                         (system_prompt ? estimateTokens(system_prompt) : 0);
-
-    console.log('[smartChatWithSearch] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('[smartChatWithSearch] API Request Summary');
-    console.log('[smartChatWithSearch] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('[smartChatWithSearch] Total messages:', apiMessages.length);
-    console.log('[smartChatWithSearch] Estimated total tokens:', totalTokens);
-    console.log('[smartChatWithSearch] System prompt length:', system_prompt ? system_prompt.length : 0, 'chars');
-    console.log('[smartChatWithSearch] Message structure:');
+    
+    console.log('[smartChatWithSearch] Calling AI model with', apiMessages.length, 'messages, estimated', totalTokens, 'tokens');
+    console.log('[smartChatWithSearch] Message details:');
     apiMessages.forEach((m, i) => {
       const tokens = estimateTokens(m.content || '');
-      const preview = (m.content || '').slice(0, 80);
-      const hasCacheControl = typeof m.content === 'object' && m.content.some?.(c => c.cache_control);
-      console.log(`[smartChatWithSearch]   [${i}] ${m.role}${hasCacheControl ? ' [CACHED]' : ''}: ${tokens} tokens, "${preview}..."`);
+      const preview = (m.content || '').slice(0, 50);
+      console.log(`  [${i}] role=${m.role}, tokens=${tokens}, preview=${preview}...`);
     });
-    console.log('[smartChatWithSearch] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
     // 系统提示词只在新对话的第一轮时使用（消息列表为空）
     // 如果有历史消息，说明不是第一轮，绝对不能使用 system_prompt
@@ -500,22 +493,17 @@ ${summaryToUse.summary_text}
     }
     console.log('[smartChatWithSearch] === END PARAMETERS ===');
     
-    // 构建调用参数
-    // CRITICAL FIX: 始终传递 system_prompt，确保 callAIModel 能区分"未传递"和"明确传递空值"
-    const systemPromptToUse = shouldUseSystemPrompt && system_prompt ? system_prompt : (system_prompt || '');
-
+    // 构建调用参数，只在需要时添加 system_prompt
     const callParams = {
       model_id: selectedModel.id,
       messages: apiMessages,
-      force_web_search: decision.will_use_web_search || false,
-      system_prompt: systemPromptToUse  // 始终传递，第一轮传自定义值，后续轮传空字符串
+      force_web_search: decision.will_use_web_search || false
     };
-
-    console.log('[smartChatWithSearch] ===== CALLING callAIModel =====');
-    console.log('[smartChatWithSearch] system_prompt being passed:', systemPromptToUse ? `"${systemPromptToUse.substring(0, 100)}..."` : '(empty string)');
-    console.log('[smartChatWithSearch] system_prompt length:', systemPromptToUse.length);
-    console.log('[smartChatWithSearch] ===========================================');
-
+    
+    if (shouldUseSystemPrompt && system_prompt) {
+      callParams.system_prompt = system_prompt;
+    }
+    
     const modelRes = await base44.functions.invoke('callAIModel', callParams);
     
     if (!modelRes.data || modelRes.data.error) {
