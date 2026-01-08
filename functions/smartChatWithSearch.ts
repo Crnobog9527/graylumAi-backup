@@ -723,7 +723,8 @@ ${summaryToUse.summary_text}
         model_id: selectedModel.id,
         messages: newMessages,
         total_credits_used: actualDeducted,
-        is_archived: false  // 确保新对话显示在列表中
+        is_archived: false,  // 确保新对话显示在列表中
+        created_by: user.email  // 显式设置 created_by，确保 RLS 规则能匹配
       };
 
       // 如果是创作类任务，记录 session_task_type
