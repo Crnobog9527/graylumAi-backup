@@ -585,10 +585,14 @@ export function useChatState() {
                       const newConv = {
                         id: responseData.conversation_id,
                         title: userPrompt.slice(0, 50),
-                        messages: [userMessage, assistantMessage]
+                        messages: [userMessage, assistantMessage],
+                        created_date: new Date().toISOString(),
+                        updated_date: new Date().toISOString(),
+                        is_archived: false
                       };
                       setCurrentConversation(newConv);
-                      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+                      // 强制立即重新获取对话列表
+                      queryClient.refetchQueries({ queryKey: ['conversations'] });
                     }
                   }
                 }).catch(error => {
