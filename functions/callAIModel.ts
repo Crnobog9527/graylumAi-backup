@@ -40,11 +40,40 @@ Deno.serve(async (req) => {
         `"${systemPromptValue.slice(0, 100)}..."`);
 
       // 使用传入的 system_prompt，如果为空则使用默认提示词
-      // CRITICAL: 只在首轮对话时使用 system_prompt（由 smartChatWithSearch 控制）
-      const finalSystemPrompt = system_prompt || DEFAULT_SYSTEM_PROMPT;
+      // CRITICAL FIX: 区分"未传递"、"传递空字符串"和"传递有效值"
+      const finalSystemPrompt = (() => {
+        // 如果明确传递了 system_prompt 字段（即使是空字符串）
+        if ('system_prompt' in requestBody) {
+          // 如果传递的是非空值，使用它
+          if (requestBody.system_prompt && requestBody.system_prompt.trim()) {
+            console.log('[callAIModel] Using provided system_prompt from request');
+            return requestBody.system_prompt;
+          }
+          // 如果传递的是空字符串或 null，不使用 system prompt
+          console.log('[callAIModel] Empty system_prompt provided, will not use any system prompt');
+          return '';
+        }
 
+        // 如果未传递字段（向后兼容旧代码），使用默认值
+        console.log('[callAIModel] No system_prompt field in request, using DEFAULT_SYSTEM_PROMPT');
+        return DEFAULT_SYSTEM_PROMPT;
+      })();
+
+      // 添加调试日志
+      console.log('[callAIModel] - System prompt decision:', {
+        fieldProvided: 'system_prompt' in requestBody,
+        valueIsEmpty: !system_prompt || system_prompt.trim().length === 0,
+        usingDefault: finalSystemPrompt === DEFAULT_SYSTEM_PROMPT,
+        usingEmpty: finalSystemPrompt === '',
+        usingCustom: finalSystemPrompt && finalSystemPrompt !== DEFAULT_SYSTEM_PROMPT,
+        promptLength: finalSystemPrompt.length
+      });
       console.log('[callAIModel] - finalSystemPrompt length:', finalSystemPrompt.length, 'chars, ~', Math.ceil(finalSystemPrompt.length / 4), 'tokens');
-      console.log('[callAIModel] - using_default_prompt:', !system_prompt);
+      if (finalSystemPrompt.length > 0) {
+        console.log('[callAIModel] - finalSystemPrompt preview:', finalSystemPrompt.substring(0, 150) + '...');
+      } else {
+        console.log('[callAIModel] - finalSystemPrompt: (empty - no system prompt will be used)');
+      }
       console.log('[callAIModel] ==============================');
 
     // Token 估算函数 (字符数 / 4)
@@ -563,20 +592,29 @@ Deno.serve(async (req) => {
         }
       }
 
-      console.log('[callAIModel] ========== ANTHROPIC API REQUEST (Official) ==========');
-      console.log('[callAIModel] Model ID:', model.model_id);
-      console.log('[callAIModel] System prompt included:', !!finalSystemPrompt);
-      console.log('[callAIModel] System prompt caching enabled:', shouldCacheSystem);
-      console.log('[callAIModel] System prompt tokens:', systemTokens);
-      console.log('[callAIModel] ===== DEBUG: COMPLETE API REQUEST =====');
-      console.log('[callAIModel] System:', JSON.stringify(requestBody.system, null, 2));
-      console.log('[callAIModel] Messages count:', anthropicMessages.length);
-      console.log('[callAIModel] Messages preview:');
+      console.log('[callAIModel] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('[callAIModel] ANTHROPIC API REQUEST (Official)');
+      console.log('[callAIModel] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('[callAIModel] Model:', model.model_id);
+      console.log('[callAIModel] System Prompt:');
+      console.log('[callAIModel]   • Included:', !!finalSystemPrompt);
+      console.log('[callAIModel]   • Caching enabled:', shouldCacheSystem);
+      console.log('[callAIModel]   • Tokens:', systemTokens);
+      console.log('[callAIModel]   • Length:', finalSystemPrompt.length, 'chars');
+      if (finalSystemPrompt.length > 0) {
+        console.log('[callAIModel]   • Preview:', finalSystemPrompt.substring(0, 150) + '...');
+      } else {
+        console.log('[callAIModel]   • Preview: (empty)');
+      }
+      console.log('[callAIModel] Request Body System Field:');
+      console.log('[callAIModel]', JSON.stringify(requestBody.system, null, 2));
+      console.log('[callAIModel] Messages:');
+      console.log('[callAIModel]   • Count:', anthropicMessages.length);
       anthropicMessages.forEach((m, i) => {
         const preview = typeof m.content === 'string' ? m.content.slice(0, 100) : JSON.stringify(m.content).slice(0, 100);
         console.log(`[callAIModel]   [${i}] ${m.role}: ${preview}...`);
       });
-      console.log('[callAIModel] ========================================');
+      console.log('[callAIModel] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       const res = await fetch(endpoint, {
         method: 'POST',
