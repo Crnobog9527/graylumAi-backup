@@ -101,7 +101,10 @@ const executeSearch = async (query, searchType) => {
 
 Deno.serve(async (req) => {
   const startTime = Date.now();
+  console.log('[smartChatWithSearch] ========================================');
+  console.log('[smartChatWithSearch] VERSION: 2026-01-08-DEBUG-v2');
   console.log('[smartChatWithSearch] Request started');
+  console.log('[smartChatWithSearch] ========================================');
   
   try {
     const base44 = createClientFromRequest(req);
