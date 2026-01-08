@@ -722,7 +722,8 @@ ${summaryToUse.summary_text}
         title: message.slice(0, 50),
         model_id: selectedModel.id,
         messages: newMessages,
-        total_credits_used: actualDeducted
+        total_credits_used: actualDeducted,
+        is_archived: false  // 确保新对话显示在列表中
       };
 
       // 如果是创作类任务，记录 session_task_type
