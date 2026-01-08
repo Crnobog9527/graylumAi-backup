@@ -22,19 +22,30 @@ Deno.serve(async (req) => {
           return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
-      const { model_id, messages, system_prompt, force_web_search, image_files } = await req.json();
+      const requestBody = await req.json();
+      const { model_id, messages, system_prompt, force_web_search, image_files } = requestBody;
+
+      // CRITICAL DEBUG: 检查 system_prompt 的传递状态
+      const systemPromptProvided = 'system_prompt' in requestBody;
+      const systemPromptValue = requestBody.system_prompt;
+
+      console.log('[callAIModel] ===== RECEIVED REQUEST =====');
+      console.log('[callAIModel] - model_id:', model_id);
+      console.log('[callAIModel] - messages count:', messages?.length);
+      console.log('[callAIModel] - system_prompt PROVIDED in request:', systemPromptProvided);
+      console.log('[callAIModel] - system_prompt VALUE:',
+        systemPromptValue === undefined ? 'undefined' :
+        systemPromptValue === null ? 'null' :
+        systemPromptValue === '' ? 'empty string' :
+        `"${systemPromptValue.slice(0, 100)}..."`);
 
       // 使用传入的 system_prompt，如果为空则使用默认提示词
       // CRITICAL: 只在首轮对话时使用 system_prompt（由 smartChatWithSearch 控制）
       const finalSystemPrompt = system_prompt || DEFAULT_SYSTEM_PROMPT;
 
-      console.log('[callAIModel] ===== RECEIVED REQUEST =====');
-    console.log('[callAIModel] - model_id:', model_id);
-    console.log('[callAIModel] - messages count:', messages?.length);
-    console.log('[callAIModel] - system_prompt (from caller):', system_prompt ? `"${system_prompt.slice(0, 100)}..."` : 'null (will use DEFAULT)');
-    console.log('[callAIModel] - finalSystemPrompt length:', finalSystemPrompt.length, 'chars, ~', Math.ceil(finalSystemPrompt.length / 4), 'tokens');
-    console.log('[callAIModel] - using_default_prompt:', !system_prompt);
-    console.log('[callAIModel] ==============================');
+      console.log('[callAIModel] - finalSystemPrompt length:', finalSystemPrompt.length, 'chars, ~', Math.ceil(finalSystemPrompt.length / 4), 'tokens');
+      console.log('[callAIModel] - using_default_prompt:', !system_prompt);
+      console.log('[callAIModel] ==============================');
 
     // Token 估算函数 (字符数 / 4)
     const estimateTokens = (text) => Math.ceil((text || '').length / 4);
@@ -364,6 +375,13 @@ Deno.serve(async (req) => {
       console.log('[callAIModel] Endpoint:', endpoint);
       console.log('[callAIModel] IsOpenRouter:', isOpenRouter);
       console.log('[callAIModel] Force web search:', force_web_search);
+      console.log('[callAIModel] ===== DEBUG: COMPLETE API REQUEST =====');
+      console.log('[callAIModel] Messages count:', requestBody.messages.length);
+      requestBody.messages.forEach((m, i) => {
+        const preview = typeof m.content === 'string' ? m.content.slice(0, 100) : JSON.stringify(m.content).slice(0, 100);
+        console.log(`[callAIModel]   [${i}] ${m.role}: ${preview}...`);
+      });
+      console.log('[callAIModel] ========================================');
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -442,6 +460,14 @@ Deno.serve(async (req) => {
         console.log('[callAIModel] ========== ANTHROPIC API REQUEST (OpenRouter) ==========');
         console.log('[callAIModel] Cache Enabled:', cacheEnabled);
         console.log('[callAIModel] Force web search:', force_web_search);
+        console.log('[callAIModel] ===== DEBUG: COMPLETE API REQUEST =====');
+        console.log('[callAIModel] Messages (with cache control):');
+        cachedMessages.forEach((m, i) => {
+          const hasCache = m.content?.some?.(c => c.cache_control);
+          const preview = typeof m.content === 'string' ? m.content.slice(0, 100) : JSON.stringify(m.content).slice(0, 100);
+          console.log(`[callAIModel]   [${i}] ${m.role} ${hasCache ? '[CACHED]' : ''}: ${preview}...`);
+        });
+        console.log('[callAIModel] ========================================');
 
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -542,6 +568,15 @@ Deno.serve(async (req) => {
       console.log('[callAIModel] System prompt included:', !!finalSystemPrompt);
       console.log('[callAIModel] System prompt caching enabled:', shouldCacheSystem);
       console.log('[callAIModel] System prompt tokens:', systemTokens);
+      console.log('[callAIModel] ===== DEBUG: COMPLETE API REQUEST =====');
+      console.log('[callAIModel] System:', JSON.stringify(requestBody.system, null, 2));
+      console.log('[callAIModel] Messages count:', anthropicMessages.length);
+      console.log('[callAIModel] Messages preview:');
+      anthropicMessages.forEach((m, i) => {
+        const preview = typeof m.content === 'string' ? m.content.slice(0, 100) : JSON.stringify(m.content).slice(0, 100);
+        console.log(`[callAIModel]   [${i}] ${m.role}: ${preview}...`);
+      });
+      console.log('[callAIModel] ========================================');
 
       const res = await fetch(endpoint, {
         method: 'POST',
