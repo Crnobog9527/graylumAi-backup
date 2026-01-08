@@ -313,6 +313,9 @@ export function useChatState() {
         system_prompt: systemPrompt
       });
 
+      if (!response || !response.data) {
+        throw new Error('No response from server');
+      }
       if (response.data?.error) {
         throw new Error(response.data.error);
       }
