@@ -1,5 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
+// ========== 对话历史管理配置 ==========
+// 原则：在保持上下文记忆的同时降低 token 消耗
+const FULL_HISTORY_LIMIT = 10;          // 10 轮内保持完整历史（20 条消息）
+const RECENT_MESSAGES_COUNT = 6;        // 超过 10 轮后，保留最近 6 条完整消息（3 轮）
+const COMPRESSION_CHECK_INTERVAL = 10;  // 每 10 条消息检查一次是否需要压缩
+const COMPRESSION_TRIGGER_MESSAGES = 20; // >= 20 条消息时触发压缩（10 轮）
+
+// 其他配置
 const CACHE_TTL_MINUTES = 15;
 const SIMILARITY_THRESHOLD = 0.85;
 const WEB_SEARCH_COST = 0.005;
@@ -284,44 +292,84 @@ Deno.serve(async (req) => {
     let beforeCompressionTokens = 0;
     let afterCompressionTokens = 0;
 
-    // 【优化】提高使用摘要的门槛，从8条改为12条，确保更多上下文被保留
-    if (summaryToUse && conversationMessages.length > 12) {
+    // 【优化】使用摘要的门槛：超过完整历史限制时
+    if (summaryToUse && conversationMessages.length > FULL_HISTORY_LIMIT * 2) {
       // 有摘要且消息较多时，使用摘要 + 最近消息
       const coveredCount = summaryToUse.covered_messages * 2; // 转换为消息数（一问一答=2条）
-      const recentMessages = conversationMessages.slice(coveredCount);
+
+      // 保留最近的消息（基于 RECENT_MESSAGES_COUNT）
+      const recentMessages = conversationMessages.slice(-RECENT_MESSAGES_COUNT);
 
       // 计算压缩前的 token 数（完整历史）
       beforeCompressionTokens = conversationMessages
         .slice(0, coveredCount)
         .reduce((sum, m) => sum + estimateTokens((m.content || m.text) || ''), 0);
 
-      // 【优化】增强摘要的上下文提示，明确告诉AI这是历史摘要
-      const summaryMessage = `[重要：以下是之前对话的摘要，请基于这些信息继续对话]
-
-【对话历史摘要 - 前${summaryToUse.covered_messages}轮】
+      // 【优化】将摘要信息自然地融入到最近消息之前
+      // 不使用虚假的 assistant 消息，而是在第一条最近消息中附加上下文
+      const summaryContext = `【对话历史摘要 - 前${summaryToUse.covered_messages}轮】
 ${summaryToUse.summary_text}
 
-[摘要结束，以下是最近的对话]`;
-      
-      apiMessages.push({
-        role: 'user',
-        content: summaryMessage
-      });
-      
-      // 添加一个AI确认消息，帮助建立上下文
-      apiMessages.push({
-        role: 'assistant',
-        content: '我已经理解了之前的对话背景和您的要求，请继续。'
-      });
+---
+[以下是最近的对话]
+`;
 
       // 计算压缩后的 token 数（摘要）
-      afterCompressionTokens = estimateTokens(summaryMessage);
+      afterCompressionTokens = estimateTokens(summaryContext);
 
-      // 添加最近的消息
-      apiMessages.push(...recentMessages.map(m => ({
-        role: m.role,
-        content: (m.content || m.text) || ''
-      })));
+      // 添加最近的消息，启用简化的位置缓存策略
+      if (recentMessages.length > 0) {
+        // 第一条消息：附加摘要上下文 + 如果摘要 >= 1024 tokens 则启用缓存
+        const firstMessage = recentMessages[0];
+        const firstContent = summaryContext + '\n' + ((firstMessage.content || firstMessage.text) || '');
+        const shouldCacheSummary = estimateTokens(summaryContext) >= 1024;
+
+        if (shouldCacheSummary) {
+          apiMessages.push({
+            role: firstMessage.role,
+            content: [
+              {
+                type: 'text',
+                text: firstContent,
+                cache_control: { type: 'ephemeral' }
+              }
+            ]
+          });
+        } else {
+          apiMessages.push({
+            role: firstMessage.role,
+            content: firstContent
+          });
+        }
+
+        // 其余消息：使用位置缓存策略（倒数第4条消息）
+        const remainingMessages = recentMessages.slice(1);
+        const cachePoint = remainingMessages.length - 3; // 倒数第4条消息（从0开始计数）
+
+        remainingMessages.forEach((m, idx) => {
+          const content = (m.content || m.text) || '';
+
+          // 倒数第4条消息：添加缓存标记（稳定边界）
+          if (idx === cachePoint && cachePoint >= 0) {
+            apiMessages.push({
+              role: m.role,
+              content: [
+                {
+                  type: 'text',
+                  text: content,
+                  cache_control: { type: 'ephemeral' }
+                }
+              ]
+            });
+          } else {
+            // 其他消息：不缓存
+            apiMessages.push({
+              role: m.role,
+              content: content
+            });
+          }
+        });
+      }
 
       contextType = '摘要+最近消息';
       compressionInfo = {
@@ -331,8 +379,11 @@ ${summaryToUse.summary_text}
         compression_ratio: ((1 - afterCompressionTokens / beforeCompressionTokens) * 100).toFixed(1)
       };
 
+      console.log('[smartChatWithSearch] ===== SUMMARY MODE =====');
       console.log('[smartChatWithSearch] Using summary + recent messages:', recentMessages.length);
+      console.log('[smartChatWithSearch] Summary attached to first message, NO fake assistant message');
       console.log('[smartChatWithSearch] Compression:', beforeCompressionTokens, '→', afterCompressionTokens, 'tokens (saved:', compressionInfo.saved_tokens, ')');
+      console.log('[smartChatWithSearch] ===========================');
     } else {
       // 没有摘要或消息较少，使用完整历史
       apiMessages = conversationMessages.map(m => ({
@@ -415,13 +466,37 @@ ${summaryToUse.summary_text}
     
     const modelData = modelRes.data;
     console.log('[smartChatWithSearch] AI response received, web_search_used:', modelData.web_search_enabled);
-    
-    // ========== 新的双轨制结算逻辑 ==========
+
+    // ========== API 性能和成本汇总 ==========
     const inputTokens = modelData.input_tokens || 0;
     const outputTokens = modelData.output_tokens || 0;
     const inputCredits = modelData.input_credits || 0;
     const outputCredits = modelData.output_credits || 0;
     const webSearchUsed = modelData.web_search_enabled || false;
+    const cachedTokens = modelData.cached_tokens || 0;
+    const cacheHitRate = modelData.cache_hit_rate || '0%';
+    const creditsSaved = modelData.credits_saved_by_cache || 0;
+
+    // 打印详细的成本汇总
+    console.log('┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓');
+    console.log('┃  💰 Smart Chat - Cost Summary                   ┃');
+    console.log('┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫');
+    console.log(`┃  📊 Token Usage:`);
+    console.log(`┃    • Input:  ${inputTokens.toLocaleString().padEnd(10)} tokens`);
+    console.log(`┃    • Output: ${outputTokens.toLocaleString().padEnd(10)} tokens`);
+    if (cachedTokens > 0) {
+      console.log(`┃  🔄 Cache Performance:`);
+      console.log(`┃    • Hit:     ${cachedTokens.toLocaleString().padEnd(10)} tokens (${cacheHitRate})`);
+      console.log(`┃    • Saved:   ${creditsSaved.toFixed(4).padEnd(10)} credits`);
+    }
+    console.log(`┃  💳 Credits Consumed:`);
+    console.log(`┃    • Input:  ${inputCredits.toFixed(4).padEnd(10)} credits`);
+    console.log(`┃    • Output: ${outputCredits.toFixed(4).padEnd(10)} credits`);
+    if (webSearchUsed) {
+      console.log(`┃    • Search: ${(0.005).toFixed(4).padEnd(10)} credits`);
+    }
+    console.log(`┃    • Total:  ${(inputCredits + outputCredits + (webSearchUsed ? 0.005 : 0)).toFixed(4).padEnd(10)} credits`);
+    console.log('┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛');
     
     // Token消耗（精确小数）
     const tokenCredits = inputCredits + outputCredits;
@@ -576,16 +651,16 @@ ${summaryToUse.summary_text}
     }
     
     // 步骤6：检查是否需要触发压缩
-    // 【优化】提高压缩触发门槛，从16条改为24条，保留更多原始上下文
+    // 使用配置的压缩触发阈值和检查间隔
     const messageCount = conversationMessages.length + 2; // +2 = 当前一问一答
-    if (messageCount >= 24 && messageCount % 12 === 0) { // 每12条消息（6轮）检查一次
+    if (messageCount >= COMPRESSION_TRIGGER_MESSAGES && messageCount % COMPRESSION_CHECK_INTERVAL === 0) {
       console.log('[smartChatWithSearch] Triggering compression check for', messageCount / 2, 'rounds');
       try {
         // 异步触发压缩，不等待结果
-        // 【优化】保留最近6轮（12条消息）而不是4轮
+        // 保留最近的消息（基于 RECENT_MESSAGES_COUNT）
         base44.functions.invoke('compressConversation', {
           conversation_id: finalConversationId,
-          messages_to_compress: messageCount - 12 // 保留最近6轮
+          messages_to_compress: messageCount - RECENT_MESSAGES_COUNT
         }).catch(err => console.log('[smartChatWithSearch] Compression failed:', err.message));
       } catch (e) {
         console.log('[smartChatWithSearch] Compression trigger skipped:', e.message);
