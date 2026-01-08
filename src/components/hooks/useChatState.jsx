@@ -363,13 +363,13 @@ export function useChatState() {
         setDebugInfo(prev => [...prev, {
           timestamp: new Date().toISOString(),
           message: trimmedMessage.slice(0, 50),
-          model: response.data.model_used,
-          inputTokens: response.data.input_tokens,
-          outputTokens: response.data.output_tokens,
-          creditsUsed: response.data.credits_used,
-          taskClassification: response.data.task_classification,
-          compressionUsed: response.data.compression_used,
-          contextType: response.data.context_type
+          model: responseData.model_used,
+          inputTokens: responseData.input_tokens,
+          outputTokens: responseData.output_tokens,
+          creditsUsed: responseData.credits_used,
+          taskClassification: responseData.task_classification,
+          compressionUsed: responseData.compression_used,
+          contextType: responseData.context_type
         }]);
       }
 
