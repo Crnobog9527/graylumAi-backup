@@ -128,12 +128,17 @@ export function useChatState() {
   const { data: conversations = [], refetch: refetchConversations } = useQuery({
     queryKey: ['conversations'],
     queryFn: async () => {
+      console.log('[useChatState] Fetching conversations...');
       // 获取所有对话，然后在前端过滤掉已归档的
       const convs = await base44.entities.Conversation.list('-updated_date', 100);
+      console.log('[useChatState] Fetched conversations:', convs.length);
       // 过滤：is_archived 不为 true 的对话（包括 false、undefined、null）
-      return convs.filter(c => c.is_archived !== true);
+      const filtered = convs.filter(c => c.is_archived !== true);
+      console.log('[useChatState] After filter:', filtered.length);
+      return filtered;
     },
-    staleTime: 10000  // 缩短缓存时间以更快刷新
+    staleTime: 5000,  // 缩短缓存时间以更快刷新
+    refetchOnWindowFocus: true
   });
 
   // 获取模型列表
