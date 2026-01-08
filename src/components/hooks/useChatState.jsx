@@ -313,11 +313,17 @@ export function useChatState() {
         system_prompt: systemPrompt
       });
 
-      if (!response || !response.data) {
-        throw new Error('No response from server');
+      // 安全检查响应
+      if (!response) {
+        throw new Error('服务器无响应');
       }
-      if (response.data?.error) {
-        throw new Error(response.data.error);
+      
+      const responseData = response.data;
+      if (!responseData) {
+        throw new Error('服务器返回空数据');
+      }
+      if (responseData.error) {
+        throw new Error(responseData.error);
       }
 
       // 添加 AI 响应
