@@ -295,33 +295,33 @@ Deno.serve(async (req) => {
         .slice(0, coveredCount)
         .reduce((sum, m) => sum + estimateTokens((m.content || m.text) || ''), 0);
 
-      // 【优化】增强摘要的上下文提示，明确告诉AI这是历史摘要
-      const summaryMessage = `[重要：以下是之前对话的摘要，请基于这些信息继续对话]
-
-【对话历史摘要 - 前${summaryToUse.covered_messages}轮】
+      // 【优化】将摘要信息自然地融入到最近消息之前
+      // 不使用虚假的 assistant 消息，而是在第一条最近消息中附加上下文
+      const summaryContext = `【对话历史摘要 - 前${summaryToUse.covered_messages}轮】
 ${summaryToUse.summary_text}
 
-[摘要结束，以下是最近的对话]`;
-      
-      apiMessages.push({
-        role: 'user',
-        content: summaryMessage
-      });
-      
-      // 添加一个AI确认消息，帮助建立上下文
-      apiMessages.push({
-        role: 'assistant',
-        content: '我已经理解了之前的对话背景和您的要求，请继续。'
-      });
+---
+[以下是最近的对话]
+`;
 
       // 计算压缩后的 token 数（摘要）
-      afterCompressionTokens = estimateTokens(summaryMessage);
+      afterCompressionTokens = estimateTokens(summaryContext);
 
-      // 添加最近的消息
-      apiMessages.push(...recentMessages.map(m => ({
-        role: m.role,
-        content: (m.content || m.text) || ''
-      })));
+      // 添加最近的消息，将摘要上下文附加到第一条消息前
+      if (recentMessages.length > 0) {
+        // 第一条消息：附加摘要上下文
+        const firstMessage = recentMessages[0];
+        apiMessages.push({
+          role: firstMessage.role,
+          content: summaryContext + '\n' + ((firstMessage.content || firstMessage.text) || '')
+        });
+
+        // 其余消息：正常添加
+        apiMessages.push(...recentMessages.slice(1).map(m => ({
+          role: m.role,
+          content: (m.content || m.text) || ''
+        })));
+      }
 
       contextType = '摘要+最近消息';
       compressionInfo = {
@@ -331,8 +331,11 @@ ${summaryToUse.summary_text}
         compression_ratio: ((1 - afterCompressionTokens / beforeCompressionTokens) * 100).toFixed(1)
       };
 
+      console.log('[smartChatWithSearch] ===== SUMMARY MODE =====');
       console.log('[smartChatWithSearch] Using summary + recent messages:', recentMessages.length);
+      console.log('[smartChatWithSearch] Summary attached to first message, NO fake assistant message');
       console.log('[smartChatWithSearch] Compression:', beforeCompressionTokens, '→', afterCompressionTokens, 'tokens (saved:', compressionInfo.saved_tokens, ')');
+      console.log('[smartChatWithSearch] ===========================');
     } else {
       // 没有摘要或消息较少，使用完整历史
       apiMessages = conversationMessages.map(m => ({
