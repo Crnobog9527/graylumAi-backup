@@ -591,10 +591,10 @@ export function useChatState() {
                         is_archived: false
                       };
                       setCurrentConversation(newConv);
-                      // 延迟一点再刷新，确保后端数据已保存
+                      // 延迟后强制刷新对话列表
                       setTimeout(() => {
-                        queryClient.refetchQueries({ queryKey: ['conversations'] });
-                      }, 500);
+                        refetchConversations();
+                      }, 800);
                     }
                   }
                 }).catch(error => {
