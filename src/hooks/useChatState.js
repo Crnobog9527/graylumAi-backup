@@ -83,16 +83,12 @@ export function useChatState() {
   const { data: conversations = [] } = useQuery({
     queryKey: ['conversations', user?.email],
     queryFn: async () => {
-      // 【重构】使用 owner_email 查询对话列表
-      // 不再依赖系统 created_by 字段，避免 RLS 和客户端不一致问题
-      console.log('[conversations] 查询参数 owner_email:', user?.email);
-
+      // 使用系统 created_by 字段查询对话列表
       const result = await base44.entities.Conversation.filter(
-        { owner_email: user?.email, is_archived: false },
+        { created_by: user?.email, is_archived: false },
         '-updated_date'
       );
-
-      console.log('[conversations] 查询返回数量:', result?.length || 0);
+      console.log('[conversations] 数量:', result?.length || 0);
       return result;
     },
     enabled: !!user?.email,
@@ -568,7 +564,6 @@ export function useChatState() {
           currentConversationRef.current = updatedConv;
           setCurrentConversation(updatedConv);
         } else {
-          console.log('[conversations] 创建新对话前端状态');
           // 新对话 - 使用后端返回的 ID 创建前端状态
           const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
           const newConv = {
@@ -578,12 +573,11 @@ export function useChatState() {
             prompt_module_id: selectedModule?.id,
             messages: updatedMessages,
             total_credits_used: creditsUsed,
-            owner_email: user?.email,  // 【重构】使用 owner_email 替代 created_by
+            created_by: user?.email,
             is_archived: false,
             created_date: new Date().toISOString(),
             updated_date: new Date().toISOString(),
           };
-          console.log('[conversations] 新对话数据:', JSON.stringify({ id: newConv.id, title: newConv.title, owner_email: newConv.owner_email }));
           // 【修复 Bug 2】同步更新 ref
           currentConversationRef.current = newConv;
           setCurrentConversation(newConv);

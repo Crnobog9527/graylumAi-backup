@@ -717,26 +717,23 @@ ${summaryToUse.summary_text}
         model_id: selectedModel.id,
         messages: newMessages,
         total_credits_used: actualDeducted,
-        is_archived: false,
-        owner_email: user.email  // 自定义字段，用于前端查询
+        is_archived: false
       };
 
-      // 【重要修复】保存系统提示词到对话记录，后续轮次可以读取
+      // 保存系统提示词
       if (hasNewSystemPrompt && system_prompt) {
         createData.system_prompt = system_prompt;
-        console.log('[smartChatWithSearch] Saving system_prompt to conversation, length:', system_prompt.length);
       }
 
       // 如果是创作类任务，记录 session_task_type
       if (shouldUpdateSessionTaskType && taskClassification) {
         createData.session_task_type = taskClassification.task_type;
-        console.log('[smartChatWithSearch] Setting initial session_task_type to:', taskClassification.task_type);
       }
 
-      // 使用 asServiceRole 创建（绕过 RLS）
-      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
+      // 使用 entities 创建，让系统自动设置 created_by
+      const newConv = await base44.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
-      console.log('[smartChatWithSearch] ✓ Created, id:', newConv.id);
+      console.log('[smartChatWithSearch] Created, id:', newConv.id);
     }
     
     // 步骤5：更新Token预算（使用最新的用户余额）
