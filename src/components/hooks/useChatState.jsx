@@ -180,6 +180,18 @@ export function useChatState() {
     setInputMessage('');
     setUploadedFiles([]);
     setFileContents([]);
+
+    // 【修复 Bug 1】清除 URL 中的 module_id 参数，防止系统提示词跨对话串联
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('module_id')) {
+      urlParams.delete('module_id');
+      urlParams.delete('auto_start');
+      const newUrl = urlParams.toString()
+        ? `${window.location.pathname}?${urlParams.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      console.log('[handleStartNewChat] 已清除 URL 中的 module_id 参数');
+    }
   }, []);
 
   // 选择对话
