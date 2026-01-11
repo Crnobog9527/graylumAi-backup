@@ -393,6 +393,42 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 </div>
 ```
 
+### 设计系统速查
+
+> 设计风格: 深色主题 (#0A0A0A) + 金色点缀 (#FFD700)
+
+**核心颜色变量**：
+```css
+--color-primary: #FFD700;    /* 金色主色 */
+--color-secondary: #FFA500;  /* 橙金辅助 */
+--bg-primary: #0A0A0A;       /* 深黑背景 */
+--bg-secondary: #1A1A1A;     /* 卡片背景 */
+```
+
+**常用组件类**：
+```css
+/* 按钮 */
+.btn .btn-primary .btn-secondary .btn-outline
+
+/* 卡片 */
+.card .card-header .card-body .card-footer
+
+/* 表单 */
+.form-input .form-label .form-group
+
+/* 布局 */
+.container .flex .grid .grid-cols-3
+
+/* 文字 */
+.heading-1 .text-gradient .text-muted
+```
+
+**设计系统文件**：
+| 文件 | 说明 | 行数 |
+|------|------|------|
+| `src/theme.css` | 设计系统变量 - 颜色/字体/间距/圆角/阴影/动画 | 376 |
+| `src/components.css` | 组件样式库 - 按钮/卡片/表单/布局/文字/徽章等 | 1224 |
+
 ---
 
 ## 错误处理标准

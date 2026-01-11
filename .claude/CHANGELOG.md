@@ -5,6 +5,50 @@
 
 ---
 
+## 2026-01-11 (知识库文档整合) 🗂️
+
+### 📊 整合统计
+
+| 操作 | 文件数 |
+|------|--------|
+| 原有文件 | 23个 |
+| 整合后核心文件 | 8个 |
+| 归档历史文档 | 15个 |
+| **减少率** | **65%** |
+
+### 📁 文件结构变更
+
+**合并后核心知识库** (8个文件):
+```
+.claude/
+├── README.md               # 快速参考
+├── PROJECT_CONTEXT.md      # 项目上下文
+├── ARCHITECTURE.md         # 系统架构
+├── CODING_STANDARDS.md     # 编码规范 + 设计系统
+├── CHANGELOG.md            # 变更日志
+├── TROUBLESHOOTING.md      # 故障排查 + 解决方案
+├── MAINTENANCE_WORKFLOW.md # 维护流程
+└── HEALTH_REPORT.md        # 健康报告 + 修复路线图
+```
+
+### 🔄 合并详情
+
+| 操作类型 | 文件 | 说明 |
+|----------|------|------|
+| 归档 | `DIAGNOSIS_REPORT.md` | P0 Bug 已解决 |
+| 归档 | `FIX_ROADMAP.md` | P0 已完成 |
+| 归档 | `docs/*` (4个) | 历史诊断文档 |
+| 合并 | `DESIGN_SYSTEM_PROGRESS.md` | → CODING_STANDARDS |
+| 归档 | 根目录文档 (7个) | 历史参考 |
+| 删除 | `docs/` 目录 | 空目录已删除 |
+
+### ✅ 更新的文档
+
+- **README.md**: 更新文档导航表，删除 FIX_ROADMAP 引用
+- **CODING_STANDARDS.md**: 添加设计系统速查章节
+
+---
+
 ## 2026-01-11 (知识库系统性更新) 📚
 
 ### 📊 代码扫描结果
