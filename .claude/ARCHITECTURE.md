@@ -1,7 +1,16 @@
 # ARCHITECTURE.md
 
+<!--
+  最后更新: 2026-01-11
+  对应代码文件:
+    - functions/smartChatWithSearch.ts
+    - functions/callAIModel.ts
+    - functions/compressConversation.ts
+    - src/components/hooks/useChatState.jsx
+  维护说明: 当上述文件结构或核心逻辑变更时，需同步更新本文档
+-->
+
 > Grayscale 项目系统架构文档
-> 最后更新：2026-01-11
 
 ---
 

@@ -1,7 +1,15 @@
 # CODING_STANDARDS.md
 
+<!--
+  最后更新: 2026-01-11
+  对应代码文件:
+    - src/theme.css (设计系统变量)
+    - src/components.css (组件样式库)
+    - src/components/ui/* (shadcn/ui 组件)
+  维护说明: 当设计系统或编码规范变更时，需同步更新本文档
+-->
+
 > Grayscale 项目编码规范文档
-> 最后更新：2026-01-11
 
 ---
 

@@ -1,7 +1,16 @@
 # 故障排查手册
 
+<!--
+  最后更新: 2026-01-11
+  对应代码文件:
+    - src/components/hooks/useChatState.jsx (前端状态问题)
+    - functions/smartChatWithSearch.ts (后端聊天问题)
+    - functions/callAIModel.ts (AI 调用问题)
+  维护说明: 每次修复 Bug 后，需在此记录问题和解决方案
+  包含内容: 故障排查 + 已解决问题的详细方案 (原 DIAGNOSIS_REPORT.md 已合并)
+-->
+
 > Grayscale 项目常见问题诊断与解决方案
-> 最后更新：2026-01-11
 
 ---
 

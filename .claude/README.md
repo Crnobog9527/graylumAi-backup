@@ -2,7 +2,67 @@
 
 > **Claude Code 快速参考指南**
 > 每次新对话开始时，请首先阅读此文件
-> 最后更新：2026-01-11
+
+---
+
+## 📊 知识库状态
+
+| 状态项 | 值 |
+|--------|-----|
+| **最后全面更新** | 2026-01-11 |
+| **最后同步 Commit** | `40c171e` |
+| **知识库版本** | 2.0 |
+| **核心文件数** | 8个 |
+
+### 待更新项
+
+<!-- 当代码变更时，在此记录需要同步的文档 -->
+| 状态 | 待更新项 | 原因 |
+|------|----------|------|
+| ✅ | 无待更新项 | 文档与代码已同步 |
+
+### 关键代码文件监控列表
+
+> **重要**: 以下文件变更时需同步更新知识库
+
+```
+# 核心业务文件 (变更时更新 ARCHITECTURE.md, TROUBLESHOOTING.md)
+src/components/hooks/useChatState.jsx
+functions/smartChatWithSearch.ts
+functions/callAIModel.ts
+functions/compressConversation.ts
+
+# 配置文件 (变更时更新 PROJECT_CONTEXT.md)
+package.json
+vite.config.js
+tailwind.config.js
+
+# 设计系统 (变更时更新 CODING_STANDARDS.md)
+src/theme.css
+src/components.css
+```
+
+---
+
+## 🔧 知识库维护清单
+
+### 每次代码修改后
+
+- [ ] 检查是否涉及"关键代码文件监控列表"中的文件
+- [ ] 更新 CHANGELOG.md 记录变更
+- [ ] 如有 Bug 修复，更新 TROUBLESHOOTING.md
+
+### 每周审查
+
+- [ ] 运行 `./update-docs.sh` 检查代码变更
+- [ ] 核对"待更新项"是否已清空
+- [ ] 检查 HEALTH_REPORT.md 问题状态
+
+### 每月审查
+
+- [ ] 验证核心文件行数是否与文档一致
+- [ ] 检查 P1/P2 问题进度
+- [ ] 更新项目健康度评分
 
 ---
 
