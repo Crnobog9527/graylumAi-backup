@@ -677,7 +677,7 @@ ${summaryToUse.summary_text}
 
     // 步骤7：直接记录性能监控数据到 TokenStats（避免额外函数调用）
     try {
-      await base44.asServiceRole.entities.TokenStats.create({
+      const tokenStatsData = {
         conversation_id: finalConversationId || 'unknown',
         user_email: user.email,
         model_used: selectedModel.name || 'unknown',
@@ -691,10 +691,12 @@ ${summaryToUse.summary_text}
         is_timeout: responseTimeMs >= 30000,
         is_slow: responseTimeMs >= 10000,
         is_error: false
-      });
-      log.debug('Performance recorded to TokenStats');
+      };
+      log.info('Creating TokenStats record:', JSON.stringify(tokenStatsData));
+      const tokenStatsResult = await base44.asServiceRole.entities.TokenStats.create(tokenStatsData);
+      log.info('TokenStats created:', tokenStatsResult?.id || 'no id returned');
     } catch (e) {
-      log.warn('TokenStats record error:', e.message);
+      log.error('TokenStats record error:', e.message, e.stack);
     }
 
     return Response.json({
