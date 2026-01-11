@@ -251,17 +251,19 @@ export function useChatState() {
         handleStartNewChat(module);
         window.history.replaceState({}, '', createPageUrl('Chat'));
 
-        // 【修复 Bug 3】设置待自动发送的消息，由下一个 useEffect 处理
+        // 【简化修复 Bug 3】直接设置消息并触发发送，使用延迟确保状态更新完成
         if (autoStart && module.user_prompt_template && module.user_prompt_template.trim()) {
-          console.log('[DEBUG-BUG3] ✓ 设置 pendingAutoSendRef');
-          pendingAutoSendRef.current = {
-            message: module.user_prompt_template,
-            systemPrompt: module.system_prompt || '',
-            moduleId: module.id,
-          };
-          console.log('[DEBUG-BUG3] pendingAutoSendRef.current:', JSON.stringify({ message: pendingAutoSendRef.current.message.slice(0, 50), moduleId: pendingAutoSendRef.current.moduleId }));
+          console.log('[DEBUG-BUG3] ✓ 准备自动发送消息');
+          const messageToSend = module.user_prompt_template;
+
+          // 使用 setTimeout 确保所有状态更新完成后再发送
+          setTimeout(() => {
+            console.log('[DEBUG-BUG3] setTimeout 执行，设置 inputMessage 并准备发送');
+            setInputMessage(messageToSend);
+            setAutoSendPending(true);
+          }, 100);
         } else {
-          console.log('[DEBUG-BUG3] ✗ 未设置 pendingAutoSendRef');
+          console.log('[DEBUG-BUG3] ✗ 未设置自动发送');
           console.log('[DEBUG-BUG3]   autoStart:', autoStart);
           console.log('[DEBUG-BUG3]   user_prompt_template 存在:', !!module.user_prompt_template);
         }
@@ -270,48 +272,12 @@ export function useChatState() {
       console.log('[DEBUG-BUG3] ✗ 条件不满足，跳过处理');
     }
     console.log('[DEBUG-BUG3] ====================================================');
-  }, [location.search, promptModules, models, user]);
+  }, [location.search, promptModules, models, user, handleStartNewChat]);
 
   // 【修复 Bug 3】自动发送状态
   const [autoSendPending, setAutoSendPending] = useState(false);
 
-  // 【修复 Bug 3】处理待自动发送的消息 - 第一步：设置输入消息
-  useEffect(() => {
-    // 【诊断日志 Bug 3】第一阶段 useEffect
-    console.log('[DEBUG-BUG3] ========== 第一阶段 useEffect 触发 ==========');
-    console.log('[DEBUG-BUG3] 条件检查:');
-    console.log('[DEBUG-BUG3]   1. pendingAutoSendRef.current:', !!pendingAutoSendRef.current);
-    console.log('[DEBUG-BUG3]   2. selectedModule:', !!selectedModule, selectedModule?.id);
-    console.log('[DEBUG-BUG3]   3. !currentConversationRef.current:', !currentConversationRef.current);
-    console.log('[DEBUG-BUG3]   4. messages.length === 0:', messages.length === 0, `(实际: ${messages.length})`);
-    console.log('[DEBUG-BUG3]   5. !isStreaming:', !isStreaming);
-    console.log('[DEBUG-BUG3]   6. selectedModel:', !!selectedModel, selectedModel?.name);
-
-    const allConditionsMet = pendingAutoSendRef.current &&
-      selectedModule &&
-      !currentConversationRef.current &&
-      messages.length === 0 &&
-      !isStreaming &&
-      selectedModel;
-
-    console.log('[DEBUG-BUG3] 所有条件满足:', allConditionsMet);
-
-    if (allConditionsMet) {
-      const pending = pendingAutoSendRef.current;
-      pendingAutoSendRef.current = null;
-
-      console.log('[DEBUG-BUG3] ✓ 执行第一阶段: 设置 inputMessage 和 autoSendPending');
-      console.log('[DEBUG-BUG3] pending.message:', pending.message.slice(0, 50) + '...');
-
-      // 设置输入消息
-      setInputMessage(pending.message);
-      // 标记需要自动发送
-      setAutoSendPending(true);
-    } else {
-      console.log('[DEBUG-BUG3] ✗ 条件不满足，跳过第一阶段');
-    }
-    console.log('[DEBUG-BUG3] ====================================================');
-  }, [selectedModule, messages.length, isStreaming, selectedModel]);
+  // 【简化】第一阶段 useEffect 已移除，自动发送逻辑已整合到 URL 参数处理中
 
   // ============ 标题编辑 ============
   const handleSaveTitle = useCallback(async () => {
