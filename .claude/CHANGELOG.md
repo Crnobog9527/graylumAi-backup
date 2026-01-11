@@ -5,6 +5,95 @@
 
 ---
 
+## 2026-01-11 (用户反馈 - 新增 3 个 P0 紧急问题) 🚨
+
+### ⚠️ 重要：之前的修复未完全生效
+
+用户反馈之前尝试修复的两个问题出现新情况：
+
+| 问题 | 之前状态 | 实际状态 | 说明 |
+|------|----------|----------|------|
+| 对话历史不显示 | ✅ 已修复 | ❌ 未解决 | 对话仍不保存在侧边栏 |
+| 系统提示词不遵循 | ✅ 已修复 | ⚠️ 部分解决 | 出现跨对话串联新问题 |
+
+### 🐛 新发现的 Bug
+
+#### Bug 1: 对话历史不显示在侧边栏 (100% 复现)
+
+**症状**：
+- 新建对话后，对话不出现在左侧历史记录栏
+- 刷新页面后对话完全消失
+- 所有对话都受影响
+
+**初步分析**：
+```
+可能的问题点：
+1. 后端 user.email 与前端 user?.email 格式不匹配
+2. Base44 SDK 的 RLS 规则配置问题
+3. queryClient.invalidateQueries 未触发实际重新获取
+4. TanStack Query 缓存问题
+
+相关代码：
+- useChatState.js L77-84: 对话列表查询
+- useChatState.js L473-476: 缓存失效调用
+- smartChatWithSearch.ts L707-731: 对话创建
+```
+
+#### Bug 2: 系统提示词跨对话串联 (100% 复现)
+
+**症状**：
+- 用户在对话A中使用的系统提示词
+- 新建对话B后依然存在
+- 不同对话之间没有做好隔离
+
+**初步分析**：
+```
+可能的问题点：
+1. React 状态更新是异步的
+2. handleStartNewChat 中 setCurrentConversation(null) 还没生效
+3. 用户立即发送消息时，currentConversation 还是旧值
+4. chatAPI.sendMessage 传递了旧的 conversation_id
+
+相关代码：
+- useChatState.js L255-267: handleStartNewChat
+- useChatState.js L392-397: chatAPI.sendMessage 参数
+- smartChatWithSearch.ts L494-502: 系统提示词处理
+```
+
+#### Bug 3: 功能模块不自动发送用户提示词 (100% 复现)
+
+**症状**：
+- 用户通过功能模块点击"使用"跳转对话后
+- 后台配置好的用户提示词没有自动发送
+- 所有对话都受影响
+
+**初步分析**：
+```
+可能的问题点：
+1. URL 缺少 auto_start=true 参数
+2. 模块字段名 user_prompt_template vs user_prompt 不匹配
+3. 发送按钮缺少 data-send-button 属性
+4. setTimeout 竞态条件，组件还没渲染完
+
+相关代码：
+- useChatState.js L218-240: URL参数处理和自动发送逻辑
+```
+
+### 📋 更新的文档
+
+- ✅ FIX_ROADMAP.md - 新增 3 个 P0 紧急问题
+- ✅ CHANGELOG.md - 记录 Bug 反馈（本文件）
+- ⏳ HEALTH_REPORT.md - 待更新
+- ⏳ docs/DIAGNOSIS_REPORT.md - 待更新
+
+### 🎯 下一步行动
+
+1. **立即**：深入分析三个 Bug 的根本原因
+2. **今天内**：修复三个 P0 问题
+3. **验证**：确保修复后不引入新问题
+
+---
+
 ## 2026-01-11 (修复对话历史不显示和系统提示词问题)
 
 ### 🐛 Bug 修复 - 对话历史不显示在侧边栏
