@@ -315,17 +315,14 @@ Deno.serve(async (req) => {
     if (conversation_id) {
       console.log('[smartChatWithSearch] Loading conversation:', conversation_id);
       try {
-        // 【重要】使用 asServiceRole 查询对话，确保返回完整字段（包括 system_prompt）
-        // ⚠️ 警告：普通客户端可能受 RLS 字段级权限限制，不返回 system_prompt 字段
-        // ⚠️ 这会导致后续轮次无法读取系统提示词，AI 不再遵循指令
-        // 注意：创建和更新仍使用普通客户端（base44.entities），只有查询使用 asServiceRole
+        // 【重构】统一使用 asServiceRole 查询对话
+        // 获取完整字段（包括 system_prompt），所有权通过 owner_email 管理
         const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
         if (convs.length > 0) {
           conversation = convs[0];
           conversationMessages = conversation.messages || [];
           console.log('[smartChatWithSearch] Loaded', conversationMessages.length, 'messages from conversation');
-          console.log('[smartChatWithSearch] Conversation created_by:', conversation.created_by);
-          // 【诊断】验证 system_prompt 字段是否正确返回
+          console.log('[smartChatWithSearch] Conversation owner_email:', conversation.owner_email);
           console.log('[smartChatWithSearch] Conversation system_prompt:', conversation.system_prompt ? `"${conversation.system_prompt.slice(0, 100)}..."` : 'null/undefined');
         } else {
           console.log('[smartChatWithSearch] ⚠️ Conversation not found, treating as new');
@@ -717,26 +714,25 @@ ${summaryToUse.summary_text}
         console.log('[smartChatWithSearch] Updating session_task_type to:', taskClassification.task_type);
       }
 
-      // 【重要】Base44 客户端使用策略：
-      // - 查询：asServiceRole（获取完整字段，包括 system_prompt）
-      // - 更新：asServiceRole（更新不影响 created_by）
-      // - 创建：entities（让系统自动设置 created_by 为当前用户）
+      // 【重构】统一使用 asServiceRole 客户端
+      // 使用自定义 owner_email 字段管理所有权，不再依赖系统 created_by
       await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
       console.log('[smartChatWithSearch] ✓ Conversation updated successfully');
     } else {
       console.log('[smartChatWithSearch] Creating new conversation');
-      // 【关键】使用 entities 创建，系统自动设置 created_by = 当前用户
-      console.log('[smartChatWithSearch] Using entities (regular client) to create');
-      console.log('[smartChatWithSearch] Current user email:', user.email);
+      // 【重构】使用 asServiceRole + owner_email 创建对话
+      console.log('[smartChatWithSearch] Using asServiceRole with owner_email');
+      console.log('[smartChatWithSearch] owner_email:', user.email);
 
       const createData = {
         title: message.slice(0, 50),
         model_id: selectedModel.id,
         messages: newMessages,
         total_credits_used: actualDeducted,
-        is_archived: false  // 确保新对话显示在列表中
-        // 注意：created_by 是系统字段，由 SDK 自动设置（无法手动指定）
-        // 使用 entities 客户端时，SDK 会自动设置 created_by = 当前用户
+        is_archived: false,
+        // 【重构】使用自定义 owner_email 字段替代系统 created_by
+        // 这样可以统一使用 asServiceRole，同时保证所有权正确
+        owner_email: user.email
       };
 
       // 【重要修复】保存系统提示词到对话记录，后续轮次可以读取
@@ -751,16 +747,14 @@ ${summaryToUse.summary_text}
         console.log('[smartChatWithSearch] Setting initial session_task_type to:', taskClassification.task_type);
       }
 
-      // 【关键】必须使用 entities（普通客户端）创建对话
-      // 因为 created_by 是系统字段，由 SDK 根据客户端类型自动设置：
-      // - entities: created_by = 当前用户 (user.email) ✅
-      // - asServiceRole: created_by = 服务账号 ❌
-      const newConv = await base44.entities.Conversation.create(createData);
+      // 【重构】统一使用 asServiceRole 创建对话
+      // 所有权通过 owner_email 字段管理，不再依赖系统 created_by
+      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
 
-      console.log('[smartChatWithSearch] ✓ Conversation created with entities (regular client)');
+      console.log('[smartChatWithSearch] ✓ Conversation created with asServiceRole');
       console.log('[smartChatWithSearch] newConv.id:', newConv.id);
-      console.log('[smartChatWithSearch] newConv.created_by:', newConv.created_by);
+      console.log('[smartChatWithSearch] newConv.owner_email:', newConv.owner_email);
     }
     
     // 步骤5：更新Token预算（使用最新的用户余额）
