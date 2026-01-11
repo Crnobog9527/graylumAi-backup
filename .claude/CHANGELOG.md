@@ -5,6 +5,69 @@
 
 ---
 
+## 2026-01-11 (修复对话历史不显示和系统提示词问题)
+
+### 🐛 Bug 修复 - 对话历史不显示在侧边栏
+
+**问题描述**：新对话不会出现在聊天历史记录窗口中
+
+**根本原因**：
+前端和后端都会创建对话，导致对话重复或状态不一致。前端没有使用后端返回的 `conversation_id`。
+
+**修复内容**：
+
+#### useChatState.js
+- **第 404-477 行**：修改对话创建逻辑
+  - 使用后端返回的 `conversation_id` 而不是前端自己创建
+  - 新对话时，使用后端 ID 创建前端状态
+  - 确保对话列表正确刷新
+
+**技术细节**：
+```javascript
+// 修复前：前端自己创建对话
+await createConversationMutation.mutateAsync({...});
+
+// 修复后：使用后端返回的 conversation_id
+const backendConversationId = result.conversation_id;
+if (backendConversationId) {
+  setCurrentConversation({ id: backendConversationId, ... });
+  queryClient.invalidateQueries(['conversations']);
+}
+```
+
+---
+
+### 🐛 Bug 修复 - AI 不遵循系统提示词
+
+**问题描述**：功能模块的多步骤提示词，AI 不遵循规定步骤执行
+
+**根本原因**：
+系统提示词只在首轮对话发送，后续轮次不发送。AI 没有"记忆"系统提示词的要求。
+
+**修复内容**：
+
+#### smartChatWithSearch.ts
+- **第 483-519 行**：重构系统提示词处理逻辑
+  - 首轮对话：使用前端传来的 system_prompt，并保存到对话记录
+  - 后续轮次：从对话记录中读取保存的 system_prompt
+- **第 718-722 行**：在创建新对话时保存 system_prompt
+
+**技术细节**：
+```typescript
+// 修复后：系统提示词会在每轮对话中使用
+if (isFirstTurn && hasNewSystemPrompt) {
+  finalSystemPrompt = system_prompt;  // 使用前端传来的
+} else if (conversation?.system_prompt) {
+  finalSystemPrompt = conversation.system_prompt;  // 从对话记录读取
+}
+```
+
+**影响范围**：
+- 所有功能模块的多步骤对话
+- AI 将在整个对话过程中遵循系统提示词的要求
+
+---
+
 ## 2026-01-11 (P0-聊天上下文丢失修复)
 
 ### 🐛 Bug 修复 - 聊天上下文丢失

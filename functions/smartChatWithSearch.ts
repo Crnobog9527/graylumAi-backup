@@ -480,27 +480,41 @@ ${summaryToUse.summary_text}
       console.log(`  [${i}] role=${m.role}, tokens=${tokens}, cached=${isCached}, preview=${preview}...`);
     });
     
-    // 系统提示词只在新对话的第一轮时使用（消息列表为空）
-    // 如果有历史消息，说明不是第一轮，绝对不能使用 system_prompt
-    // CRITICAL: 只有当 system_prompt 有实际内容时才使用
+    // ========== 系统提示词处理 ==========
+    // 【重要修复】系统提示词不再只在首轮使用，而是：
+    // 1. 首轮对话：使用前端传来的 system_prompt，并保存到对话记录
+    // 2. 后续轮次：从对话记录中读取保存的 system_prompt
     const isFirstTurn = conversationMessages.length === 0;
-    const hasValidSystemPrompt = system_prompt && system_prompt.trim().length > 0;
-    const shouldUseSystemPrompt = isFirstTurn && hasValidSystemPrompt;
-    
+    const hasNewSystemPrompt = system_prompt && system_prompt.trim().length > 0;
+
+    // 确定最终使用的系统提示词
+    let finalSystemPrompt = null;
+    let systemPromptSource = 'none';
+
+    if (isFirstTurn && hasNewSystemPrompt) {
+      // 首轮对话：使用前端传来的系统提示词
+      finalSystemPrompt = system_prompt;
+      systemPromptSource = 'new_from_frontend';
+    } else if (conversation && conversation.system_prompt) {
+      // 后续轮次：从对话记录中读取保存的系统提示词
+      finalSystemPrompt = conversation.system_prompt;
+      systemPromptSource = 'saved_in_conversation';
+    }
+
+    const shouldUseSystemPrompt = finalSystemPrompt && finalSystemPrompt.trim().length > 0;
+
     console.log('[smartChatWithSearch] ===== SYSTEM PROMPT DECISION =====');
     console.log('[smartChatWithSearch] isFirstTurn:', isFirstTurn, '(conversationMessages.length:', conversationMessages.length, ')');
     console.log('[smartChatWithSearch] conversation exists:', !!conversation);
-    console.log('[smartChatWithSearch] system_prompt:', system_prompt ? `"${system_prompt.slice(0, 100)}..."` : 'null/undefined');
-    console.log('[smartChatWithSearch] hasValidSystemPrompt:', hasValidSystemPrompt);
+    console.log('[smartChatWithSearch] new system_prompt from frontend:', hasNewSystemPrompt ? `"${system_prompt.slice(0, 100)}..."` : 'null/undefined');
+    console.log('[smartChatWithSearch] saved system_prompt in conversation:', conversation?.system_prompt ? `"${conversation.system_prompt.slice(0, 100)}..."` : 'null/undefined');
+    console.log('[smartChatWithSearch] finalSystemPrompt source:', systemPromptSource);
     console.log('[smartChatWithSearch] shouldUseSystemPrompt:', shouldUseSystemPrompt);
-    
+
     if (shouldUseSystemPrompt) {
-      console.log('[smartChatWithSearch] ✓ WILL USE system prompt, tokens:', estimateTokens(system_prompt));
+      console.log('[smartChatWithSearch] ✓ WILL USE system prompt, tokens:', estimateTokens(finalSystemPrompt));
     } else {
       console.log('[smartChatWithSearch] ✗ WILL NOT USE system prompt');
-      if (system_prompt) {
-        console.log('[smartChatWithSearch]   Reason: isFirstTurn=', isFirstTurn, 'conversation=', !!conversation);
-      }
     }
     console.log('[smartChatWithSearch] ========================================');
     
@@ -509,22 +523,23 @@ ${summaryToUse.summary_text}
     console.log('[smartChatWithSearch] Parameters:');
     console.log('[smartChatWithSearch]   - model_id:', selectedModel.id);
     console.log('[smartChatWithSearch]   - messages count:', apiMessages.length);
-    console.log('[smartChatWithSearch]   - system_prompt:', shouldUseSystemPrompt ? `YES (${system_prompt.length} chars, ~${Math.ceil(system_prompt.length / 4)} tokens)` : 'NO');
+    console.log('[smartChatWithSearch]   - system_prompt:', shouldUseSystemPrompt ? `YES (${finalSystemPrompt.length} chars, ~${Math.ceil(finalSystemPrompt.length / 4)} tokens)` : 'NO');
     console.log('[smartChatWithSearch]   - force_web_search:', decision.will_use_web_search || false);
-    if (shouldUseSystemPrompt && system_prompt) {
-      console.log('[smartChatWithSearch]   - system_prompt preview:', system_prompt.slice(0, 200) + '...');
+    if (shouldUseSystemPrompt && finalSystemPrompt) {
+      console.log('[smartChatWithSearch]   - system_prompt preview:', finalSystemPrompt.slice(0, 200) + '...');
     }
     console.log('[smartChatWithSearch] === END PARAMETERS ===');
-    
+
     // 构建调用参数，只在需要时添加 system_prompt
     const callParams = {
       model_id: selectedModel.id,
       messages: apiMessages,
       force_web_search: decision.will_use_web_search || false
     };
-    
-    if (shouldUseSystemPrompt && system_prompt) {
-      callParams.system_prompt = system_prompt;
+
+    // 【修复】使用 finalSystemPrompt（可能来自前端或对话记录）
+    if (shouldUseSystemPrompt && finalSystemPrompt) {
+      callParams.system_prompt = finalSystemPrompt;
     }
     
     const modelRes = await base44.functions.invoke('callAIModel', callParams);
@@ -699,13 +714,19 @@ ${summaryToUse.summary_text}
         is_archived: false,  // 确保新对话显示在列表中
         created_by: user.email  // 显式设置 created_by，确保 RLS 规则能匹配
       };
-      
+
+      // 【重要修复】保存系统提示词到对话记录，后续轮次可以读取
+      if (hasNewSystemPrompt && system_prompt) {
+        createData.system_prompt = system_prompt;
+        console.log('[smartChatWithSearch] Saving system_prompt to conversation, length:', system_prompt.length);
+      }
+
       // 如果是创作类任务，记录 session_task_type
       if (shouldUpdateSessionTaskType && taskClassification) {
         createData.session_task_type = taskClassification.task_type;
         console.log('[smartChatWithSearch] Setting initial session_task_type to:', taskClassification.task_type);
       }
-      
+
       const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
     }

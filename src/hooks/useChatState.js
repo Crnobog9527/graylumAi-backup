@@ -401,6 +401,9 @@ export function useChatState() {
       }
       const response = result.response;
 
+      // 【重要】使用后端返回的 conversation_id，而不是前端自己创建
+      const backendConversationId = result.conversation_id;
+
       const creditsUsed = result.credits_used || 0;
       const inputTokens = result.input_tokens || 0;
       const outputTokens = result.output_tokens || 0;
@@ -441,24 +444,36 @@ export function useChatState() {
         total_credits_used: (user.total_credits_used || 0) + creditsUsed,
       });
 
-      const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
-
-      if (currentConversation) {
-        await updateConversationMutation.mutateAsync({
-          id: currentConversation.id,
-          data: {
+      // 【修复】使用后端返回的 conversation_id 来同步对话状态
+      // 后端已经创建/更新了对话，前端只需要同步状态即可
+      if (backendConversationId) {
+        if (currentConversation) {
+          // 更新现有对话 - 只需刷新前端状态
+          setCurrentConversation(prev => ({
+            ...prev,
             messages: updatedMessages,
-            total_credits_used: (currentConversation.total_credits_used || 0) + creditsUsed,
-          }
-        });
-      } else {
-        await createConversationMutation.mutateAsync({
-          title,
-          model_id: selectedModel.id,
-          prompt_module_id: selectedModule?.id,
-          messages: updatedMessages,
-          total_credits_used: creditsUsed,
-        });
+            total_credits_used: (prev?.total_credits_used || 0) + creditsUsed,
+          }));
+        } else {
+          // 新对话 - 使用后端返回的 ID 创建前端状态
+          const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
+          const newConv = {
+            id: backendConversationId,
+            title,
+            model_id: selectedModel.id,
+            prompt_module_id: selectedModule?.id,
+            messages: updatedMessages,
+            total_credits_used: creditsUsed,
+            created_date: new Date().toISOString(),
+            updated_date: new Date().toISOString(),
+          };
+          setCurrentConversation(newConv);
+        }
+
+        // 刷新对话列表以显示新对话
+        queryClient.invalidateQueries(['conversations']);
+        chatAPI.invalidateConversationList(user?.email);
+        chatAPI.invalidateConversation(backendConversationId);
       }
     } catch (error) {
       console.error('Error sending message:', error);
