@@ -717,15 +717,16 @@ ${summaryToUse.summary_text}
         console.log('[smartChatWithSearch] Updating session_task_type to:', taskClassification.task_type);
       }
 
-      // 【重要】Base44 客户端统一使用策略：
-      // - 查询/创建/更新：全部使用 asServiceRole（绕过 RLS 限制）
-      // - 创建时显式设置 created_by: user.email（确保前端能查到）
+      // 【重要】Base44 客户端使用策略：
+      // - 查询：asServiceRole（获取完整字段，包括 system_prompt）
+      // - 更新：asServiceRole（更新不影响 created_by）
+      // - 创建：entities（让系统自动设置 created_by 为当前用户）
       await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
       console.log('[smartChatWithSearch] ✓ Conversation updated successfully');
     } else {
       console.log('[smartChatWithSearch] Creating new conversation');
-      // 【修复】使用 asServiceRole 创建，显式设置 created_by
-      console.log('[smartChatWithSearch] Using asServiceRole with explicit created_by');
+      // 【关键】使用 entities 创建，系统自动设置 created_by = 当前用户
+      console.log('[smartChatWithSearch] Using entities (regular client) to create');
       console.log('[smartChatWithSearch] Current user email:', user.email);
 
       const createData = {
@@ -733,10 +734,9 @@ ${summaryToUse.summary_text}
         model_id: selectedModel.id,
         messages: newMessages,
         total_credits_used: actualDeducted,
-        is_archived: false,  // 确保新对话显示在列表中
-        // 【关键修复】显式设置 created_by 为用户邮箱
-        // 前端查询使用 { created_by: user.email }，必须匹配
-        created_by: user.email
+        is_archived: false  // 确保新对话显示在列表中
+        // 注意：created_by 是系统字段，由 SDK 自动设置（无法手动指定）
+        // 使用 entities 客户端时，SDK 会自动设置 created_by = 当前用户
       };
 
       // 【重要修复】保存系统提示词到对话记录，后续轮次可以读取
@@ -751,16 +751,16 @@ ${summaryToUse.summary_text}
         console.log('[smartChatWithSearch] Setting initial session_task_type to:', taskClassification.task_type);
       }
 
-      // 【修复】使用 asServiceRole 创建对话，绕过 RLS 限制
-      // 同时显式设置 created_by 确保前端查询能找到
-      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
+      // 【关键】必须使用 entities（普通客户端）创建对话
+      // 因为 created_by 是系统字段，由 SDK 根据客户端类型自动设置：
+      // - entities: created_by = 当前用户 (user.email) ✅
+      // - asServiceRole: created_by = 服务账号 ❌
+      const newConv = await base44.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
 
-      console.log('[smartChatWithSearch] ✓ Conversation created with asServiceRole');
+      console.log('[smartChatWithSearch] ✓ Conversation created with entities (regular client)');
       console.log('[smartChatWithSearch] newConv.id:', newConv.id);
       console.log('[smartChatWithSearch] newConv.created_by:', newConv.created_by);
-      console.log('[smartChatWithSearch] Expected created_by:', user.email);
-      console.log('[smartChatWithSearch] Match:', newConv.created_by === user.email);
     }
     
     // 步骤5：更新Token预算（使用最新的用户余额）
