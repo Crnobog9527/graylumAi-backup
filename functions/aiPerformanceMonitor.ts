@@ -279,8 +279,8 @@ Deno.serve(async (req) => {
 
         // 按模型计算平均响应时间
         for (const model in dashboard.by_model) {
-          const modelStats = filteredStats.filter(s => s.model_used === model);
-          const modelResponseTimes = modelStats.map(s => s.response_time_ms || 0).filter(t => t > 0);
+          const modelStats = filteredStats.filter(s => (s.data || s).model_used === model);
+          const modelResponseTimes = modelStats.map(s => (s.data || s).response_time_ms || 0).filter(t => t > 0);
           if (modelResponseTimes.length > 0) {
             dashboard.by_model[model].avg_response_time_ms = Math.round(
               modelResponseTimes.reduce((a, b) => a + b, 0) / modelResponseTimes.length
