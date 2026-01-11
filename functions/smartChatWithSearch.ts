@@ -717,17 +717,15 @@ ${summaryToUse.summary_text}
         console.log('[smartChatWithSearch] Updating session_task_type to:', taskClassification.task_type);
       }
 
-      // 【重要】Base44 客户端使用策略：
-      // - 查询：使用 asServiceRole（获取完整字段，包括 system_prompt）
-      // - 创建：使用 entities（让 SDK 自动设置 created_by）
-      // - 更新：使用 entities（保持与创建一致的权限上下文）
-      await base44.entities.Conversation.update(conversation.id, updateData);
+      // 【重要】Base44 客户端统一使用策略：
+      // - 查询/创建/更新：全部使用 asServiceRole（绕过 RLS 限制）
+      // - 创建时显式设置 created_by: user.email（确保前端能查到）
+      await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
       console.log('[smartChatWithSearch] ✓ Conversation updated successfully');
     } else {
       console.log('[smartChatWithSearch] Creating new conversation');
-      // 【修复 Bug 1】使用普通客户端创建对话，让 SDK 自动设置 created_by
-      // 之前使用 asServiceRole 导致 created_by 字段不是当前用户，查询时匹配不上
-      console.log('[smartChatWithSearch] Using regular client (NOT asServiceRole) to create conversation');
+      // 【修复】使用 asServiceRole 创建，显式设置 created_by
+      console.log('[smartChatWithSearch] Using asServiceRole with explicit created_by');
       console.log('[smartChatWithSearch] Current user email:', user.email);
 
       const createData = {
@@ -753,14 +751,16 @@ ${summaryToUse.summary_text}
         console.log('[smartChatWithSearch] Setting initial session_task_type to:', taskClassification.task_type);
       }
 
-      // 【修复 Bug 1】使用 base44.entities 而不是 base44.asServiceRole.entities
-      // 这样 SDK 会自动将 created_by 设置为当前登录用户
-      const newConv = await base44.entities.Conversation.create(createData);
+      // 【修复】使用 asServiceRole 创建对话，绕过 RLS 限制
+      // 同时显式设置 created_by 确保前端查询能找到
+      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
 
-      console.log('[smartChatWithSearch] ✓ Conversation created with regular client');
+      console.log('[smartChatWithSearch] ✓ Conversation created with asServiceRole');
       console.log('[smartChatWithSearch] newConv.id:', newConv.id);
       console.log('[smartChatWithSearch] newConv.created_by:', newConv.created_by);
+      console.log('[smartChatWithSearch] Expected created_by:', user.email);
+      console.log('[smartChatWithSearch] Match:', newConv.created_by === user.email);
     }
     
     // 步骤5：更新Token预算（使用最新的用户余额）
