@@ -224,8 +224,21 @@ export function useChatState() {
     const moduleId = params.get('module_id');
     const autoStart = params.get('auto_start') === 'true';
 
+    // 【诊断日志 Bug 3】URL 参数处理
+    console.log('[DEBUG-BUG3] ========== URL 参数处理 useEffect 触发 ==========');
+    console.log('[DEBUG-BUG3] location.search:', location.search);
+    console.log('[DEBUG-BUG3] moduleId:', moduleId);
+    console.log('[DEBUG-BUG3] autoStart:', autoStart);
+    console.log('[DEBUG-BUG3] processedModuleRef.current:', processedModuleRef.current);
+    console.log('[DEBUG-BUG3] promptModules.length:', promptModules.length);
+    console.log('[DEBUG-BUG3] models.length:', models.length);
+    console.log('[DEBUG-BUG3] user:', user?.email);
+
     if (moduleId && moduleId !== processedModuleRef.current && promptModules.length > 0 && models.length > 0 && user) {
       const module = promptModules.find(m => m.id === moduleId);
+      console.log('[DEBUG-BUG3] 找到模块:', module?.id, module?.title);
+      console.log('[DEBUG-BUG3] module.user_prompt_template:', module?.user_prompt_template?.slice(0, 50) || 'undefined');
+
       if (module) {
         processedModuleRef.current = moduleId;
         handleStartNewChat(module);
@@ -233,14 +246,23 @@ export function useChatState() {
 
         // 【修复 Bug 3】设置待自动发送的消息，由下一个 useEffect 处理
         if (autoStart && module.user_prompt_template && module.user_prompt_template.trim()) {
+          console.log('[DEBUG-BUG3] ✓ 设置 pendingAutoSendRef');
           pendingAutoSendRef.current = {
             message: module.user_prompt_template,
             systemPrompt: module.system_prompt || '',
             moduleId: module.id,
           };
+          console.log('[DEBUG-BUG3] pendingAutoSendRef.current:', JSON.stringify({ message: pendingAutoSendRef.current.message.slice(0, 50), moduleId: pendingAutoSendRef.current.moduleId }));
+        } else {
+          console.log('[DEBUG-BUG3] ✗ 未设置 pendingAutoSendRef');
+          console.log('[DEBUG-BUG3]   autoStart:', autoStart);
+          console.log('[DEBUG-BUG3]   user_prompt_template 存在:', !!module.user_prompt_template);
         }
       }
+    } else {
+      console.log('[DEBUG-BUG3] ✗ 条件不满足，跳过处理');
     }
+    console.log('[DEBUG-BUG3] ====================================================');
   }, [location.search, promptModules, models, user]);
 
   // 【修复 Bug 3】自动发送状态
@@ -248,22 +270,40 @@ export function useChatState() {
 
   // 【修复 Bug 3】处理待自动发送的消息 - 第一步：设置输入消息
   useEffect(() => {
-    if (
-      pendingAutoSendRef.current &&
+    // 【诊断日志 Bug 3】第一阶段 useEffect
+    console.log('[DEBUG-BUG3] ========== 第一阶段 useEffect 触发 ==========');
+    console.log('[DEBUG-BUG3] 条件检查:');
+    console.log('[DEBUG-BUG3]   1. pendingAutoSendRef.current:', !!pendingAutoSendRef.current);
+    console.log('[DEBUG-BUG3]   2. selectedModule:', !!selectedModule, selectedModule?.id);
+    console.log('[DEBUG-BUG3]   3. !currentConversationRef.current:', !currentConversationRef.current);
+    console.log('[DEBUG-BUG3]   4. messages.length === 0:', messages.length === 0, `(实际: ${messages.length})`);
+    console.log('[DEBUG-BUG3]   5. !isStreaming:', !isStreaming);
+    console.log('[DEBUG-BUG3]   6. selectedModel:', !!selectedModel, selectedModel?.name);
+
+    const allConditionsMet = pendingAutoSendRef.current &&
       selectedModule &&
       !currentConversationRef.current &&
       messages.length === 0 &&
       !isStreaming &&
-      selectedModel
-    ) {
+      selectedModel;
+
+    console.log('[DEBUG-BUG3] 所有条件满足:', allConditionsMet);
+
+    if (allConditionsMet) {
       const pending = pendingAutoSendRef.current;
       pendingAutoSendRef.current = null;
+
+      console.log('[DEBUG-BUG3] ✓ 执行第一阶段: 设置 inputMessage 和 autoSendPending');
+      console.log('[DEBUG-BUG3] pending.message:', pending.message.slice(0, 50) + '...');
 
       // 设置输入消息
       setInputMessage(pending.message);
       // 标记需要自动发送
       setAutoSendPending(true);
+    } else {
+      console.log('[DEBUG-BUG3] ✗ 条件不满足，跳过第一阶段');
     }
+    console.log('[DEBUG-BUG3] ====================================================');
   }, [selectedModule, messages.length, isStreaming, selectedModel]);
 
   // ============ 标题编辑 ============
@@ -280,12 +320,20 @@ export function useChatState() {
   }, [currentConversation, editingTitleValue, updateConversationMutation]);
 
   const handleStartNewChat = useCallback((module = null) => {
+    // 【诊断日志 Bug 2】跟踪新对话创建
+    console.log('[DEBUG-BUG2] ========== handleStartNewChat 被调用 ==========');
+    console.log('[DEBUG-BUG2] 传入 module:', module?.id, module?.title);
+    console.log('[DEBUG-BUG2] 重置前 currentConversationRef:', currentConversationRef.current?.id);
+
     // 【修复 Bug 2】同步更新 ref，确保状态立即生效
     currentConversationRef.current = null;
     setCurrentConversation(null);
     setMessages([]);
     setSelectedModule(module ? module : null);
     setIsEditingTitle(false);
+
+    console.log('[DEBUG-BUG2] 重置后 currentConversationRef:', currentConversationRef.current);
+    console.log('[DEBUG-BUG2] ================================================');
 
     if (module?.model_id && models.length > 0) {
       const moduleModel = models.find(m => m.id === module.model_id);
@@ -322,6 +370,13 @@ export function useChatState() {
 
   // ============ 发送消息 ============
   const handleSendMessage = useCallback(async (skipWarning = false) => {
+    // 【诊断日志 Bug 2】发送消息入口
+    console.log('[DEBUG-BUG2] ========== handleSendMessage 被调用 ==========');
+    console.log('[DEBUG-BUG2] currentConversationRef.current:', currentConversationRef.current?.id);
+    console.log('[DEBUG-BUG2] currentConversation (state):', currentConversation?.id);
+    console.log('[DEBUG-BUG2] selectedModule:', selectedModule?.id, selectedModule?.title);
+    console.log('[DEBUG-BUG2] messages.length:', messages.length);
+
     if ((!inputMessage.trim() && fileContents.length === 0) || !selectedModel || !user || isStreaming) return;
 
     const currentCredits = user.credits || 0;
@@ -337,6 +392,13 @@ export function useChatState() {
     // 【修复 Bug 2】使用 ref 判断是否新对话，避免 React 状态异步问题
     const isNewConversation = !currentConversationRef.current;
 
+    // 【诊断日志 Bug 2】系统提示词决策
+    console.log('[DEBUG-BUG2] 系统提示词决策:');
+    console.log('[DEBUG-BUG2]   hasModule:', hasModule);
+    console.log('[DEBUG-BUG2]   isFirstTurn:', isFirstTurn);
+    console.log('[DEBUG-BUG2]   isNewConversation:', isNewConversation);
+    console.log('[DEBUG-BUG2]   条件满足 (hasModule && isFirstTurn && isNewConversation):', hasModule && isFirstTurn && isNewConversation);
+
     if (hasModule && isFirstTurn && isNewConversation) {
       systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
   ${selectedModule.system_prompt}
@@ -345,7 +407,11 @@ export function useChatState() {
   1. 你必须严格遵循上述角色定位和功能约束
   2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
   3. 保持专业、专注，不要偏离主题`;
+      console.log('[DEBUG-BUG2] ✓ 将发送系统提示词, 长度:', systemPrompt.length);
+    } else {
+      console.log('[DEBUG-BUG2] ✗ 不发送系统提示词');
     }
+    console.log('[DEBUG-BUG2] ================================================');
 
     const attachments = await Promise.all(fileContents.map(async (f, idx) => {
       const file = uploadedFiles[idx];
@@ -481,9 +547,16 @@ export function useChatState() {
 
       // 【修复】使用后端返回的 conversation_id 来同步对话状态
       // 后端已经创建/更新了对话，前端只需要同步状态即可
+      // 【诊断日志 Bug 1】对话同步
+      console.log('[DEBUG-BUG1] ========== 对话同步开始 ==========');
+      console.log('[DEBUG-BUG1] backendConversationId:', backendConversationId);
+      console.log('[DEBUG-BUG1] user?.email:', user?.email);
+      console.log('[DEBUG-BUG1] currentConversationRef.current:', currentConversationRef.current?.id);
+
       if (backendConversationId) {
         // 【修复 Bug 2】使用 ref 判断是否为现有对话
         if (currentConversationRef.current) {
+          console.log('[DEBUG-BUG1] 更新现有对话');
           // 更新现有对话 - 只需刷新前端状态
           const updatedConv = {
             ...currentConversationRef.current,
@@ -494,6 +567,7 @@ export function useChatState() {
           currentConversationRef.current = updatedConv;
           setCurrentConversation(updatedConv);
         } else {
+          console.log('[DEBUG-BUG1] 创建新对话前端状态');
           // 新对话 - 使用后端返回的 ID 创建前端状态
           // 【修复】添加 created_by 字段确保本地状态与服务器一致
           const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
@@ -509,6 +583,7 @@ export function useChatState() {
             created_date: new Date().toISOString(),
             updated_date: new Date().toISOString(),
           };
+          console.log('[DEBUG-BUG1] 新对话数据:', JSON.stringify({ id: newConv.id, title: newConv.title, created_by: newConv.created_by, is_archived: newConv.is_archived }));
           // 【修复 Bug 2】同步更新 ref
           currentConversationRef.current = newConv;
           setCurrentConversation(newConv);
@@ -516,12 +591,27 @@ export function useChatState() {
 
         // 【修复】使用 refetchQueries 强制立即刷新对话列表
         // invalidateQueries 只标记缓存过期，不会立即重新获取
+        console.log('[DEBUG-BUG1] 准备刷新对话列表');
+        console.log('[DEBUG-BUG1] queryKey 将使用:', ['conversations', user?.email]);
         chatAPI.invalidateConversationList(user?.email);
         chatAPI.invalidateConversation(backendConversationId);
+
+        // 【诊断日志 Bug 1】刷新前的缓存状态
+        const cacheDataBefore = queryClient.getQueryData(['conversations', user?.email]);
+        console.log('[DEBUG-BUG1] refetchQueries 前缓存数据条数:', cacheDataBefore?.length || 0);
+
         await queryClient.refetchQueries({
           queryKey: ['conversations', user?.email],
           exact: true,
         });
+
+        // 【诊断日志 Bug 1】刷新后的缓存状态
+        const cacheDataAfter = queryClient.getQueryData(['conversations', user?.email]);
+        console.log('[DEBUG-BUG1] refetchQueries 后缓存数据条数:', cacheDataAfter?.length || 0);
+        console.log('[DEBUG-BUG1] 刷新后对话列表 ID:', cacheDataAfter?.map(c => c.id)?.join(', ') || '空');
+        console.log('[DEBUG-BUG1] ========== 对话同步结束 ==========');
+      } else {
+        console.log('[DEBUG-BUG1] ✗ 没有 backendConversationId，跳过同步');
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -539,13 +629,25 @@ export function useChatState() {
 
   // 【修复 Bug 3】处理待自动发送的消息 - 第二步：触发发送
   useEffect(() => {
+    // 【诊断日志 Bug 3】第二阶段 useEffect
+    console.log('[DEBUG-BUG3] ========== 第二阶段 useEffect 触发 ==========');
+    console.log('[DEBUG-BUG3] autoSendPending:', autoSendPending);
+    console.log('[DEBUG-BUG3] inputMessage:', inputMessage ? inputMessage.slice(0, 30) + '...' : 'empty');
+    console.log('[DEBUG-BUG3] isStreaming:', isStreaming);
+    console.log('[DEBUG-BUG3] 条件满足 (autoSendPending && inputMessage && !isStreaming):', autoSendPending && inputMessage && !isStreaming);
+
     if (autoSendPending && inputMessage && !isStreaming) {
+      console.log('[DEBUG-BUG3] ✓ 执行第二阶段: 调用 handleSendMessage(true)');
       setAutoSendPending(false);
       // 延迟一帧确保状态已更新
       requestAnimationFrame(() => {
+        console.log('[DEBUG-BUG3] requestAnimationFrame 执行，调用 handleSendMessage');
         handleSendMessage(true); // skipWarning = true，跳过长文本警告
       });
+    } else {
+      console.log('[DEBUG-BUG3] ✗ 条件不满足，跳过第二阶段');
     }
+    console.log('[DEBUG-BUG3] ====================================================');
   }, [autoSendPending, inputMessage, isStreaming, handleSendMessage]);
 
   const handleConfirmLongText = useCallback(() => {
