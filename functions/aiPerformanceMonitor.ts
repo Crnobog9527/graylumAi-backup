@@ -116,7 +116,9 @@ Deno.serve(async (req) => {
     // ========== 获取性能仪表板数据 ==========
     if (operation === 'dashboard') {
       // 获取统计数据
-      const stats = await base44.asServiceRole.entities.TokenStats.filter({});
+      log.info('Fetching TokenStats for dashboard...');
+      const stats = await base44.asServiceRole.entities.TokenStats.list();
+      log.info('Found', stats.length, 'TokenStats records');
 
       // 过滤时间范围
       const filteredStats = stats.filter(s =>
