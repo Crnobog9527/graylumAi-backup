@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,22 +10,214 @@ import {
   TrendingUp, Database, DollarSign, RefreshCw, Bot
 } from 'lucide-react';
 
+// 性能监控配置
+const TIMEOUT_THRESHOLD_MS = 30000;
+const SLOW_RESPONSE_THRESHOLD_MS = 10000;
+const CACHE_HIT_TARGET_RATE = 50;
+
 export default function AIPerformanceMonitor() {
   const [timeRange, setTimeRange] = useState('24h');
 
-  const { data: dashboard, isLoading, refetch, error } = useQuery({
-    queryKey: ['ai-performance', timeRange],
+  // 直接从前端读取 TokenStats 数据（类似财务统计的方式）
+  const { data: tokenStats = [], isLoading, refetch, error } = useQuery({
+    queryKey: ['token-stats'],
     queryFn: async () => {
-      console.log('[AIPerformanceMonitor] Fetching dashboard data...');
-      const response = await base44.functions.invoke('aiPerformanceMonitor', {
-        operation: 'dashboard',
-        time_range: timeRange
-      });
-      console.log('[AIPerformanceMonitor] Response:', response?.data);
-      return response.data;
+      console.log('[AIPerformanceMonitor] Fetching TokenStats directly...');
+      const stats = await base44.entities.TokenStats.list('-created_date', 1000);
+      console.log('[AIPerformanceMonitor] Fetched', stats.length, 'records');
+      console.log('[AIPerformanceMonitor] Sample record:', stats[0]);
+      return stats;
     },
-    refetchInterval: 30000 // 每30秒刷新
+    refetchInterval: 30000
   });
+
+  // 根据时间范围过滤并计算仪表板数据
+  const dashboard = useMemo(() => {
+    if (!tokenStats.length) return null;
+
+    // 计算时间范围
+    let startDate = new Date();
+    if (timeRange === '1h') {
+      startDate = new Date(Date.now() - 60 * 60 * 1000);
+    } else if (timeRange === '24h') {
+      startDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    } else if (timeRange === '7d') {
+      startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    } else if (timeRange === '30d') {
+      startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    // 过滤时间范围内的数据
+    const filteredStats = tokenStats.filter(s => {
+      const createdDate = new Date(s.created_date);
+      return createdDate >= startDate;
+    });
+
+    console.log('[AIPerformanceMonitor] Filtered to', filteredStats.length, 'records for', timeRange);
+
+    // 初始化仪表板
+    const result = {
+      time_range: timeRange,
+      total_requests: filteredStats.length,
+      response_time: {
+        total_ms: 0,
+        avg_ms: 0,
+        min_ms: Number.MAX_VALUE,
+        max_ms: 0,
+        p95_ms: 0,
+        timeout_count: 0,
+        slow_count: 0
+      },
+      token_usage: {
+        total_input: 0,
+        total_output: 0,
+        total_cached: 0,
+        total_cache_creation: 0,
+        cache_hit_rate: '0%',
+        cache_hit_target: CACHE_HIT_TARGET_RATE + '%'
+      },
+      cost: {
+        total: 0,
+        avg_per_request: 0,
+        estimated_savings: 0
+      },
+      errors: {
+        total_count: 0,
+        error_rate: '0%',
+        recent_errors: []
+      },
+      by_model: {},
+      health: {
+        status: 'healthy',
+        issues: []
+      }
+    };
+
+    const responseTimes = [];
+
+    for (const stat of filteredStats) {
+      const responseTime = Number(stat.response_time_ms) || 0;
+
+      // 响应时间统计
+      if (responseTime > 0) {
+        responseTimes.push(responseTime);
+        result.response_time.total_ms += responseTime;
+        result.response_time.min_ms = Math.min(result.response_time.min_ms, responseTime);
+        result.response_time.max_ms = Math.max(result.response_time.max_ms, responseTime);
+      }
+
+      if (stat.is_timeout) result.response_time.timeout_count++;
+      if (stat.is_slow) result.response_time.slow_count++;
+
+      // Token 统计
+      result.token_usage.total_input += Number(stat.input_tokens) || 0;
+      result.token_usage.total_output += Number(stat.output_tokens) || 0;
+      result.token_usage.total_cached += Number(stat.cached_tokens) || 0;
+      result.token_usage.total_cache_creation += Number(stat.cache_creation_tokens) || 0;
+
+      // 成本统计
+      result.cost.total += Number(stat.total_cost) || 0;
+
+      // 错误统计
+      if (stat.is_error) {
+        result.errors.total_count++;
+        if (result.errors.recent_errors.length < 10) {
+          result.errors.recent_errors.push({
+            time: stat.created_date,
+            model: stat.model_used || 'unknown',
+            error: stat.error_message || 'Unknown error'
+          });
+        }
+      }
+
+      // 按模型分组
+      const model = stat.model_used || 'unknown';
+      if (!result.by_model[model]) {
+        result.by_model[model] = {
+          count: 0,
+          total_response_time: 0,
+          avg_response_time_ms: 0,
+          cache_hit_rate: '0%',
+          error_count: 0,
+          total_cached: 0,
+          total_input: 0
+        };
+      }
+      result.by_model[model].count++;
+      result.by_model[model].total_response_time += responseTime;
+      result.by_model[model].total_cached += Number(stat.cached_tokens) || 0;
+      result.by_model[model].total_input += Number(stat.input_tokens) || 0;
+      if (stat.is_error) result.by_model[model].error_count++;
+    }
+
+    // 计算平均值和比率
+    if (result.total_requests > 0) {
+      result.response_time.avg_ms = responseTimes.length > 0 
+        ? Math.round(result.response_time.total_ms / responseTimes.length)
+        : 0;
+
+      // 计算 P95
+      if (responseTimes.length > 0) {
+        responseTimes.sort((a, b) => a - b);
+        const p95Index = Math.floor(responseTimes.length * 0.95);
+        result.response_time.p95_ms = responseTimes[p95Index] || result.response_time.max_ms;
+      }
+
+      // 缓存命中率
+      const totalTokens = result.token_usage.total_input + result.token_usage.total_cached;
+      if (totalTokens > 0) {
+        const hitRate = (result.token_usage.total_cached / totalTokens) * 100;
+        result.token_usage.cache_hit_rate = hitRate.toFixed(2) + '%';
+      }
+
+      // 平均成本
+      result.cost.avg_per_request = result.cost.total / result.total_requests;
+
+      // 估算缓存节省
+      const inputCostPerToken = 0.000003;
+      result.cost.estimated_savings = result.token_usage.total_cached * inputCostPerToken * 0.9;
+
+      // 错误率
+      result.errors.error_rate = ((result.errors.total_count / result.total_requests) * 100).toFixed(2) + '%';
+
+      // 按模型计算平均响应时间和缓存命中率
+      for (const model in result.by_model) {
+        const m = result.by_model[model];
+        m.avg_response_time_ms = m.count > 0 ? Math.round(m.total_response_time / m.count) : 0;
+        const modelTotal = m.total_cached + m.total_input;
+        if (modelTotal > 0) {
+          m.cache_hit_rate = ((m.total_cached / modelTotal) * 100).toFixed(2) + '%';
+        }
+      }
+    }
+
+    // 修正无数据时的 min 值
+    if (result.response_time.min_ms === Number.MAX_VALUE) {
+      result.response_time.min_ms = 0;
+    }
+
+    // 健康状态检查
+    const timeoutRate = parseFloat(result.response_time.timeout_count / result.total_requests * 100) || 0;
+    const errorRate = parseFloat(result.errors.error_rate) || 0;
+    const cacheHitRate = parseFloat(result.token_usage.cache_hit_rate) || 0;
+
+    if (timeoutRate > 5) {
+      result.health.status = 'critical';
+      result.health.issues.push(`超时率过高: ${timeoutRate.toFixed(2)}%`);
+    }
+    if (errorRate > 5) {
+      result.health.status = 'critical';
+      result.health.issues.push(`错误率过高: ${result.errors.error_rate}`);
+    }
+    if (cacheHitRate < CACHE_HIT_TARGET_RATE && result.total_requests > 10) {
+      if (result.health.status !== 'critical') {
+        result.health.status = 'warning';
+      }
+      result.health.issues.push(`缓存命中率低于目标 ${CACHE_HIT_TARGET_RATE}%: ${result.token_usage.cache_hit_rate}`);
+    }
+
+    return result;
+  }, [tokenStats, timeRange]);
 
   // 调试：显示错误
   if (error) {
