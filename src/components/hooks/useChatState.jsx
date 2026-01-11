@@ -544,23 +544,44 @@ export function useChatState() {
 
   // 处理功能广场模块的自动发送
   useEffect(() => {
-    // 如果已经自动发送过，直接返回
-    if (autoSentRef.current) return;
-
     const urlParams = new URLSearchParams(window.location.search);
     const moduleId = urlParams.get('module_id');
     const autoStart = urlParams.get('auto_start');
 
+    // 【诊断日志】
+    console.log('[AutoSend] ========== useEffect 触发 ==========');
+    console.log('[AutoSend] autoSentRef.current:', autoSentRef.current);
+    console.log('[AutoSend] moduleId:', moduleId);
+    console.log('[AutoSend] autoStart:', autoStart);
+    console.log('[AutoSend] currentConversation:', currentConversation?.id || 'null');
+    console.log('[AutoSend] messages.length:', messages.length);
+    console.log('[AutoSend] isStreaming:', isStreaming);
+
+    // 如果已经自动发送过，直接返回
+    if (autoSentRef.current) {
+      console.log('[AutoSend] ✗ 已经发送过，跳过');
+      return;
+    }
+
     // 只有当 auto_start=true、有 moduleId、没有当前对话、且消息为空时才自动发送
-    if (autoStart === 'true' && moduleId && !currentConversation && messages.length === 0 && !isStreaming) {
+    const shouldAutoSend = autoStart === 'true' && moduleId && !currentConversation && messages.length === 0 && !isStreaming;
+    console.log('[AutoSend] shouldAutoSend:', shouldAutoSend);
+
+    if (shouldAutoSend) {
       autoSentRef.current = true;  // 标记已经触发过
+      console.log('[AutoSend] ✓ 开始自动发送流程');
 
       const autoSendMessage = async () => {
         try {
+          console.log('[AutoSend] 正在获取模块:', moduleId);
           const modules = await base44.entities.PromptModule.filter({ id: moduleId });
+          console.log('[AutoSend] 获取到模块数量:', modules.length);
+
           if (modules.length > 0) {
             const module = modules[0];
             const userPrompt = module.user_prompt_template || '';
+            console.log('[AutoSend] 模块标题:', module.title);
+            console.log('[AutoSend] user_prompt_template:', userPrompt ? userPrompt.slice(0, 50) + '...' : '(空)');
 
             // 清除 URL 中的 auto_start 参数，避免重复触发
             const newUrl = window.location.pathname + '?module_id=' + moduleId;
@@ -568,10 +589,12 @@ export function useChatState() {
 
             // 如果有用户提示词模板，自动填充并发送
             if (userPrompt && userPrompt.trim()) {
+              console.log('[AutoSend] ✓ 有用户提示词，准备发送');
               setInputMessage(userPrompt);
 
               // 使用 setTimeout 确保 inputMessage 更新后再发送
               setTimeout(() => {
+                console.log('[AutoSend] setTimeout 触发，开始发送消息');
                 // 创建用户消息
                 const userMessage = {
                   role: 'user',
@@ -584,11 +607,13 @@ export function useChatState() {
                 setIsStreaming(true);
 
                 // 调用 API
+                console.log('[AutoSend] 调用 smartChatWithSearch API');
                 base44.functions.invoke('smartChatWithSearch', {
                   message: userPrompt,
                   conversation_id: null,
                   system_prompt: module.system_prompt || ''
                 }).then(response => {
+                  console.log('[AutoSend] API 响应:', response?.data ? '成功' : '失败');
                   const responseData = response.data;
                   if (responseData && !responseData.error) {
                     const assistantMessage = {
@@ -623,9 +648,11 @@ export function useChatState() {
                         refetchConversations();
                       }, 1500);
                     }
+                  } else {
+                    console.log('[AutoSend] API 返回错误:', responseData?.error);
                   }
                 }).catch(error => {
-                  console.error('Auto-send failed:', error);
+                  console.error('[AutoSend] Auto-send failed:', error);
                   setMessages(prev => [...prev, {
                     role: 'assistant',
                     content: `抱歉，发送失败：${error.message}`,
@@ -636,15 +663,22 @@ export function useChatState() {
                   setIsStreaming(false);
                 });
               }, 100);
+            } else {
+              console.log('[AutoSend] ✗ 用户提示词为空，不发送');
             }
+          } else {
+            console.log('[AutoSend] ✗ 未找到模块');
           }
         } catch (e) {
-          console.error('Failed to auto-send message:', e);
+          console.error('[AutoSend] Failed to auto-send message:', e);
         }
       };
 
       autoSendMessage();
+    } else {
+      console.log('[AutoSend] ✗ 条件不满足，不触发自动发送');
     }
+    console.log('[AutoSend] ====================================');
   }, [messages.length, currentConversation, isStreaming, queryClient]);
 
   return {
