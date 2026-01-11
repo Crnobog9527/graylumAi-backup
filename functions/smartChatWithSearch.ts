@@ -706,22 +706,19 @@ ${summaryToUse.summary_text}
       await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
     } else {
       console.log('[smartChatWithSearch] Creating new conversation');
-      // 【诊断日志 Bug 1】对话创建
-      console.log('[DEBUG-BUG1-BACKEND] ========== 创建新对话 ==========');
-      console.log('[DEBUG-BUG1-BACKEND] user.email:', user.email);
-      console.log('[DEBUG-BUG1-BACKEND] user 完整信息:', JSON.stringify({ email: user.email, id: user.id }));
+      // 【修复 Bug 1】使用普通客户端创建对话，让 SDK 自动设置 created_by
+      // 之前使用 asServiceRole 导致 created_by 字段不是当前用户，查询时匹配不上
+      console.log('[smartChatWithSearch] Using regular client (NOT asServiceRole) to create conversation');
+      console.log('[smartChatWithSearch] Current user email:', user.email);
 
       const createData = {
         title: message.slice(0, 50),
         model_id: selectedModel.id,
         messages: newMessages,
         total_credits_used: actualDeducted,
-        is_archived: false,  // 确保新对话显示在列表中
-        created_by: user.email  // 显式设置 created_by，确保 RLS 规则能匹配
+        is_archived: false  // 确保新对话显示在列表中
+        // 注意：不再手动设置 created_by，让 SDK 自动设置
       };
-
-      console.log('[DEBUG-BUG1-BACKEND] createData.created_by:', createData.created_by);
-      console.log('[DEBUG-BUG1-BACKEND] createData.is_archived:', createData.is_archived);
 
       // 【重要修复】保存系统提示词到对话记录，后续轮次可以读取
       if (hasNewSystemPrompt && system_prompt) {
@@ -735,13 +732,14 @@ ${summaryToUse.summary_text}
         console.log('[smartChatWithSearch] Setting initial session_task_type to:', taskClassification.task_type);
       }
 
-      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
+      // 【修复 Bug 1】使用 base44.entities 而不是 base44.asServiceRole.entities
+      // 这样 SDK 会自动将 created_by 设置为当前登录用户
+      const newConv = await base44.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
 
-      console.log('[DEBUG-BUG1-BACKEND] ✓ 对话创建成功！');
-      console.log('[DEBUG-BUG1-BACKEND] newConv.id:', newConv.id);
-      console.log('[DEBUG-BUG1-BACKEND] newConv.created_by:', newConv.created_by);
-      console.log('[DEBUG-BUG1-BACKEND] ========================================');
+      console.log('[smartChatWithSearch] ✓ Conversation created with regular client');
+      console.log('[smartChatWithSearch] newConv.id:', newConv.id);
+      console.log('[smartChatWithSearch] newConv.created_by:', newConv.created_by);
     }
     
     // 步骤5：更新Token预算（使用最新的用户余额）
