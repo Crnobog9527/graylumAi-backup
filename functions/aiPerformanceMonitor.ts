@@ -335,18 +335,24 @@ Deno.serve(async (req) => {
 
     // ========== 获取超时警报列表 ==========
     if (operation === 'alerts') {
-      const stats = await base44.asServiceRole.entities.TokenStats.filter({});
+      const stats = await base44.asServiceRole.entities.TokenStats.list();
 
       const alerts = stats
-        .filter(s => new Date(s.created_date) >= startDate && (s.is_timeout || s.is_error))
-        .map(s => ({
-          time: s.created_date,
-          type: s.is_timeout ? 'timeout' : 'error',
-          model: s.model_used,
-          response_time_ms: s.response_time_ms,
-          error_message: s.error_message,
-          conversation_id: s.conversation_id
-        }))
+        .filter(s => {
+          const stat = s.data || s;
+          return new Date(s.created_date) >= startDate && (stat.is_timeout || stat.is_error);
+        })
+        .map(s => {
+          const stat = s.data || s;
+          return {
+            time: s.created_date,
+            type: stat.is_timeout ? 'timeout' : 'error',
+            model: stat.model_used,
+            response_time_ms: stat.response_time_ms,
+            error_message: stat.error_message,
+            conversation_id: stat.conversation_id
+          };
+        })
         .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
         .slice(0, 50);
 
