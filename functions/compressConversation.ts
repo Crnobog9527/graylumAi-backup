@@ -1,8 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
+// ========== 摘要生成配置 ==========
+// 强制使用 Haiku 降低成本，摘要任务不需要 Sonnet
 const MODELS = {
   haiku: '@preset/claude-haiku-4.5'
 };
+
+const SUMMARY_MAX_TOKENS = 300;  // 摘要简短即可，控制在 300 tokens
 
 const estimateTokens = (text) => Math.ceil((text || '').length / 4);
 
@@ -30,8 +34,8 @@ Deno.serve(async (req) => {
     }
     
     const messages = conversation.messages || [];
-    // 【优化】增加保留的消息数量，从4轮改为6轮（12条消息）
-    const messagesToCompress = messages_to_compress || messages.length - 12; // 保留最近6轮
+    // 压缩消息数量由调用方传入（通常保留最近 6 条消息）
+    const messagesToCompress = messages_to_compress || messages.length - 6; // 默认保留最近 6 条
     
     if (messagesToCompress <= 0) {
       return Response.json({ error: 'No messages to compress' }, { status: 400 });
@@ -44,49 +48,18 @@ Deno.serve(async (req) => {
     
     const originalTokens = estimateTokens(conversationText);
     
-    // 【优化】增强摘要提示词，确保关键指令和上下文被完整保留
-    const summaryPrompt = `你是一个专业的对话摘要助手。请为以下对话生成**高质量结构化摘要**。
+    // 【优化】简洁的摘要提示词，使用 Haiku 快速提取关键信息
+    const summaryPrompt = `Summarize the key points of this conversation in 2-3 concise sentences.
 
-**核心原则：宁多勿少，关键信息必须完整保留**
+Focus on:
+1. User's main needs and requests
+2. Important context for continuing the conversation
+3. Any specific requirements or preferences mentioned
 
-**必须保留的内容（按重要性排序）：**
-1. **用户的核心指令和要求**：用户明确要求AI做什么、怎么做、以什么格式输出
-2. **角色设定和人设**：如果用户要求AI扮演某个角色或专家身份
-3. **输出格式要求**：用户指定的任何格式、结构、风格要求
-4. **创作主题和背景**：正在讨论或创作的具体内容、主题、背景设定
-5. **已完成的内容概要**：AI已经输出了什么（如小说章节、代码模块等）
-6. **待完成的任务**：用户还期望完成什么
-7. **用户的偏好和反馈**：用户表达的喜好、不满、修改意见
-
-**输出格式：**
-【角色/人设】（如有）
-...
-
-【核心任务】
-...
-
-【输出要求】
-- 格式：...
-- 风格：...
-- 其他：...
-
-【已完成内容】
-- 第X部分：...概要...
-- 第Y部分：...概要...
-
-【待完成任务】
-...
-
-【用户偏好/反馈】
-...
-
-【关键上下文】
-...
-
-对话内容（共 ${Math.floor(oldMessages.length / 2)} 轮）：
+Conversation (${Math.floor(oldMessages.length / 2)} turns):
 ${conversationText}
 
-**重要：摘要必须足够详细，让AI在没有原始对话的情况下，仍能准确继续执行用户的任务和要求。**`;
+Provide a brief, structured summary that captures the essential information.`;
 
     // 调用 Haiku 生成摘要
     const openRouterKey = Deno.env.get('OPENROUTER_API_KEY');
@@ -103,7 +76,7 @@ ${conversationText}
       body: JSON.stringify({
         model: MODELS.haiku,
         messages: [{ role: 'user', content: summaryPrompt }],
-        max_tokens: 2000
+        max_tokens: SUMMARY_MAX_TOKENS  // 使用配置的最大 token 数
       })
     });
     
