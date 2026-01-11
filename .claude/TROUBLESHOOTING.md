@@ -1,7 +1,16 @@
 # 故障排查手册
 
+<!--
+  最后更新: 2026-01-11
+  对应代码文件:
+    - src/components/hooks/useChatState.jsx (前端状态问题)
+    - functions/smartChatWithSearch.ts (后端聊天问题)
+    - functions/callAIModel.ts (AI 调用问题)
+  维护说明: 每次修复 Bug 后，需在此记录问题和解决方案
+  包含内容: 故障排查 + 已解决问题的详细方案 (原 DIAGNOSIS_REPORT.md 已合并)
+-->
+
 > Grayscale 项目常见问题诊断与解决方案
-> 最后更新：2026-01-11
 
 ---
 
@@ -17,39 +26,144 @@
 
 ---
 
-## 🚨 紧急问题
+## 🚨 紧急问题 - ✅ 已解决
 
-### 问题：AdminAnnouncements.jsx 文件过大导致编辑卡顿
+### ✅ 问题已修复：文件大小数据错误（2026-01-11）
+
+**原问题**：文档中记录的文件大小数据严重错误
+
+**实际数据**：
+| 文件 | 原记录 | 实际行数 | 状态 |
+|------|--------|----------|------|
+| `AdminAnnouncements.jsx` | 48,524 | **1,116** | ✅ 正常 |
+| `smartChatWithSearch.ts` | 31,478 | **801** | ✅ 正常 |
+| `callAIModel.ts` | 27,164 | **718** | ✅ 正常 |
+| `useChatState.jsx` | 22,855 | **737** | ✅ 正常 |
+
+**结论**：所有文件大小均在合理范围内（<1500行），无需紧急拆分。
+
+---
+
+### ✅ 问题已修复：系统提示词跨对话串联（2026-01-11）
 
 **症状**
-- 文件有 48,524 行代码
-- IDE 打开文件缓慢或卡死
-- 可能影响构建性能
-- 代码审查困难
+- 用户在对话A中使用功能模块（带系统提示词）
+- 新建对话B后，对话A的系统提示词仍然生效
+- 不同对话之间记忆互相串联
 
-**诊断步骤**
-1. 分析文件内容结构
-2. 识别可拆分的功能模块
-3. 评估拆分对现有功能的影响
+**根本原因**
+系统提示词从 URL 参数 `module_id` 读取，新建对话时 URL 没有清除
 
-**解决方案（待执行）**
+**修复方案**（`src/components/hooks/useChatState.jsx:184-194`）
 
-```jsx
-// 拆分建议结构
-src/components/admin/announcements/
-├── index.jsx                    # 主入口
-├── AnnouncementList.jsx         # 公告列表
-├── AnnouncementForm.jsx         # 公告表单
-├── AnnouncementPreview.jsx      # 公告预览
-├── AnnouncementFilters.jsx      # 筛选器
-└── hooks/
-    └── useAnnouncements.js      # 公告状态管理
+```javascript
+const handleStartNewChat = useCallback(() => {
+  setCurrentConversation(null);
+  setMessages([]);
+  // ...
+
+  // 【修复】清除 URL 中的 module_id 参数
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('module_id')) {
+    urlParams.delete('module_id');
+    urlParams.delete('auto_start');
+    const newUrl = urlParams.toString()
+      ? `${window.location.pathname}?${urlParams.toString()}`
+      : window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
+  }
+}, []);
 ```
 
-**临时解决方案**
-- 使用 VSCode 的 "大文件模式"
-- 关闭语法高亮和 lint 检查
-- 使用命令行编辑器 (vim/nano) 进行小修改
+---
+
+### ✅ 问题已修复：功能模块不自动发送用户提示词（2026-01-11）
+
+**症状**
+- 用户通过功能模块点击"使用"跳转对话后
+- 后台配置的用户提示词没有自动发送
+
+**根本原因**
+原有的 `setTimeout + querySelector.click()` 方法不可靠，存在竞态条件
+
+**修复方案**（`src/components/hooks/useChatState.jsx:546-682`）
+
+```javascript
+// 使用 autoSentRef 防止重复发送
+const autoSentRef = useRef(false);
+
+useEffect(() => {
+  if (autoSentRef.current) return;  // 已发送过则跳过
+
+  const shouldAutoSend = autoStart === 'true' && moduleId &&
+                         !currentConversation && messages.length === 0;
+
+  if (shouldAutoSend) {
+    autoSentRef.current = true;  // 标记已触发
+    // 直接调用 API 发送消息，不依赖 DOM 查询
+    await base44.functions.invoke('smartChatWithSearch', {...});
+  }
+}, [messages.length, currentConversation, isStreaming]);
+```
+
+**关键改进**：
+- 使用 `useRef` 防止重复发送
+- 直接调用 API 而非模拟点击
+- 添加 `[AutoSend]` 前缀的诊断日志
+
+---
+
+### ✅ 问题已修复：对话历史不显示在侧边栏（2026-01-11）
+
+**症状**
+- 新建对话后，对话不出现在左侧历史记录栏
+- 刷新页面后对话完全消失
+
+**根本原因**
+`queryClient.invalidateQueries` 只标记缓存过期，不会立即触发重新获取
+
+**修复方案**（`src/components/hooks/useChatState.jsx:372-379`）
+
+```javascript
+// 修复：多次刷新确保数据同步
+setTimeout(() => {
+  console.log('[useChatState] First refetch attempt...');
+  refetchConversations();
+}, 500);
+setTimeout(() => {
+  console.log('[useChatState] Second refetch attempt...');
+  refetchConversations();
+}, 1500);
+```
+
+---
+
+### ✅ 问题已修复：聊天上下文丢失（2026-01-11）
+
+**症状**
+- 多轮对话后 AI 忘记之前内容
+- 长对话时问题更明显
+
+**根本原因**
+消息过滤和 token 估算逻辑无法正确处理数组格式的消息内容（带缓存控制的消息格式）
+
+**修复方案**（`functions/smartChatWithSearch.ts` 和 `functions/callAIModel.ts`）
+
+```typescript
+// 修复前（错误处理）
+apiMessages = apiMessages.filter(m => m.content && m.content.trim().length > 0);
+
+// 修复后（安全处理数组格式）
+apiMessages = apiMessages.filter(m => {
+  if (!m.content) return false;
+  if (Array.isArray(m.content)) {
+    return m.content.some(block =>
+      block && block.text && typeof block.text === 'string' && block.text.trim().length > 0
+    );
+  }
+  return typeof m.content === 'string' && m.content.trim().length > 0;
+});
+```
 
 ---
 

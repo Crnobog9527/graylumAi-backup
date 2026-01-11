@@ -1,7 +1,15 @@
 # PROJECT_CONTEXT.md
 
+<!--
+  最后更新: 2026-01-11
+  对应代码文件:
+    - package.json (依赖版本)
+    - vite.config.js (构建配置)
+    - tailwind.config.js (样式配置)
+  维护说明: 当技术栈、依赖版本或项目配置变更时，需同步更新本文档
+-->
+
 > 本文件为 Claude Code 维护项目时的核心上下文参考文档
-> 最后更新：2026-01-11
 
 ---
 
@@ -84,9 +92,10 @@ Grayscale 是一个 AI 驱动的社交媒体增长平台，通过智能聊天机
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
-| `functions/smartChatWithSearch.ts` | 31,478 | 智能搜索聊天核心逻辑 |
-| `functions/callAIModel.ts` | 27,164 | AI 模型调用封装 |
-| `src/hooks/useChatState.js` | 22,855 | 聊天状态管理 Hook |
+| `functions/smartChatWithSearch.ts` | 801 | 智能搜索聊天核心逻辑 |
+| `functions/callAIModel.ts` | 718 | AI 模型调用封装 |
+| `src/components/hooks/useChatState.jsx` | 737 | 聊天状态管理 Hook |
+| `functions/compressConversation.ts` | 148 | 对话压缩 |
 
 ---
 
@@ -103,7 +112,7 @@ Grayscale 是一个 AI 驱动的社交媒体增长平台，通过智能聊天机
 **关键文件:**
 - `src/pages/Chat.jsx` - 聊天页面
 - `src/components/chat/` - 聊天组件 (15个)
-- `src/hooks/useChatState.js` - 状态管理
+- `src/components/hooks/useChatState.jsx` - 状态管理
 - `functions/smartChatWithSearch.ts` - 后端聊天逻辑
 - `functions/callAIModel.ts` - AI 模型调用
 - `functions/compressConversation.ts` - 上下文压缩
@@ -139,7 +148,7 @@ Grayscale 是一个 AI 驱动的社交媒体增长平台，通过智能聊天机
 | 交易记录 | AdminTransactions.jsx | 正常 |
 | 财务管理 | AdminFinance.jsx | 正常 |
 | 工单管理 | AdminTickets.jsx | 正常 |
-| 公告管理 | AdminAnnouncements.jsx | **需优化** (48,524行) |
+| 公告管理 | AdminAnnouncements.jsx | 正常 (1,116行) |
 | 系统设置 | AdminSettings.jsx | 正常 |
 | 精选管理 | AdminFeatured.jsx | **未实现** (空文件) |
 

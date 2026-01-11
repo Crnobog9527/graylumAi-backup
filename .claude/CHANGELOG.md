@@ -1,7 +1,155 @@
 # 开发日志
 
+<!--
+  最后更新: 2026-01-11
+  维护说明: 每次代码变更后必须更新此文件
+  格式要求: 按时间倒序排列，最新的变更在最上面
+-->
+
 > Grayscale 项目变更记录
-> 按时间倒序排列，最新的变更在最上面
+
+---
+
+## 2026-01-11 (知识库自动维护机制) 🔧
+
+### 📊 新增功能
+
+建立了完整的知识库自动维护体系：
+
+| 组件 | 文件 | 功能 |
+|------|------|------|
+| **状态追踪** | `.claude/README.md` | 知识库状态、待更新项、维护清单 |
+| **自动检测** | `update-docs.sh` | 检测代码变更，生成更新提示词 |
+| **提交提醒** | `.git/hooks/post-commit` | 动态读取监控文件列表，自动提醒 |
+| **元数据** | 所有 `.claude/*.md` | 统一的文件头部元数据格式 |
+
+### ✅ 更新的文件
+
+**README.md 新增部分**：
+- 知识库状态表（最后更新时间、commit hash）
+- 待更新项列表
+- 关键代码文件监控列表
+- 知识库维护清单（每次/每周/每月）
+
+**新建脚本**：
+```bash
+./update-docs.sh     # 检测最近7天代码变更
+./update-docs.sh 14  # 检测最近14天代码变更
+```
+
+**Git Hook**：
+- 位置: `.git/hooks/post-commit`
+- 功能: 动态读取 README.md 中的监控文件列表
+- 效果: 当关键文件变更时自动提醒更新文档
+
+**文件头部元数据格式**：
+```markdown
+<!--
+  最后更新: 日期
+  对应代码文件: 相关代码文件列表
+  维护说明: 更新触发条件说明
+-->
+```
+
+### 📋 监控的关键文件
+
+```
+核心业务: useChatState.jsx, smartChatWithSearch.ts, callAIModel.ts
+配置文件: package.json, vite.config.js, tailwind.config.js
+设计系统: theme.css, components.css
+```
+
+---
+
+## 2026-01-11 (知识库文档整合) 🗂️
+
+### 📊 整合统计
+
+| 操作 | 文件数 |
+|------|--------|
+| 原有文件 | 23个 |
+| 整合后核心文件 | 8个 |
+| 归档历史文档 | 15个 |
+| **减少率** | **65%** |
+
+### 📁 文件结构变更
+
+**合并后核心知识库** (8个文件):
+```
+.claude/
+├── README.md               # 快速参考
+├── PROJECT_CONTEXT.md      # 项目上下文
+├── ARCHITECTURE.md         # 系统架构
+├── CODING_STANDARDS.md     # 编码规范 + 设计系统
+├── CHANGELOG.md            # 变更日志
+├── TROUBLESHOOTING.md      # 故障排查 + 解决方案
+├── MAINTENANCE_WORKFLOW.md # 维护流程
+└── HEALTH_REPORT.md        # 健康报告 + 修复路线图
+```
+
+### 🔄 合并详情
+
+| 操作类型 | 文件 | 说明 |
+|----------|------|------|
+| 归档 | `DIAGNOSIS_REPORT.md` | P0 Bug 已解决 |
+| 归档 | `FIX_ROADMAP.md` | P0 已完成 |
+| 归档 | `docs/*` (4个) | 历史诊断文档 |
+| 合并 | `DESIGN_SYSTEM_PROGRESS.md` | → CODING_STANDARDS |
+| 归档 | 根目录文档 (7个) | 历史参考 |
+| 删除 | `docs/` 目录 | 空目录已删除 |
+
+### ✅ 更新的文档
+
+- **README.md**: 更新文档导航表，删除 FIX_ROADMAP 引用
+- **CODING_STANDARDS.md**: 添加设计系统速查章节
+
+---
+
+## 2026-01-11 (知识库系统性更新) 📚
+
+### 📊 代码扫描结果
+
+**核心文件实际行数验证**：
+
+| 文件 | 文档旧值 | 实际行数 | 位置 |
+|------|----------|----------|------|
+| `smartChatWithSearch.ts` | 752 / 31,478 | **801** | `functions/` |
+| `callAIModel.ts` | 679 / 27,164 | **718** | `functions/` |
+| `useChatState.jsx` | 691 / 22,855 | **737** | `components/hooks/` |
+| `AdminAnnouncements.jsx` | 1,116 / 48,524 | **1,116** | `pages/` |
+| `ProfileComponents.jsx` | 1,348 | **1,348** | `components/profile/` |
+| `compressConversation.ts` | - | **148** | `functions/` |
+
+### ✅ 已确认删除的文件
+
+- `src/hooks/useChatState.js` - 已删除（commit 311d26c）
+- 只有 `src/components/hooks/useChatState.jsx` 在使用
+
+### 📝 已更新的知识库文档
+
+| 文档 | 更新内容 |
+|------|----------|
+| **README.md** | 关键文件行数、P0 问题状态、改进项 |
+| **ARCHITECTURE.md** | 文件行数、useChatState 位置说明 |
+| **TROUBLESHOOTING.md** | 添加 5 个已修复问题的详细解决方案 |
+| **HEALTH_REPORT.md** | 文件大小数据、问题状态更新 |
+| **CHANGELOG.md** | 本次更新记录（本条目） |
+
+### 🎯 P0 问题修复确认
+
+通过代码扫描确认以下修复已在代码中实现：
+
+1. **系统提示词跨对话串联** - `useChatState.jsx:184-194`
+2. **功能模块自动发送** - `useChatState.jsx:546-682`
+3. **对话历史不显示** - `useChatState.jsx:372-379`
+4. **聊天上下文丢失** - 消息过滤逻辑修复
+
+### 📋 经验教训总结
+
+1. **确认导入路径**：修改前先用 grep 确认哪个文件被导入
+2. **避免重复文件**：项目不应存在同名但路径不同的模块
+3. **定期扫描验证**：文档数据需要与代码保持同步
+4. **代码位置标注**：在文档中标注具体行号便于快速定位
 
 ---
 

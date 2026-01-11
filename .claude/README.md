@@ -2,7 +2,67 @@
 
 > **Claude Code 快速参考指南**
 > 每次新对话开始时，请首先阅读此文件
-> 最后更新：2026-01-11
+
+---
+
+## 📊 知识库状态
+
+| 状态项 | 值 |
+|--------|-----|
+| **最后全面更新** | 2026-01-11 |
+| **最后同步 Commit** | `c57ec48` |
+| **知识库版本** | 2.0 |
+| **核心文件数** | 8个 |
+
+### 待更新项
+
+<!-- 当代码变更时，在此记录需要同步的文档 -->
+| 状态 | 待更新项 | 原因 |
+|------|----------|------|
+| ✅ | 无待更新项 | 文档与代码已同步 |
+
+### 关键代码文件监控列表
+
+> **重要**: 以下文件变更时需同步更新知识库
+
+```
+# 核心业务文件 (变更时更新 ARCHITECTURE.md, TROUBLESHOOTING.md)
+src/components/hooks/useChatState.jsx
+functions/smartChatWithSearch.ts
+functions/callAIModel.ts
+functions/compressConversation.ts
+
+# 配置文件 (变更时更新 PROJECT_CONTEXT.md)
+package.json
+vite.config.js
+tailwind.config.js
+
+# 设计系统 (变更时更新 CODING_STANDARDS.md)
+src/theme.css
+src/components.css
+```
+
+---
+
+## 🔧 知识库维护清单
+
+### 每次代码修改后
+
+- [ ] 检查是否涉及"关键代码文件监控列表"中的文件
+- [ ] 更新 CHANGELOG.md 记录变更
+- [ ] 如有 Bug 修复，更新 TROUBLESHOOTING.md
+
+### 每周审查
+
+- [ ] 运行 `./update-docs.sh` 检查代码变更
+- [ ] 核对"待更新项"是否已清空
+- [ ] 检查 HEALTH_REPORT.md 问题状态
+
+### 每月审查
+
+- [ ] 验证核心文件行数是否与文档一致
+- [ ] 检查 P1/P2 问题进度
+- [ ] 更新项目健康度评分
 
 ---
 
@@ -13,12 +73,13 @@
 | **README.md** | 快速参考指南（本文件） | 每次对话开始时 |
 | **PROJECT_CONTEXT.md** | 项目全貌、技术栈、功能模块 | 需要了解项目背景时 |
 | **ARCHITECTURE.md** | 系统架构、数据流、AI 系统 | 开发新功能或重构时 |
-| **CODING_STANDARDS.md** | 编码规范、命名规则、检查清单 | 编写代码前 |
+| **CODING_STANDARDS.md** | 编码规范、命名规则、设计系统 | 编写代码前 |
 | **CHANGELOG.md** | 变更日志、当前状态 | 了解最近变更时 |
 | **TROUBLESHOOTING.md** | 故障排查、问题解决方案 | 遇到 Bug 或问题时 |
-| **FIX_ROADMAP.md** | 修复路线图、优先级排序 | 规划修复任务时 |
 | **MAINTENANCE_WORKFLOW.md** | 维护流程、操作规范 | 执行维护任务时 |
-| **HEALTH_REPORT.md** | 项目健康度评估、改进建议 | 规划工作或评估时 |
+| **HEALTH_REPORT.md** | 项目健康度评估、改进建议、修复路线图 | 规划工作或评估时 |
+
+> **已整合文档**：历史文档已归档到 `archive/` 目录
 
 ---
 
@@ -34,10 +95,10 @@
 |----------|----------|
 | Bug 修复 | TROUBLESHOOTING.md |
 | 新功能 | ARCHITECTURE.md + CODING_STANDARDS.md |
-| UI 调整 | CODING_STANDARDS.md (设计部分) |
+| UI 调整 | CODING_STANDARDS.md (设计系统部分) |
 | AI 优化 | ARCHITECTURE.md (AI 章节) |
-| **问题修复规划** | **FIX_ROADMAP.md** |
-| **优先级评估** | **FIX_ROADMAP.md + HEALTH_REPORT.md** |
+| **问题修复规划** | **HEALTH_REPORT.md** |
+| **优先级评估** | **HEALTH_REPORT.md** |
 
 ### 步骤 3：开始工作
 确认理解后，执行任务并更新 CHANGELOG.md
@@ -63,9 +124,9 @@
 |------|------|------|
 | `ProfileComponents.jsx` | 1,348 | 用户资料组件 |
 | `AdminAnnouncements.jsx` | 1,116 | 公告管理 |
-| `smartChatWithSearch.ts` | 752 | 智能搜索聊天核心 |
-| `callAIModel.ts` | 679 | AI 模型调用封装 |
-| `useChatState.jsx` | 691 | 聊天状态管理 |
+| `smartChatWithSearch.ts` | 801 | 智能搜索聊天核心 |
+| `callAIModel.ts` | 718 | AI 模型调用封装 |
+| `useChatState.jsx` | 737 | 聊天状态管理（位于 components/hooks/）|
 
 ### 设计系统要点
 
@@ -87,17 +148,19 @@
 
 ## 4. 当前已知问题（优先处理）
 
-### P0 紧急问题 🔴 （本周内 3天）
+### P0 紧急问题 🔴 - ✅ 全部已修复
 
-> **用户反馈**：以下问题严重影响使用体验，必须立即处理
+> **2026-01-11 更新**：所有 P0 问题已修复完成
 
-| 问题 | 相关文件 | 影响 |
-|------|----------|------|
-| **聊天上下文丢失** | `useChatState.jsx`, `compressConversation.ts` | 核心功能受损 |
-| **AI 响应缓慢或超时** | `callAIModel.ts`, `smartChatWithSearch.ts` | 用户体验差 |
+| 问题 | 状态 | 解决方案 |
+|------|------|----------|
+| **系统提示词跨对话串联** | ✅ 已修复 | `handleStartNewChat` 清除 URL 参数 |
+| **功能模块不自动发送提示词** | ✅ 已修复 | 自动发送逻辑 + `autoSentRef` 防重复 |
+| **对话历史不显示** | ✅ 已修复 | `refetchConversations()` 多次刷新 |
+| **聊天上下文丢失** | ✅ 已修复 | 修复消息过滤逻辑处理数组格式 |
+| **AI 响应缓慢或超时** | ⏳ 待验证 | 已有重试机制，需要监控 |
 
-**处理时限**: 3天内完成
-**详细方案**: 见 `FIX_ROADMAP.md`
+**详细修复方案**: 见 `TROUBLESHOOTING.md` 和 `CHANGELOG.md`
 
 ### P1 高优先级 🟡 （本月内）
 
@@ -244,11 +307,11 @@
 | 不知道代码在哪 | ARCHITECTURE.md |
 | 不确定规范 | CODING_STANDARDS.md |
 | AI 响应问题 | TROUBLESHOOTING.md (AI 章节) |
-| UI 样式问题 | CODING_STANDARDS.md (UI 部分) |
+| UI 样式问题 | CODING_STANDARDS.md (设计系统部分) |
 | 性能问题 | ARCHITECTURE.md (性能章节) |
-| **多个问题需要排序** | **FIX_ROADMAP.md** |
-| **制定修复计划** | **FIX_ROADMAP.md** |
-| **评估问题紧急程度** | **FIX_ROADMAP.md + HEALTH_REPORT.md** |
+| **多个问题需要排序** | **HEALTH_REPORT.md** |
+| **制定修复计划** | **HEALTH_REPORT.md** |
+| **评估问题紧急程度** | **HEALTH_REPORT.md** |
 
 ### 快速查找方式
 
@@ -259,64 +322,6 @@
 - "暗色模式" / "dark"
 - "Token"
 ```
-
----
-
-## 9. FIX_ROADMAP.md 使用指南
-
-### 适用场景
-
-| 场景 | 使用方式 |
-|------|----------|
-| **发现新问题** | 评估优先级后添加到 FIX_ROADMAP.md |
-| **用户反馈紧急问题** | 提升问题优先级为 P0，更新处理时限 |
-| **规划修复工作** | 按照路线图中的优先级顺序执行 |
-| **评估工作量** | 参考每个问题的预估时间和相关文件 |
-| **开始新对话** | 查看当前 P0/P1 问题，了解紧急任务 |
-
-### 与其他文档的协作关系
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    文档协作流程图                            │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  TROUBLESHOOTING.md ──→ FIX_ROADMAP.md ──→ CHANGELOG.md    │
-│  (发现问题)            (排序优先级)        (记录修复)        │
-│       ↑                     ↓                    ↑          │
-│       │              HEALTH_REPORT.md            │          │
-│       │              (评估影响)                   │          │
-│       │                     ↓                    │          │
-│       └──────── 修复完成后更新 ←─────────────────┘          │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**协作说明**：
-
-| 文档 | 与 FIX_ROADMAP.md 的关系 |
-|------|--------------------------|
-| **TROUBLESHOOTING.md** | 问题来源 → 新发现的问题先记录到此，再评估是否加入路线图 |
-| **HEALTH_REPORT.md** | 影响评估 → 提供问题严重程度和项目健康度参考 |
-| **CHANGELOG.md** | 结果记录 → 问题修复后在此记录，并更新路线图状态 |
-| **ARCHITECTURE.md** | 技术参考 → 了解问题涉及的系统架构，辅助制定方案 |
-
-### 优先级评估公式
-
-```
-优先级得分 = (影响范围 × 严重程度 × 发生频率) / 修复难度
-
-P0 紧急：得分 > 15 或 用户反馈严重影响体验
-P1 高优先级：得分 10-15
-P2 中优先级：得分 5-10
-P3 低优先级：得分 < 5
-```
-
-### 维护流程
-
-1. **新问题加入**：评估优先级 → 添加到对应 P 级别 → 更新 CHANGELOG.md
-2. **问题完成**：标记完成 → 更新 CHANGELOG.md → 更新 TROUBLESHOOTING.md（如需要）
-3. **优先级调整**：用户反馈或影响变化 → 重新评估 → 更新所有相关文档
 
 ---
 
@@ -351,7 +356,7 @@ src/
 │   ├── admin/        # 管理后台组件 (9个)
 │   └── [其他模块]/
 ├── hooks/            # 全局 Hooks
-│   └── useChatState.js  # 聊天状态管理
+│   └── use-mobile.jsx   # 移动端检测
 ├── pages/            # 页面组件 (18个)
 ├── lib/              # 工具库
 └── utils/            # 工具函数
@@ -379,15 +384,21 @@ functions/
 
 ### 文档系统位置
 ```
-.claude/
+.claude/                     # 核心知识库 (8个文件)
 ├── README.md               # 快速参考（本文件）
 ├── PROJECT_CONTEXT.md      # 项目上下文
 ├── ARCHITECTURE.md         # 系统架构
-├── CODING_STANDARDS.md     # 编码规范
+├── CODING_STANDARDS.md     # 编码规范 + 设计系统
 ├── CHANGELOG.md            # 变更日志
-├── TROUBLESHOOTING.md      # 故障排查
+├── TROUBLESHOOTING.md      # 故障排查 + 解决方案
 ├── MAINTENANCE_WORKFLOW.md # 维护流程
-└── HEALTH_REPORT.md        # 健康报告
+└── HEALTH_REPORT.md        # 健康报告 + 修复路线图
+
+archive/                     # 历史文档归档
+├── DIAGNOSIS_REPORT_P0_bugs.md
+├── FIX_ROADMAP_completed.md
+├── DESIGN_SYSTEM_PROGRESS.md
+└── [其他历史文档]
 ```
 
 ---
@@ -425,7 +436,7 @@ functions/
 2. 理解现有逻辑：
    - callAIModel.ts: 模型调用
    - smartChatWithSearch.ts: 智能搜索
-   - useChatState.js: 状态管理
+   - useChatState.jsx: 状态管理（位于 components/hooks/）
 3. 修改时记录 Token 影响
 4. 测试成本变化
 5. 在 CHANGELOG.md 记录优化
@@ -462,13 +473,13 @@ functions/
 
 ### 优先改进项
 
-| 优先级 | 任务 | 预期影响 | 时限 |
+| 优先级 | 任务 | 预期影响 | 状态 |
 |--------|------|----------|------|
-| **P0** | 修复聊天上下文丢失 | 核心功能恢复 | **3天内** |
-| **P0** | 优化 AI 响应速度 | 用户体验提升 | **3天内** |
+| **P0** | 修复 P0 核心问题 | 核心功能恢复 | ✅ **已完成** |
 | P1 | Token 消耗优化 | 成本降低 | 本月内 |
 | P1 | 前端代码分割 | 首屏加载 -40% | 本月内 |
 | P2 | 整合文档系统 | 维护效率 +30% | 本季度 |
+| P2 | 清理重复文件 | 维护性提升 | 本季度 |
 
 ---
 
