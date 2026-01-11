@@ -735,8 +735,10 @@ ${summaryToUse.summary_text}
         model_id: selectedModel.id,
         messages: newMessages,
         total_credits_used: actualDeducted,
-        is_archived: false  // 确保新对话显示在列表中
-        // 注意：不再手动设置 created_by，让 SDK 自动设置
+        is_archived: false,  // 确保新对话显示在列表中
+        // 【关键修复】显式设置 created_by 为用户邮箱
+        // 前端查询使用 { created_by: user.email }，必须匹配
+        created_by: user.email
       };
 
       // 【重要修复】保存系统提示词到对话记录，后续轮次可以读取
