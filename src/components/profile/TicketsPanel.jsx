@@ -649,7 +649,7 @@ function CreateTicketForm({ user, onBack, onSuccess }) {
                   style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}
                 >
                   <div className="flex items-center gap-3">
-                    <img src={att.url} alt={att.name} className="w-12 h-12 object-cover rounded" />
+                    <img src={att.url} alt={att.name} loading="lazy" className="w-12 h-12 object-cover rounded" />
                     <span className="text-sm truncate max-w-[200px]" style={{ color: 'var(--text-primary)' }}>
                       {att.name}
                     </span>

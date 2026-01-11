@@ -940,9 +940,10 @@ function AdminAnnouncementsContent() {
                 <Label>横幅大图</Label>
                 {featuredForm.image_url ? (
                   <div className="relative rounded-lg overflow-hidden border border-slate-200">
-                    <img 
-                      src={featuredForm.image_url} 
-                      alt="横幅预览" 
+                    <img
+                      src={featuredForm.image_url}
+                      alt="横幅预览"
+                      loading="lazy"
                       className="w-full h-32 object-cover"
                     />
                     <button

@@ -336,7 +336,7 @@ function AdminTicketsContent() {
                   <div className="grid grid-cols-2 gap-2">
                     {selectedTicket.attachments.map((att, idx) => (
                       <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer">
-                        <img src={att.url} alt={att.name} className="w-full h-24 object-cover rounded-lg border" />
+                        <img src={att.url} alt={att.name} loading="lazy" className="w-full h-24 object-cover rounded-lg border" />
                       </a>
                     ))}
                   </div>

@@ -158,9 +158,10 @@ export default function FeaturedModules() {
               {featured.image_url && (
                 <div className="px-6">
                   <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <img 
-                      src={featured.image_url} 
+                    <img
+                      src={featured.image_url}
                       alt={featured.title}
+                      loading="lazy"
                       className="w-full h-40 object-cover transition-all duration-700 group-hover:scale-110"
                     />
                   </div>

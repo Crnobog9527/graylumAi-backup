@@ -62,9 +62,10 @@ export default function FileAttachmentCard({ attachment, className }) {
       {/* 图片预览 */}
       {isImage && attachment.content && (
         <div className="border-t border-slate-200 p-3 bg-white">
-          <img 
+          <img
             src={`data:${attachment.mediaType};base64,${attachment.content}`}
             alt={attachment.fileName}
+            loading="lazy"
             className="max-w-full h-auto rounded"
           />
         </div>
