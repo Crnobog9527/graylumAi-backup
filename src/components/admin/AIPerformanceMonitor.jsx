@@ -13,17 +13,24 @@ import {
 export default function AIPerformanceMonitor() {
   const [timeRange, setTimeRange] = useState('24h');
 
-  const { data: dashboard, isLoading, refetch } = useQuery({
+  const { data: dashboard, isLoading, refetch, error } = useQuery({
     queryKey: ['ai-performance', timeRange],
     queryFn: async () => {
+      console.log('[AIPerformanceMonitor] Fetching dashboard data...');
       const response = await base44.functions.invoke('aiPerformanceMonitor', {
         operation: 'dashboard',
         time_range: timeRange
       });
+      console.log('[AIPerformanceMonitor] Response:', response?.data);
       return response.data;
     },
-    refetchInterval: 60000 // 每分钟刷新
+    refetchInterval: 30000 // 每30秒刷新
   });
+
+  // 调试：显示错误
+  if (error) {
+    console.error('[AIPerformanceMonitor] Error:', error);
+  }
 
   const getHealthBadge = (status) => {
     const styles = {
