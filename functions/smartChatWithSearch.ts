@@ -732,7 +732,8 @@ ${summaryToUse.summary_text}
     try {
       const base44ForError = createClientFromRequest(req);
       const errorUser = await base44ForError.auth.me().catch(() => null);
-      await base44ForError.asServiceRole.entities.TokenStats.create({
+      // 使用普通用户身份创建（RLS 已设为 public）
+      await base44ForError.entities.TokenStats.create({
         conversation_id: 'error',
         user_email: errorUser?.email || 'unknown',
         model_used: 'unknown',
@@ -749,7 +750,7 @@ ${summaryToUse.summary_text}
         error_message: error.message
       });
     } catch (e) {
-      // Silently ignore
+      log.error('Error recording TokenStats for error:', e.message);
     }
 
     return Response.json({
