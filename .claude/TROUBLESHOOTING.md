@@ -97,35 +97,6 @@ for (let i = 0; i < MAX_RETRIES; i++) {
 ```
 
 ---
-
-### 问题：聊天上下文丢失
-
-**症状**
-- AI 没有上下文记忆，每次对话都像新开对话。
-- AI 不遵循系统提示词中的制定的严格规则
-
-**诊断步骤**
-1. 检查 `useChatState.js` 状态管理
-2. 验证对话历史是否正确传递到后端
-3. 检查 Token 限制是否导致上下文被截断
-4. 查看 `compressConversation.ts` 压缩策略
-
-**相关配置**
-
-```typescript
-// smartChatWithSearch.ts 中的配置
-const FULL_HISTORY_LIMIT = 10;          // 10轮内保持完整历史
-const RECENT_MESSAGES_COUNT = 6;        // 超过后保留最近6条
-const COMPRESSION_TRIGGER_MESSAGES = 20; // 触发压缩的消息数
-```
-
-**解决方案**
-- 确保 `useChatState.js` 正确维护 `messages` 数组
-- 检查前端是否正确传递 `conversationId`
-- 验证压缩后的摘要质量
-
----
-
 ### 问题：Token 消耗过高
 
 **症状**
@@ -155,29 +126,6 @@ console.log('[Token分析]', {
 - 确保 Prompt Caching 生效 (系统提示 ≥1024 tokens)
 - 简化系统提示词
 - 对长文本使用上下文压缩
-
----
-
-### 问题：智能搜索不生效
-
-**症状**
-- AI 无法获取最新信息
-- 搜索结果为空
-- 搜索决策错误
-
-**诊断步骤**
-1. 检查 `SystemSettings` 中 `enable_smart_search_decision` 是否为 `true`
-2. 验证搜索分类器 `searchClassifier.ts` 逻辑
-3. 检查搜索缓存是否过期
-
-**解决方案**
-
-```typescript
-// 检查系统设置
-const settings = await base44.entities.SystemSettings.list();
-const searchEnabled = settings.find(s => s.setting_key === 'enable_smart_search_decision');
-console.log('智能搜索开关:', searchEnabled?.setting_value);
-```
 
 ---
 
