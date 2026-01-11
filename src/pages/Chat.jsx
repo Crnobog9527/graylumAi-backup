@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 // 引入自定义 Hook 和组件
-import { useChatState } from '@/components/hooks/useChatState';
+import { useChatState } from '@/components/hooks/useChatState.jsx';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import ChatHeader from '@/components/chat/ChatHeader';
 import ChatMessages from '@/components/chat/ChatMessages';
