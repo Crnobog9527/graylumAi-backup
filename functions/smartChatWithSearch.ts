@@ -315,15 +315,13 @@ Deno.serve(async (req) => {
     if (conversation_id) {
       console.log('[smartChatWithSearch] Loading conversation:', conversation_id);
       try {
-        // 【重构】统一使用 asServiceRole 查询对话
-        // 获取完整字段（包括 system_prompt），所有权通过 owner_email 管理
+        // 使用 asServiceRole 查询，获取完整字段（包括 system_prompt）
         const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
         if (convs.length > 0) {
           conversation = convs[0];
           conversationMessages = conversation.messages || [];
-          console.log('[smartChatWithSearch] Loaded', conversationMessages.length, 'messages from conversation');
-          console.log('[smartChatWithSearch] Conversation owner_email:', conversation.owner_email);
-          console.log('[smartChatWithSearch] Conversation system_prompt:', conversation.system_prompt ? `"${conversation.system_prompt.slice(0, 100)}..."` : 'null/undefined');
+          console.log('[smartChatWithSearch] Loaded', conversationMessages.length, 'messages');
+          console.log('[smartChatWithSearch] system_prompt:', conversation.system_prompt ? 'yes' : 'no');
         } else {
           console.log('[smartChatWithSearch] ⚠️ Conversation not found, treating as new');
           console.log('[smartChatWithSearch] This may indicate a permission issue or conversation was deleted');
@@ -708,15 +706,11 @@ ${summaryToUse.summary_text}
         console.log('[smartChatWithSearch] Updating session_task_type to:', taskClassification.task_type);
       }
 
-      // 【重构】统一使用 asServiceRole 客户端
-      // 使用自定义 owner_email 字段管理所有权，不再依赖系统 created_by
+      // 使用 asServiceRole 更新（可以更新任何对话）
       await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
-      console.log('[smartChatWithSearch] ✓ Conversation updated successfully');
+      console.log('[smartChatWithSearch] ✓ Updated');
     } else {
       console.log('[smartChatWithSearch] Creating new conversation');
-      // 【重构】使用 asServiceRole + owner_email 创建对话
-      console.log('[smartChatWithSearch] Using asServiceRole with owner_email');
-      console.log('[smartChatWithSearch] owner_email:', user.email);
 
       const createData = {
         title: message.slice(0, 50),
@@ -724,9 +718,7 @@ ${summaryToUse.summary_text}
         messages: newMessages,
         total_credits_used: actualDeducted,
         is_archived: false,
-        // 【重构】使用自定义 owner_email 字段替代系统 created_by
-        // 这样可以统一使用 asServiceRole，同时保证所有权正确
-        owner_email: user.email
+        owner_email: user.email  // 自定义字段，用于前端查询
       };
 
       // 【重要修复】保存系统提示词到对话记录，后续轮次可以读取
@@ -741,14 +733,10 @@ ${summaryToUse.summary_text}
         console.log('[smartChatWithSearch] Setting initial session_task_type to:', taskClassification.task_type);
       }
 
-      // 【重构】统一使用 asServiceRole 创建对话
-      // 所有权通过 owner_email 字段管理，不再依赖系统 created_by
+      // 使用 asServiceRole 创建（绕过 RLS）
       const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
-
-      console.log('[smartChatWithSearch] ✓ Conversation created with asServiceRole');
-      console.log('[smartChatWithSearch] newConv.id:', newConv.id);
-      console.log('[smartChatWithSearch] newConv.owner_email:', newConv.owner_email);
+      console.log('[smartChatWithSearch] ✓ Created, id:', newConv.id);
     }
     
     // 步骤5：更新Token预算（使用最新的用户余额）
