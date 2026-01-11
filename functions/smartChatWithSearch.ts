@@ -675,7 +675,7 @@ ${summaryToUse.summary_text}
     const responseTimeMs = Date.now() - startTime;
     log.info('Request completed in', responseTimeMs, 'ms');
 
-    // 步骤7：直接记录性能监控数据到 TokenStats（避免额外函数调用）
+    // 步骤7：直接记录性能监控数据到 TokenStats（使用用户身份，RLS 已设为 public）
     try {
       const tokenStatsData = {
         conversation_id: finalConversationId || 'unknown',
@@ -693,7 +693,8 @@ ${summaryToUse.summary_text}
         is_error: false
       };
       log.info('Creating TokenStats record:', JSON.stringify(tokenStatsData));
-      const tokenStatsResult = await base44.asServiceRole.entities.TokenStats.create(tokenStatsData);
+      // 使用普通用户身份创建（RLS 已设为 public）
+      const tokenStatsResult = await base44.entities.TokenStats.create(tokenStatsData);
       log.info('TokenStats created:', tokenStatsResult?.id || 'no id returned');
     } catch (e) {
       log.error('TokenStats record error:', e.message, e.stack);
