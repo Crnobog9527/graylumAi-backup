@@ -16,6 +16,7 @@
 | **CODING_STANDARDS.md** | 编码规范、命名规则、检查清单 | 编写代码前 |
 | **CHANGELOG.md** | 变更日志、当前状态 | 了解最近变更时 |
 | **TROUBLESHOOTING.md** | 故障排查、问题解决方案 | 遇到 Bug 或问题时 |
+| **FIX_ROADMAP.md** | 修复路线图、优先级排序 | 规划修复任务时 |
 | **MAINTENANCE_WORKFLOW.md** | 维护流程、操作规范 | 执行维护任务时 |
 | **HEALTH_REPORT.md** | 项目健康度评估、改进建议 | 规划工作或评估时 |
 
