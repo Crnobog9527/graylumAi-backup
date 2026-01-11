@@ -40,6 +40,10 @@ export function useChatState() {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const processedModuleRef = useRef(null);
+  // 【修复 Bug 2】使用 ref 追踪当前对话，避免 React 状态异步更新导致的串联问题
+  const currentConversationRef = useRef(null);
+  // 【修复 Bug 3】追踪待自动发送的消息，避免 setTimeout 竞态条件
+  const pendingAutoSendRef = useRef(null);
 
   const queryClient = useQueryClient();
   const location = useLocation();
@@ -227,17 +231,40 @@ export function useChatState() {
         handleStartNewChat(module);
         window.history.replaceState({}, '', createPageUrl('Chat'));
 
+        // 【修复 Bug 3】设置待自动发送的消息，由下一个 useEffect 处理
         if (autoStart && module.user_prompt_template && module.user_prompt_template.trim()) {
-          setTimeout(() => {
-            setInputMessage(module.user_prompt_template);
-            setTimeout(() => {
-              document.querySelector('[data-send-button]')?.click();
-            }, 200);
-          }, 200);
+          pendingAutoSendRef.current = {
+            message: module.user_prompt_template,
+            systemPrompt: module.system_prompt || '',
+            moduleId: module.id,
+          };
         }
       }
     }
   }, [location.search, promptModules, models, user]);
+
+  // 【修复 Bug 3】自动发送状态
+  const [autoSendPending, setAutoSendPending] = useState(false);
+
+  // 【修复 Bug 3】处理待自动发送的消息 - 第一步：设置输入消息
+  useEffect(() => {
+    if (
+      pendingAutoSendRef.current &&
+      selectedModule &&
+      !currentConversationRef.current &&
+      messages.length === 0 &&
+      !isStreaming &&
+      selectedModel
+    ) {
+      const pending = pendingAutoSendRef.current;
+      pendingAutoSendRef.current = null;
+
+      // 设置输入消息
+      setInputMessage(pending.message);
+      // 标记需要自动发送
+      setAutoSendPending(true);
+    }
+  }, [selectedModule, messages.length, isStreaming, selectedModel]);
 
   // ============ 标题编辑 ============
   const handleSaveTitle = useCallback(async () => {
@@ -253,6 +280,8 @@ export function useChatState() {
   }, [currentConversation, editingTitleValue, updateConversationMutation]);
 
   const handleStartNewChat = useCallback((module = null) => {
+    // 【修复 Bug 2】同步更新 ref，确保状态立即生效
+    currentConversationRef.current = null;
     setCurrentConversation(null);
     setMessages([]);
     setSelectedModule(module ? module : null);
@@ -270,6 +299,8 @@ export function useChatState() {
     try {
       // 使用带缓存的 API 获取对话
       const freshConv = await chatAPI.getConversationHistory(conv.id);
+      // 【修复 Bug 2】同步更新 ref
+      currentConversationRef.current = freshConv;
       setCurrentConversation(freshConv);
       setMessages(freshConv.messages || []);
       setSelectedModule(null);
@@ -279,6 +310,8 @@ export function useChatState() {
       }
     } catch (e) {
       console.error('对话加载失败:', e);
+      // 【修复 Bug 2】同步更新 ref
+      currentConversationRef.current = null;
       setCurrentConversation(null);
       setMessages([]);
       chatAPI.invalidateConversation(conv.id);
@@ -301,7 +334,8 @@ export function useChatState() {
     let systemPrompt = '';
     const isFirstTurn = messages.length === 0;
     const hasModule = selectedModule !== null && selectedModule !== undefined;
-    const isNewConversation = !currentConversation;
+    // 【修复 Bug 2】使用 ref 判断是否新对话，避免 React 状态异步问题
+    const isNewConversation = !currentConversationRef.current;
 
     if (hasModule && isFirstTurn && isNewConversation) {
       systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
@@ -388,9 +422,10 @@ export function useChatState() {
           }));
       }
 
+      // 【修复 Bug 2】使用 ref 获取 conversationId，确保获取到同步更新后的值
       // 使用 chatAPI 发送消息（自动去重防止重复请求）
       const { data: result } = await chatAPI.sendMessage({
-        conversationId: currentConversation?.id,
+        conversationId: currentConversationRef.current?.id,
         message: messageToSend,
         systemPrompt: systemPrompt || undefined,
         imageFiles: imageFiles
@@ -447,15 +482,20 @@ export function useChatState() {
       // 【修复】使用后端返回的 conversation_id 来同步对话状态
       // 后端已经创建/更新了对话，前端只需要同步状态即可
       if (backendConversationId) {
-        if (currentConversation) {
+        // 【修复 Bug 2】使用 ref 判断是否为现有对话
+        if (currentConversationRef.current) {
           // 更新现有对话 - 只需刷新前端状态
-          setCurrentConversation(prev => ({
-            ...prev,
+          const updatedConv = {
+            ...currentConversationRef.current,
             messages: updatedMessages,
-            total_credits_used: (prev?.total_credits_used || 0) + creditsUsed,
-          }));
+            total_credits_used: (currentConversationRef.current?.total_credits_used || 0) + creditsUsed,
+          };
+          // 【修复 Bug 2】同步更新 ref
+          currentConversationRef.current = updatedConv;
+          setCurrentConversation(updatedConv);
         } else {
           // 新对话 - 使用后端返回的 ID 创建前端状态
+          // 【修复】添加 created_by 字段确保本地状态与服务器一致
           const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
           const newConv = {
             id: backendConversationId,
@@ -464,16 +504,24 @@ export function useChatState() {
             prompt_module_id: selectedModule?.id,
             messages: updatedMessages,
             total_credits_used: creditsUsed,
+            created_by: user?.email,  // 【修复】添加 created_by 字段
+            is_archived: false,        // 【修复】添加 is_archived 字段
             created_date: new Date().toISOString(),
             updated_date: new Date().toISOString(),
           };
+          // 【修复 Bug 2】同步更新 ref
+          currentConversationRef.current = newConv;
           setCurrentConversation(newConv);
         }
 
-        // 刷新对话列表以显示新对话
-        queryClient.invalidateQueries(['conversations']);
+        // 【修复】使用 refetchQueries 强制立即刷新对话列表
+        // invalidateQueries 只标记缓存过期，不会立即重新获取
         chatAPI.invalidateConversationList(user?.email);
         chatAPI.invalidateConversation(backendConversationId);
+        await queryClient.refetchQueries({
+          queryKey: ['conversations', user?.email],
+          exact: true,
+        });
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -488,6 +536,17 @@ export function useChatState() {
       handleSendMessage(false);
     }
   }, [handleSendMessage]);
+
+  // 【修复 Bug 3】处理待自动发送的消息 - 第二步：触发发送
+  useEffect(() => {
+    if (autoSendPending && inputMessage && !isStreaming) {
+      setAutoSendPending(false);
+      // 延迟一帧确保状态已更新
+      requestAnimationFrame(() => {
+        handleSendMessage(true); // skipWarning = true，跳过长文本警告
+      });
+    }
+  }, [autoSendPending, inputMessage, isStreaming, handleSendMessage]);
 
   const handleConfirmLongText = useCallback(() => {
     setLongTextWarning({ open: false, estimatedCredits: 0, estimatedTokens: 0 });

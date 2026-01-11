@@ -5,6 +5,90 @@
 
 ---
 
+## 2026-01-11 (方案 B 模块化重构 - 阶段 0：P0 Bug 修复) 🔧
+
+### ✅ Bug 1 修复：对话历史不显示在侧边栏
+
+**问题描述**：新建对话后，对话不出现在左侧历史记录栏，刷新后消失
+
+**根本原因**：
+1. `invalidateQueries` 只标记缓存过期，不会立即触发重新获取
+2. 新对话缺少 `created_by` 和 `is_archived` 字段
+
+**修复内容**（useChatState.js）：
+- L476-477: 添加 `created_by: user?.email` 和 `is_archived: false` 字段
+- L488-491: 使用 `queryClient.refetchQueries` 替代 `invalidateQueries`
+
+```javascript
+// 修复后：强制立即刷新
+await queryClient.refetchQueries({
+  queryKey: ['conversations', user?.email],
+  exact: true,
+});
+```
+
+---
+
+### ✅ Bug 2 修复：系统提示词跨对话串联
+
+**问题描述**：用户在对话A使用的系统提示词，新建对话B后依然存在
+
+**根本原因**：
+React `useState` 是异步更新的，`handleStartNewChat` 中 `setCurrentConversation(null)`
+还没生效时用户就发送消息，导致 `chatAPI.sendMessage` 传递了旧的 `conversation_id`
+
+**修复内容**（useChatState.js）：
+- L44: 添加 `currentConversationRef` 同步追踪当前对话
+- L259: `handleStartNewChat` 同步更新 ref: `currentConversationRef.current = null`
+- L278, L289: `handleSelectConversation` 同步更新 ref
+- L313: 使用 ref 判断是否新对话: `!currentConversationRef.current`
+- L402: 发送消息使用 ref: `conversationId: currentConversationRef.current?.id`
+- L461-463, L480-481: 设置对话时同步更新 ref
+
+```javascript
+// 修复：使用 useRef 同步追踪对话状态
+const currentConversationRef = useRef(null);
+
+// handleStartNewChat 同步更新
+currentConversationRef.current = null;
+setCurrentConversation(null);
+
+// handleSendMessage 使用 ref 获取 ID
+conversationId: currentConversationRef.current?.id
+```
+
+---
+
+### ✅ Bug 3 修复：功能模块不自动发送用户提示词
+
+**问题描述**：用户通过功能模块点击"使用"跳转对话后，后台配置的用户提示词没有自动发送
+
+**根本原因**：
+1. 使用 `setTimeout` + `document.querySelector('[data-send-button]').click()` 不可靠
+2. 存在竞态条件：组件可能还没渲染完
+
+**修复内容**（useChatState.js）：
+- L46: 添加 `pendingAutoSendRef` 追踪待自动发送的消息
+- L234-241: URL 参数处理时设置 `pendingAutoSendRef.current`
+- L246-267: 第一步 useEffect - 检测条件满足后设置 `inputMessage` 和 `autoSendPending`
+- L540-549: 第二步 useEffect - 检测 `autoSendPending` 后调用 `handleSendMessage(true)`
+
+```javascript
+// 修复：两阶段自动发送
+// 第一阶段：设置输入消息
+if (pendingAutoSendRef.current && selectedModule && ...) {
+  setInputMessage(pending.message);
+  setAutoSendPending(true);
+}
+
+// 第二阶段：触发发送（在 handleSendMessage 定义之后）
+if (autoSendPending && inputMessage && !isStreaming) {
+  handleSendMessage(true);
+}
+```
+
+---
+
 ## 2026-01-11 (用户反馈 - 新增 3 个 P0 紧急问题) 🚨
 
 ### ⚠️ 重要：之前的修复未完全生效
