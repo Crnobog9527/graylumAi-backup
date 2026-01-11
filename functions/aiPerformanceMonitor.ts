@@ -288,8 +288,8 @@ Deno.serve(async (req) => {
           }
 
           // 按模型计算缓存命中率
-          const modelCached = modelStats.reduce((sum, s) => sum + (s.cached_tokens || 0), 0);
-          const modelInput = modelStats.reduce((sum, s) => sum + (s.input_tokens || 0), 0);
+          const modelCached = modelStats.reduce((sum, s) => sum + ((s.data || s).cached_tokens || 0), 0);
+          const modelInput = modelStats.reduce((sum, s) => sum + ((s.data || s).input_tokens || 0), 0);
           const modelTotal = modelCached + modelInput;
           if (modelTotal > 0) {
             dashboard.by_model[model].cache_hit_rate = ((modelCached / modelTotal) * 100).toFixed(2) + '%';
