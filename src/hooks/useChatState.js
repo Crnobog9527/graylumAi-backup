@@ -81,28 +81,16 @@ export function useChatState() {
   const { data: conversations = [] } = useQuery({
     queryKey: ['conversations', user?.email],
     queryFn: async () => {
-      // 【诊断日志 Bug 1】对话列表查询
-      console.log('[DEBUG-BUG1] ========== 对话列表查询开始 ==========');
-      console.log('[DEBUG-BUG1] 查询参数 created_by:', user?.email);
-      console.log('[DEBUG-BUG1] 查询参数 is_archived:', false);
+      // 【重构】使用 owner_email 查询对话列表
+      // 不再依赖系统 created_by 字段，避免 RLS 和客户端不一致问题
+      console.log('[conversations] 查询参数 owner_email:', user?.email);
 
       const result = await base44.entities.Conversation.filter(
-        { created_by: user?.email, is_archived: false },
+        { owner_email: user?.email, is_archived: false },
         '-updated_date'
       );
 
-      console.log('[DEBUG-BUG1] 查询返回数量:', result?.length || 0);
-      if (result && result.length > 0) {
-        console.log('[DEBUG-BUG1] 返回的对话 ID:', result.map(c => c.id).join(', '));
-        console.log('[DEBUG-BUG1] 返回的对话 created_by:', result.map(c => c.created_by).join(', '));
-      } else {
-        console.log('[DEBUG-BUG1] ⚠️ 查询返回空数组！可能原因：');
-        console.log('[DEBUG-BUG1]   1. 没有对话记录');
-        console.log('[DEBUG-BUG1]   2. created_by 字段不匹配');
-        console.log('[DEBUG-BUG1]   3. RLS 规则阻止了查询');
-      }
-      console.log('[DEBUG-BUG1] ========== 对话列表查询结束 ==========');
-
+      console.log('[conversations] 查询返回数量:', result?.length || 0);
       return result;
     },
     enabled: !!user?.email,
@@ -588,9 +576,8 @@ export function useChatState() {
           currentConversationRef.current = updatedConv;
           setCurrentConversation(updatedConv);
         } else {
-          console.log('[DEBUG-BUG1] 创建新对话前端状态');
+          console.log('[conversations] 创建新对话前端状态');
           // 新对话 - 使用后端返回的 ID 创建前端状态
-          // 【修复】添加 created_by 字段确保本地状态与服务器一致
           const title = inputMessage.slice(0, 30) + (inputMessage.length > 30 ? '...' : '');
           const newConv = {
             id: backendConversationId,
@@ -599,40 +586,28 @@ export function useChatState() {
             prompt_module_id: selectedModule?.id,
             messages: updatedMessages,
             total_credits_used: creditsUsed,
-            created_by: user?.email,  // 【修复】添加 created_by 字段
-            is_archived: false,        // 【修复】添加 is_archived 字段
+            owner_email: user?.email,  // 【重构】使用 owner_email 替代 created_by
+            is_archived: false,
             created_date: new Date().toISOString(),
             updated_date: new Date().toISOString(),
           };
-          console.log('[DEBUG-BUG1] 新对话数据:', JSON.stringify({ id: newConv.id, title: newConv.title, created_by: newConv.created_by, is_archived: newConv.is_archived }));
+          console.log('[conversations] 新对话数据:', JSON.stringify({ id: newConv.id, title: newConv.title, owner_email: newConv.owner_email }));
           // 【修复 Bug 2】同步更新 ref
           currentConversationRef.current = newConv;
           setCurrentConversation(newConv);
         }
 
-        // 【修复】使用 refetchQueries 强制立即刷新对话列表
-        // invalidateQueries 只标记缓存过期，不会立即重新获取
-        console.log('[DEBUG-BUG1] 准备刷新对话列表');
-        console.log('[DEBUG-BUG1] queryKey 将使用:', ['conversations', user?.email]);
+        // 刷新对话列表
         chatAPI.invalidateConversationList(user?.email);
         chatAPI.invalidateConversation(backendConversationId);
-
-        // 【诊断日志 Bug 1】刷新前的缓存状态
-        const cacheDataBefore = queryClient.getQueryData(['conversations', user?.email]);
-        console.log('[DEBUG-BUG1] refetchQueries 前缓存数据条数:', cacheDataBefore?.length || 0);
 
         await queryClient.refetchQueries({
           queryKey: ['conversations', user?.email],
           exact: true,
         });
 
-        // 【诊断日志 Bug 1】刷新后的缓存状态
         const cacheDataAfter = queryClient.getQueryData(['conversations', user?.email]);
-        console.log('[DEBUG-BUG1] refetchQueries 后缓存数据条数:', cacheDataAfter?.length || 0);
-        console.log('[DEBUG-BUG1] 刷新后对话列表 ID:', cacheDataAfter?.map(c => c.id)?.join(', ') || '空');
-        console.log('[DEBUG-BUG1] ========== 对话同步结束 ==========');
-      } else {
-        console.log('[DEBUG-BUG1] ✗ 没有 backendConversationId，跳过同步');
+        console.log('[conversations] 刷新后数量:', cacheDataAfter?.length || 0);
       }
     } catch (error) {
       console.error('Error sending message:', error);
