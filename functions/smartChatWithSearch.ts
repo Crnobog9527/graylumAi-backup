@@ -520,12 +520,6 @@ ${summaryToUse.summary_text}
       console.log('[smartChatWithSearch] ✓ WILL USE system prompt, tokens:', estimateTokens(finalSystemPrompt));
     } else {
       console.log('[smartChatWithSearch] ✗ WILL NOT USE system prompt');
-      // 【警告】如果不是首轮且有对话记录但没有系统提示词，可能是字段未正确返回
-      if (!isFirstTurn && conversation && !conversation.system_prompt) {
-        console.log('[smartChatWithSearch] ⚠️ WARNING: 后续轮次但 conversation.system_prompt 为空！');
-        console.log('[smartChatWithSearch] ⚠️ 这可能导致 AI 不遵循系统指令');
-        console.log('[smartChatWithSearch] ⚠️ 检查：1. 首轮是否保存了 system_prompt  2. 查询是否使用 asServiceRole');
-      }
     }
     console.log('[smartChatWithSearch] ========================================');
     
