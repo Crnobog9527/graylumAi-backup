@@ -80,10 +80,31 @@ export function useChatState() {
 
   const { data: conversations = [] } = useQuery({
     queryKey: ['conversations', user?.email],
-    queryFn: () => base44.entities.Conversation.filter(
-      { created_by: user?.email, is_archived: false },
-      '-updated_date'
-    ),
+    queryFn: async () => {
+      // 【诊断日志 Bug 1】对话列表查询
+      console.log('[DEBUG-BUG1] ========== 对话列表查询开始 ==========');
+      console.log('[DEBUG-BUG1] 查询参数 created_by:', user?.email);
+      console.log('[DEBUG-BUG1] 查询参数 is_archived:', false);
+
+      const result = await base44.entities.Conversation.filter(
+        { created_by: user?.email, is_archived: false },
+        '-updated_date'
+      );
+
+      console.log('[DEBUG-BUG1] 查询返回数量:', result?.length || 0);
+      if (result && result.length > 0) {
+        console.log('[DEBUG-BUG1] 返回的对话 ID:', result.map(c => c.id).join(', '));
+        console.log('[DEBUG-BUG1] 返回的对话 created_by:', result.map(c => c.created_by).join(', '));
+      } else {
+        console.log('[DEBUG-BUG1] ⚠️ 查询返回空数组！可能原因：');
+        console.log('[DEBUG-BUG1]   1. 没有对话记录');
+        console.log('[DEBUG-BUG1]   2. created_by 字段不匹配');
+        console.log('[DEBUG-BUG1]   3. RLS 规则阻止了查询');
+      }
+      console.log('[DEBUG-BUG1] ========== 对话列表查询结束 ==========');
+
+      return result;
+    },
     enabled: !!user?.email,
   });
 
