@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { 
   Shield, Bot, FileText, Users, Settings, 
-  ChevronLeft, LayoutDashboard 
+  ChevronLeft, LayoutDashboard, Activity 
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +14,7 @@ import SystemStats from '@/components/admin/SystemStats';
 import ModelManagement from '@/components/admin/ModelManagement';
 import TemplateManagement from '@/components/admin/TemplateManagement';
 import UserManagement from '@/components/admin/UserManagement';
+import AIPerformanceMonitor from '@/components/admin/AIPerformanceMonitor';
 
 export default function Admin() {
   const [user, setUser] = useState(null);
@@ -104,6 +105,13 @@ export default function Admin() {
               <Users className="h-4 w-4 mr-2" />
               Users
             </TabsTrigger>
+            <TabsTrigger 
+              value="performance"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white"
+            >
+              <Activity className="h-4 w-4 mr-2" />
+              Performance
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -125,6 +133,10 @@ export default function Admin() {
 
           <TabsContent value="users">
             <UserManagement />
+          </TabsContent>
+
+          <TabsContent value="performance">
+            <AIPerformanceMonitor />
           </TabsContent>
         </Tabs>
       </div>
