@@ -58,6 +58,7 @@ export const chatAPI = {
   },
 
   // 获取对话列表（带缓存）
+  // 使用后端函数 listMyConversations 绕过 RLS 限制
   async getConversations(userEmail, options = {}) {
     const { forceRefresh = false } = options;
     const cacheKey = `conversations:${userEmail}`;
@@ -73,10 +74,15 @@ export const chatAPI = {
       }
     }
 
-    const data = await base44.entities.Conversation.filter(
-      { created_by: userEmail, is_archived: false },
-      '-updated_date'
-    );
+    // 使用后端函数绕过 RLS 限制
+    const result = await base44.functions.invoke('listMyConversations', {});
+
+    if (!result.data?.success) {
+      console.error('[ChatAPI] 获取对话列表失败:', result.data?.error);
+      return [];
+    }
+
+    const data = result.data.conversations || [];
 
     // 更新本地缓存
     conversationCache.set(cacheKey, {
