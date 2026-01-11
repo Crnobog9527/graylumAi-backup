@@ -725,21 +725,26 @@ ${summaryToUse.summary_text}
     const errorTimeMs = Date.now() - startTime;
     log.error('Error:', error.message);
 
-    // 记录错误到性能监控
+    // 记录错误到 TokenStats
     try {
       const base44ForError = createClientFromRequest(req);
-      base44ForError.functions.invoke('aiPerformanceMonitor', {
-        operation: 'record',
+      const errorUser = await base44ForError.auth.me().catch(() => null);
+      await base44ForError.asServiceRole.entities.TokenStats.create({
         conversation_id: 'error',
+        user_email: errorUser?.email || 'unknown',
         model_used: 'unknown',
-        response_time_ms: errorTimeMs,
         input_tokens: 0,
         output_tokens: 0,
         cached_tokens: 0,
+        cache_creation_tokens: 0,
         total_cost: 0,
+        request_type: 'chat',
+        response_time_ms: errorTimeMs,
+        is_timeout: false,
+        is_slow: false,
         is_error: true,
         error_message: error.message
-      }).catch(() => {});
+      });
     } catch (e) {
       // Silently ignore
     }
