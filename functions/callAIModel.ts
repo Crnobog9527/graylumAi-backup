@@ -141,6 +141,21 @@ Deno.serve(async (req) => {
       let cacheEnabled = false;
       let cachedBlocksCount = 0;
 
+      // 辅助函数：提取消息的纯文本内容
+      const extractText = (content) => {
+        if (!content) return '';
+        if (Array.isArray(content)) {
+          return content.map(block => block?.text || '').join('');
+        }
+        return typeof content === 'string' ? content : '';
+      };
+
+      // 辅助函数：检查消息是否已经有缓存控制
+      const hasCacheControl = (content) => {
+        if (!Array.isArray(content)) return false;
+        return content.some(block => block?.cache_control);
+      };
+
       // 1. 系统提示词：如果 >= 1024 tokens，启用缓存
       const sysTokens = estimateTokens(sysPrompt);
       const shouldCacheSystem = sysPrompt && sysTokens >= CACHE_MIN_TOKENS;
@@ -163,17 +178,28 @@ Deno.serve(async (req) => {
       const cachePoint = msgs.length - 4;
 
       msgs.forEach((m, idx) => {
+        // 如果消息已经有缓存控制，保留原样
+        if (hasCacheControl(m.content)) {
+          result.push({ role: m.role, content: m.content });
+          cacheEnabled = true;
+          cachedBlocksCount++;
+          return;
+        }
+
+        // 获取消息文本内容（处理数组格式）
+        const textContent = extractText(m.content);
+
         // 倒数第4条消息：添加缓存标记
         if (idx === cachePoint && cachePoint >= 0) {
           result.push({
             role: m.role,
-            content: [{ type: 'text', text: m.content, cache_control: { type: 'ephemeral' } }]
+            content: [{ type: 'text', text: textContent, cache_control: { type: 'ephemeral' } }]
           });
           cacheEnabled = true;
           cachedBlocksCount++;
         } else {
-          // 其他消息：不缓存
-          result.push({ role: m.role, content: m.content });
+          // 其他消息：不缓存，但确保格式正确
+          result.push({ role: m.role, content: textContent });
         }
       });
 
@@ -184,11 +210,20 @@ Deno.serve(async (req) => {
       };
     };
 
-    // 计算消息列表的总 token 数
+    // 辅助函数：从消息内容中提取纯文本（处理数组格式的 content）
+    const getMessageText = (content) => {
+      if (!content) return '';
+      if (Array.isArray(content)) {
+        return content.map(block => block?.text || '').join('');
+      }
+      return typeof content === 'string' ? content : '';
+    };
+
+    // 计算消息列表的总 token 数 - 安全处理数组格式的 content
     const calculateTotalTokens = (msgs, sysPrompt) => {
       let total = estimateTokens(sysPrompt);
       for (const m of msgs) {
-        total += estimateTokens(m.content);
+        total += estimateTokens(getMessageText(m.content));
       }
       return total;
     };
@@ -231,15 +266,18 @@ Deno.serve(async (req) => {
     console.log('[callAIModel] - processedMessages count:', processedMessages.length);
     console.log('[callAIModel] - estimatedInputTokens:', estimatedInputTokens);
     processedMessages.forEach((m, i) => {
-      console.log(`[callAIModel]   [${i}] ${m.role}: ${m.content.slice(0, 100)}... (${Math.ceil(m.content.length / 4)} tokens)`);
+      const textContent = getMessageText(m.content);
+      const isCached = Array.isArray(m.content);
+      console.log(`[callAIModel]   [${i}] ${m.role}: ${textContent.slice(0, 100)}... (${Math.ceil(textContent.length / 4)} tokens, cached=${isCached})`);
     });
 
     // 只有当provider是builtin时才使用内置集成
     if (model.provider === 'builtin') {
       const fullPrompt = processedMessages.map(m => {
-        if (m.role === 'user') return `用户: ${m.content}`;
-        if (m.role === 'assistant') return `助手: ${m.content}`;
-        return m.content;
+        const textContent = getMessageText(m.content);
+        if (m.role === 'user') return `用户: ${textContent}`;
+        if (m.role === 'assistant') return `助手: ${textContent}`;
+        return textContent;
       }).join('\n\n');
 
       const finalPrompt = finalSystemPrompt
@@ -305,7 +343,8 @@ Deno.serve(async (req) => {
     if (image_files && image_files.length > 0) {
       const lastUserMsgIdx = formattedMessages.length - 1;
       if (formattedMessages[lastUserMsgIdx]?.role === 'user') {
-        const textContent = formattedMessages[lastUserMsgIdx].content;
+        // 安全提取文本内容（处理数组格式）
+        const textContent = getMessageText(formattedMessages[lastUserMsgIdx].content);
         const contentArray = [];
 
         // 添加图片
@@ -614,7 +653,7 @@ Deno.serve(async (req) => {
         .filter(m => m.role !== 'system')
         .map(m => ({
           role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: m.content }]
+          parts: [{ text: getMessageText(m.content) }]
         }));
 
       const requestBody = {

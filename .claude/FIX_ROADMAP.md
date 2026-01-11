@@ -34,12 +34,12 @@
 
 ### 当前优先级分布
 
-| 优先级 | 问题数量 | 处理时限 |
-|--------|----------|----------|
-| **P0 紧急** | 2 | **本周内（3天）** |
-| **P1 高优先级** | 3 | 本月内 |
-| **P2 中优先级** | 5 | 本季度 |
-| **P3 低优先级** | 3 | 可推迟 |
+| 优先级 | 问题数量 | 已完成 | 处理时限 |
+|--------|----------|--------|----------|
+| **P0 紧急** | 2 | ✅ 1 | **本周内（3天）** |
+| **P1 高优先级** | 3 | 0 | 本月内 |
+| **P2 中优先级** | 5 | 0 | 本季度 |
+| **P3 低优先级** | 3 | 0 | 可推迟 |
 
 ---
 
@@ -49,8 +49,8 @@
 
 > **用户反馈**：这两个问题严重影响使用体验，必须立即处理
 
-#### 1. 聊天上下文丢失
-**优先级：P0 紧急** | **处理时限：3天内**
+#### 1. ✅ 聊天上下文丢失 [已修复 2026-01-11]
+**优先级：P0 紧急** | **状态：已修复**
 
 | 评估维度 | 说明 |
 |----------|------|
@@ -63,26 +63,17 @@
 - AI 回复与之前对话不连贯
 - 长对话时问题更明显
 
-**解决方案**：
-1. 检查 `useChatState.jsx` 状态管理逻辑
-2. 验证对话历史传递是否完整
-3. 检查 Token 限制是否导致截断
-4. 优化 `compressConversation.ts` 压缩策略
-5. 添加上下文完整性检查
+**根本原因**：
+消息过滤和 token 估算逻辑无法正确处理数组格式的消息内容（带缓存控制的消息格式），导致消息被错误过滤掉。
 
-**相关文件**：
-- `src/components/hooks/useChatState.jsx` (691行)
-- `functions/compressConversation.ts`
-- `functions/smartChatWithSearch.ts` (752行)
+**修复内容**：
+1. ✅ `smartChatWithSearch.ts` - 修复消息过滤逻辑，安全处理数组格式 content
+2. ✅ `smartChatWithSearch.ts` - 新增 `getMessageText()` 辅助函数
+3. ✅ `callAIModel.ts` - 修复 `calculateTotalTokens()` 函数
+4. ✅ `callAIModel.ts` - 增强 `buildCachedMessagesForOpenRouter()` 函数
+5. ✅ `callAIModel.ts` - 修复 builtin/Gemini provider 的消息处理
 
-**执行提示词**：
-```
-请分析聊天上下文丢失问题：
-1. 检查 src/components/hooks/useChatState.jsx 中的状态管理
-2. 检查 functions/compressConversation.ts 的压缩逻辑
-3. 验证对话历史在 smartChatWithSearch.ts 中的传递
-4. 找出可能导致上下文丢失的原因并修复
-```
+**修复详情**：见 CHANGELOG.md `2026-01-11 (P0-聊天上下文丢失修复)`
 
 ---
 
@@ -222,20 +213,21 @@ const Admin = React.lazy(() => import('./pages/Admin'));
 
 **详细计划**：
 
-#### Day 1：聊天上下文丢失
-- [ ] 分析 useChatState.jsx 状态管理
-- [ ] 检查 compressConversation.ts 压缩逻辑
-- [ ] 验证对话历史传递链路
-- [ ] 定位问题根因
+#### Day 1：聊天上下文丢失 ✅ 已完成 (2026-01-11)
+- [x] 分析 useChatState.jsx 状态管理
+- [x] 检查 compressConversation.ts 压缩逻辑
+- [x] 验证对话历史传递链路
+- [x] 定位问题根因（消息过滤逻辑错误）
+- [x] 修复 smartChatWithSearch.ts
+- [x] 修复 callAIModel.ts
 
-#### Day 2：修复上下文 + 分析响应
-- [ ] 修复上下文丢失问题
+#### Day 2：AI响应优化 (进行中)
 - [ ] 分析 callAIModel.ts 响应逻辑
 - [ ] 检查模型选择策略
 - [ ] 检查超时配置
-
-#### Day 3：响应优化 + 验证
 - [ ] 实现重试机制
+
+#### Day 3：优化 + 验证
 - [ ] 优化 Token 预算
 - [ ] 全面测试验证
 - [ ] 部署并监控
