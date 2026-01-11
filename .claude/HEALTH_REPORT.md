@@ -107,6 +107,17 @@
 >
 > 3 个 P0 紧急问题已全部修复
 
+### ⚠️ 重要发现：项目存在重复文件
+
+在修复过程中发现项目存在两个同名的状态管理文件：
+
+| 文件路径 | 状态 | 说明 |
+|----------|------|------|
+| `src/hooks/useChatState.js` | ❌ **未使用** | 最初修复代码写在这里（错误） |
+| `src/components/hooks/useChatState.jsx` | ✅ **实际使用** | Chat.jsx 导入此文件 |
+
+**建议**：删除或整合 `src/hooks/useChatState.js`，避免混淆
+
 ### ✅ 已解决的 P0 问题
 
 #### ✅ 1. 对话历史不显示在侧边栏 [已修复]
@@ -128,11 +139,13 @@
 |------|------|
 | **状态** | ✅ 已修复 |
 | **修复日期** | 2026-01-11 |
+| **修复文件** | `src/components/hooks/useChatState.jsx` |
+
+**根本原因**：系统提示词从 URL 参数 `module_id` 读取，新建对话时 URL 没有清除
 
 **修复方案**：
-- 添加 `currentConversationRef` 同步追踪当前对话
-- 在 `handleStartNewChat` / `handleSelectConversation` 同步更新 ref
-- 在 `handleSendMessage` 使用 ref 获取 conversation_id
+- 在 `handleStartNewChat` 中清除 URL 的 `module_id` 和 `auto_start` 参数
+- 使用 `window.history.replaceState` 更新 URL
 
 ---
 
@@ -142,11 +155,12 @@
 |------|------|
 | **状态** | ✅ 已修复 |
 | **修复日期** | 2026-01-11 |
+| **修复文件** | `src/components/hooks/useChatState.jsx` |
 
 **修复方案**：
-- 添加 `pendingAutoSendRef` 和 `autoSendPending` 状态
-- 使用两阶段 useEffect 处理自动发送
-- 直接调用 `handleSendMessage` 而非点击按钮
+- `useChatState.jsx` 已有完整的自动发送逻辑
+- 添加 `[AutoSend]` 诊断日志确认流程正常
+- 验证 `user_prompt_template` 正确获取和发送
 
 ---
 

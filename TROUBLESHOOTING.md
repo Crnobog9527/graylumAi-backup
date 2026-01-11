@@ -102,6 +102,66 @@ const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conv
 
 ---
 
+### 4. 修复代码应用到错误文件（重要案例）
+
+**案例背景**
+- 原问题描述：两个 P0 级别 Bug：(1) 系统提示词跨对话串联 (2) 功能模块「立即使用」不自动发送用户提示词
+- 第一次修复尝试：在 `src/hooks/useChatState.js` 中进行修复
+- 引入的新问题：修复代码完全无效，Bug 仍然存在
+
+**根本原因**
+项目中存在两个同名的状态管理文件：
+```
+src/hooks/useChatState.js           ← 修复代码写在这里（错误）
+src/components/hooks/useChatState.jsx  ← 实际被 Chat.jsx 使用（正确）
+```
+
+`Chat.jsx` 的导入语句：
+```javascript
+import { useChatState } from '@/components/hooks/useChatState';
+```
+
+开发者修改了错误的文件，导致所有修复都没有生效。
+
+**正确的解决方案**
+
+**Bug 1 修复**（系统提示词串联）- 在正确的文件 `useChatState.jsx` 中：
+```javascript
+const handleStartNewChat = useCallback(() => {
+  setCurrentConversation(null);
+  setMessages([]);
+  setInputMessage('');
+  // ...其他清除代码
+
+  // 【修复 Bug 1】清除 URL 中的 module_id 参数
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('module_id')) {
+    urlParams.delete('module_id');
+    urlParams.delete('auto_start');
+    const newUrl = urlParams.toString()
+      ? `${window.location.pathname}?${urlParams.toString()}`
+      : window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
+  }
+}, []);
+```
+
+**Bug 2 修复**（自动发送）- 该文件已有自动发送逻辑，添加诊断日志确认工作正常。
+
+**经验教训**
+1. **确认导入路径**：修改任何模块前，先确认哪个文件被实际导入使用
+2. **避免重复文件**：项目中不应存在同名但路径不同的模块，容易造成混淆
+3. **部署后验证**：修改代码后必须验证日志输出，确认代码确实被执行
+4. **诊断日志价值**：添加详细日志（如 `[AutoSend]` 前缀）可以快速定位问题
+5. **使用 grep 搜索导入**：`grep -r "import.*useChatState" src/` 可以快速找到实际导入关系
+
+**相关文件**
+- `src/components/hooks/useChatState.jsx` - **实际使用的**前端状态管理钩子
+- `src/hooks/useChatState.js` - 未使用的旧文件（应考虑删除或整合）
+- `src/pages/Chat.jsx` - 导入 useChatState 的页面组件
+
+---
+
 ## 调试技巧
 
 ### 1. 前端调试
