@@ -84,7 +84,7 @@
 - [ ] 前端组件位置（哪个文件夹）
 - [ ] 后端云函数需求（是否需要新建）
 - [ ] API 调用方式（使用 @base44/sdk）
-- [ ] 状态管理方式（是否用 useChatState.js）
+- [ ] 状态管理方式（是否用 useChatState.jsx）
 
 ### 步骤 3：编码实现
 
@@ -130,9 +130,9 @@
 ### 核心文件理解
 
 在修改 AI 相关功能前，必须理解：
-- **callAIModel.ts** (27,164行) - 模型调用核心
-- **smartChatWithSearch.ts** (31,478行) - 智能搜索集成
-- **useChatState.js** (22,855行) - 状态管理
+- **callAIModel.ts** (718行) - 模型调用核心
+- **smartChatWithSearch.ts** (801行) - 智能搜索集成
+- **useChatState.jsx** (737行) - 状态管理（位于 `components/hooks/`）
 
 ### 常见任务
 
@@ -140,7 +140,7 @@
 |------|---------|---------|
 | 调整模型选择逻辑 | callAIModel.ts | 必须考虑成本和性能平衡 |
 | 修改 Token 预算 | callAIModel.ts | 避免过度限制影响回答质量 |
-| 优化上下文管理 | useChatState.js | 确保历史正确传递 |
+| 优化上下文管理 | useChatState.jsx | 确保历史正确传递 |
 | 优化智能搜索判断功能 | smartChatWithSearch.ts | 理解现有智能搜索判断逻辑 |
 
 ---

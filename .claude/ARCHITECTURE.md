@@ -85,7 +85,7 @@ src/
 │   ├── common/             # 通用组件
 │   ├── credits/            # 积分系统组件
 │   ├── home/               # 首页组件
-│   ├── hooks/              # 组件级 Hooks
+│   ├── hooks/              # 组件级 Hooks（含 useChatState.jsx）
 │   ├── invite/             # 邀请系统组件
 │   ├── layout/             # 布局组件
 │   ├── marketplace/        # 市场组件
@@ -101,8 +101,8 @@ src/
 ├── constants/              # 常量定义
 │
 ├── hooks/                  # 全局 Hooks
-│   ├── useChatState.js     # 聊天状态管理 (核心 Hook)
 │   └── use-mobile.jsx      # 移动端检测
+│   # 注意：useChatState.jsx 位于 components/hooks/ 目录
 │
 ├── lib/                    # 工具库
 │   ├── AuthContext.jsx     # 认证上下文
@@ -130,11 +130,11 @@ src/
 
 ```
 functions/
-├── smartChatWithSearch.ts  # 智能聊天核心 (31,478行)
-├── callAIModel.ts          # AI 模型调用 (27,164行)
+├── smartChatWithSearch.ts  # 智能聊天核心 (801行)
+├── callAIModel.ts          # AI 模型调用 (718行)
 ├── taskClassifier.ts       # 任务分类器
 ├── searchClassifier.ts     # 搜索分类器
-├── compressConversation.ts # 对话压缩
+├── compressConversation.ts # 对话压缩 (148行)
 ├── tokenBudgetManager.ts   # Token 预算管理
 ├── processInviteReward.ts  # 邀请奖励处理
 ├── completeInviteReward.ts # 完成邀请奖励
@@ -152,7 +152,7 @@ functions/
 
 ### 核心文件职责
 
-#### 1. smartChatWithSearch.ts (31,478行)
+#### 1. smartChatWithSearch.ts (801行)
 
 **主要职责:**
 - 智能对话管理和路由
@@ -187,7 +187,7 @@ const WEB_SEARCH_COST = 0.005;          // 网络搜索成本
 
 ---
 
-#### 2. callAIModel.ts (27,164行)
+#### 2. callAIModel.ts (718行)
 
 **主要职责:**
 - Claude API 调用封装
@@ -221,13 +221,14 @@ const MODEL_RATES = {
 
 ---
 
-#### 3. useChatState.js (22,855行)
+#### 3. useChatState.jsx (737行) - 位于 `src/components/hooks/`
 
 **主要职责:**
 - 前端聊天状态管理
 - 对话历史维护
 - UI 交互状态控制
 - React Query 集成
+- 功能模块自动发送逻辑
 
 **状态结构:**
 
@@ -428,8 +429,8 @@ npm run preview
 
 | 问题 | 影响 | 建议方案 | 优先级 |
 |------|------|----------|--------|
-| AdminAnnouncements.jsx (48,524行) | 加载慢、维护难 | 拆分为子组件 | 高 |
-| smartChatWithSearch.ts (31,478行) | 部署慢 | 模块化拆分 | 中 |
+| ProfileComponents.jsx (1,348行) | 可选优化 | 拆分为子组件 | 低 |
+| AdminAnnouncements.jsx (1,116行) | 可选优化 | 拆分为子组件 | 低 |
 | 无代码分割 | 首屏加载慢 | React.lazy + Suspense | 中 |
 | 无图片懒加载 | 带宽浪费 | Intersection Observer | 低 |
 

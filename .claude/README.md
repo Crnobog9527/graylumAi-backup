@@ -63,9 +63,9 @@
 |------|------|------|
 | `ProfileComponents.jsx` | 1,348 | 用户资料组件 |
 | `AdminAnnouncements.jsx` | 1,116 | 公告管理 |
-| `smartChatWithSearch.ts` | 752 | 智能搜索聊天核心 |
-| `callAIModel.ts` | 679 | AI 模型调用封装 |
-| `useChatState.jsx` | 691 | 聊天状态管理 |
+| `smartChatWithSearch.ts` | 801 | 智能搜索聊天核心 |
+| `callAIModel.ts` | 718 | AI 模型调用封装 |
+| `useChatState.jsx` | 737 | 聊天状态管理（位于 components/hooks/）|
 
 ### 设计系统要点
 
@@ -87,17 +87,19 @@
 
 ## 4. 当前已知问题（优先处理）
 
-### P0 紧急问题 🔴 （本周内 3天）
+### P0 紧急问题 🔴 - ✅ 全部已修复
 
-> **用户反馈**：以下问题严重影响使用体验，必须立即处理
+> **2026-01-11 更新**：所有 P0 问题已修复完成
 
-| 问题 | 相关文件 | 影响 |
-|------|----------|------|
-| **聊天上下文丢失** | `useChatState.jsx`, `compressConversation.ts` | 核心功能受损 |
-| **AI 响应缓慢或超时** | `callAIModel.ts`, `smartChatWithSearch.ts` | 用户体验差 |
+| 问题 | 状态 | 解决方案 |
+|------|------|----------|
+| **系统提示词跨对话串联** | ✅ 已修复 | `handleStartNewChat` 清除 URL 参数 |
+| **功能模块不自动发送提示词** | ✅ 已修复 | 自动发送逻辑 + `autoSentRef` 防重复 |
+| **对话历史不显示** | ✅ 已修复 | `refetchConversations()` 多次刷新 |
+| **聊天上下文丢失** | ✅ 已修复 | 修复消息过滤逻辑处理数组格式 |
+| **AI 响应缓慢或超时** | ⏳ 待验证 | 已有重试机制，需要监控 |
 
-**处理时限**: 3天内完成
-**详细方案**: 见 `FIX_ROADMAP.md`
+**详细修复方案**: 见 `TROUBLESHOOTING.md` 和 `CHANGELOG.md`
 
 ### P1 高优先级 🟡 （本月内）
 
@@ -351,7 +353,7 @@ src/
 │   ├── admin/        # 管理后台组件 (9个)
 │   └── [其他模块]/
 ├── hooks/            # 全局 Hooks
-│   └── useChatState.js  # 聊天状态管理
+│   └── use-mobile.jsx   # 移动端检测
 ├── pages/            # 页面组件 (18个)
 ├── lib/              # 工具库
 └── utils/            # 工具函数
@@ -425,7 +427,7 @@ functions/
 2. 理解现有逻辑：
    - callAIModel.ts: 模型调用
    - smartChatWithSearch.ts: 智能搜索
-   - useChatState.js: 状态管理
+   - useChatState.jsx: 状态管理（位于 components/hooks/）
 3. 修改时记录 Token 影响
 4. 测试成本变化
 5. 在 CHANGELOG.md 记录优化
@@ -462,13 +464,13 @@ functions/
 
 ### 优先改进项
 
-| 优先级 | 任务 | 预期影响 | 时限 |
+| 优先级 | 任务 | 预期影响 | 状态 |
 |--------|------|----------|------|
-| **P0** | 修复聊天上下文丢失 | 核心功能恢复 | **3天内** |
-| **P0** | 优化 AI 响应速度 | 用户体验提升 | **3天内** |
+| **P0** | 修复 P0 核心问题 | 核心功能恢复 | ✅ **已完成** |
 | P1 | Token 消耗优化 | 成本降低 | 本月内 |
 | P1 | 前端代码分割 | 首屏加载 -40% | 本月内 |
 | P2 | 整合文档系统 | 维护效率 +30% | 本季度 |
+| P2 | 清理重复文件 | 维护性提升 | 本季度 |
 
 ---
 

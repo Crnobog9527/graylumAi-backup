@@ -5,6 +5,54 @@
 
 ---
 
+## 2026-01-11 (知识库系统性更新) 📚
+
+### 📊 代码扫描结果
+
+**核心文件实际行数验证**：
+
+| 文件 | 文档旧值 | 实际行数 | 位置 |
+|------|----------|----------|------|
+| `smartChatWithSearch.ts` | 752 / 31,478 | **801** | `functions/` |
+| `callAIModel.ts` | 679 / 27,164 | **718** | `functions/` |
+| `useChatState.jsx` | 691 / 22,855 | **737** | `components/hooks/` |
+| `AdminAnnouncements.jsx` | 1,116 / 48,524 | **1,116** | `pages/` |
+| `ProfileComponents.jsx` | 1,348 | **1,348** | `components/profile/` |
+| `compressConversation.ts` | - | **148** | `functions/` |
+
+### ✅ 已确认删除的文件
+
+- `src/hooks/useChatState.js` - 已删除（commit 311d26c）
+- 只有 `src/components/hooks/useChatState.jsx` 在使用
+
+### 📝 已更新的知识库文档
+
+| 文档 | 更新内容 |
+|------|----------|
+| **README.md** | 关键文件行数、P0 问题状态、改进项 |
+| **ARCHITECTURE.md** | 文件行数、useChatState 位置说明 |
+| **TROUBLESHOOTING.md** | 添加 5 个已修复问题的详细解决方案 |
+| **HEALTH_REPORT.md** | 文件大小数据、问题状态更新 |
+| **CHANGELOG.md** | 本次更新记录（本条目） |
+
+### 🎯 P0 问题修复确认
+
+通过代码扫描确认以下修复已在代码中实现：
+
+1. **系统提示词跨对话串联** - `useChatState.jsx:184-194`
+2. **功能模块自动发送** - `useChatState.jsx:546-682`
+3. **对话历史不显示** - `useChatState.jsx:372-379`
+4. **聊天上下文丢失** - 消息过滤逻辑修复
+
+### 📋 经验教训总结
+
+1. **确认导入路径**：修改前先用 grep 确认哪个文件被导入
+2. **避免重复文件**：项目不应存在同名但路径不同的模块
+3. **定期扫描验证**：文档数据需要与代码保持同步
+4. **代码位置标注**：在文档中标注具体行号便于快速定位
+
+---
+
 ## 2026-01-11 (P0 Bug 最终修复 - 发现重复文件问题) ✅
 
 ### 🔍 重要发现：项目存在重复文件
