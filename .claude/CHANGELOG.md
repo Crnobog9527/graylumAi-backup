@@ -5,6 +5,71 @@
 
 ---
 
+## 2026-01-11 (P0-聊天上下文丢失修复)
+
+### 🐛 Bug 修复 - 聊天上下文丢失
+
+**问题描述**：多轮对话后 AI 忘记之前内容，上下文丢失
+
+**根本原因分析**：
+
+在 `smartChatWithSearch.ts` 和 `callAIModel.ts` 中，消息过滤和 token 估算逻辑无法正确处理数组格式的消息内容（带缓存控制的消息格式）。
+
+当消息格式是 `{ role, content: [{type: 'text', text: '...', cache_control: {...}}] }` 时：
+- `m.content.trim()` 会失败（因为 content 是数组）
+- `estimateTokens(m.content)` 返回错误结果
+- 导致带缓存控制的消息被错误过滤掉，造成上下文丢失
+
+**修复内容**：
+
+#### 1. smartChatWithSearch.ts
+- **第444-458行**：修复消息过滤逻辑，安全处理数组格式的 content
+- **第460-467行**：新增 `getMessageText()` 辅助函数，正确提取消息文本
+- **第469-471行**：修复 token 估算逻辑
+- **第475-481行**：修复日志打印部分
+
+#### 2. callAIModel.ts
+- **第187-194行**：新增 `getMessageText()` 辅助函数
+- **第196-203行**：修复 `calculateTotalTokens()` 函数
+- **第144-157行**：增强 `buildCachedMessagesForOpenRouter()` 函数
+  - 新增 `extractText()` 辅助函数
+  - 新增 `hasCacheControl()` 检查函数
+  - 正确处理已有缓存控制的消息
+- **第268-272行**：修复日志打印
+- **第276-281行**：修复 builtin provider 的 fullPrompt 构建
+- **第346-347行**：修复图片处理时的文本提取
+- **第652-657行**：修复 Gemini API 的消息构建
+
+**技术细节**：
+
+```typescript
+// 修复前（错误处理）
+apiMessages = apiMessages.filter(m => m.content && m.content.trim().length > 0);
+
+// 修复后（安全处理数组格式）
+apiMessages = apiMessages.filter(m => {
+  if (!m.content) return false;
+  if (Array.isArray(m.content)) {
+    return m.content.some(block =>
+      block && block.text && typeof block.text === 'string' && block.text.trim().length > 0
+    );
+  }
+  return typeof m.content === 'string' && m.content.trim().length > 0;
+});
+```
+
+**影响范围**：
+- 所有使用带缓存控制的消息格式的对话
+- 长对话（超过10轮）触发压缩后的消息传递
+- 使用摘要模式的对话历史恢复
+
+**验证方法**：
+- 进行超过10轮的多轮对话
+- 确认 AI 能够正确记住之前的对话内容
+- 检查日志中 token 估算值是否正确
+
+---
+
 ## 2026-01-11 (文档协作流程完善)
 
 ### 📚 FIX_ROADMAP.md 使用指南更新

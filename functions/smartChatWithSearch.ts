@@ -442,19 +442,42 @@ ${summaryToUse.summary_text}
     // 添加当前增强消息
     apiMessages.push({ role: 'user', content: enhancedMessage });
     
-    // 过滤掉空消息
-    apiMessages = apiMessages.filter(m => m.content && m.content.trim().length > 0);
-    
-    // 计算token估算
-    const totalTokens = apiMessages.reduce((sum, m) => sum + estimateTokens(m.content || ''), 0) + 
+    // 过滤掉空消息 - 安全处理 content 可能是数组（带缓存控制）或字符串的情况
+    apiMessages = apiMessages.filter(m => {
+      if (!m.content) return false;
+
+      // 如果 content 是数组（带缓存控制的消息格式）
+      if (Array.isArray(m.content)) {
+        return m.content.some(block =>
+          block && block.text && typeof block.text === 'string' && block.text.trim().length > 0
+        );
+      }
+
+      // 如果 content 是字符串
+      return typeof m.content === 'string' && m.content.trim().length > 0;
+    });
+
+    // 辅助函数：从消息中提取文本内容
+    const getMessageText = (content) => {
+      if (!content) return '';
+      if (Array.isArray(content)) {
+        return content.map(block => block?.text || '').join('');
+      }
+      return typeof content === 'string' ? content : '';
+    };
+
+    // 计算token估算 - 安全处理数组格式的 content
+    const totalTokens = apiMessages.reduce((sum, m) => sum + estimateTokens(getMessageText(m.content)), 0) +
                         (system_prompt ? estimateTokens(system_prompt) : 0);
     
     console.log('[smartChatWithSearch] Calling AI model with', apiMessages.length, 'messages, estimated', totalTokens, 'tokens');
     console.log('[smartChatWithSearch] Message details:');
     apiMessages.forEach((m, i) => {
-      const tokens = estimateTokens(m.content || '');
-      const preview = (m.content || '').slice(0, 50);
-      console.log(`  [${i}] role=${m.role}, tokens=${tokens}, preview=${preview}...`);
+      const textContent = getMessageText(m.content);
+      const tokens = estimateTokens(textContent);
+      const preview = textContent.slice(0, 50);
+      const isCached = Array.isArray(m.content);
+      console.log(`  [${i}] role=${m.role}, tokens=${tokens}, cached=${isCached}, preview=${preview}...`);
     });
     
     // 系统提示词只在新对话的第一轮时使用（消息列表为空）
