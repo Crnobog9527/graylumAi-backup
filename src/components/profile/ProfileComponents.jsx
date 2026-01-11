@@ -874,8 +874,9 @@ export function UsageHistoryCard({ user }) {
     queryKey: ['user-conversations', userEmail],
     queryFn: async () => {
       if (!userEmail) return [];
+      // 尝试用 user_email 字段过滤（Conversation 实体的实际字段）
       return base44.entities.Conversation.filter(
-        { created_by: userEmail },
+        { user_email: userEmail },
         '-created_date',
         20
       );
