@@ -121,9 +121,11 @@ Deno.serve(async (req) => {
       log.info('Found', stats.length, 'TokenStats records');
 
       // 过滤时间范围
-      const filteredStats = stats.filter(s =>
-        new Date(s.created_date) >= startDate
-      );
+      const filteredStats = stats.filter(s => {
+        const createdDate = new Date(s.created_date);
+        return createdDate >= startDate;
+      });
+      log.info('Filtered to', filteredStats.length, 'records for time range', timeRange);
 
       // 聚合统计
       const dashboard = {
