@@ -197,9 +197,11 @@ Deno.serve(async (req) => {
       const responseTimes: number[] = [];
 
       for (const rawStat of filteredStats) {
-        // 兼容两种数据格式：直接属性或嵌套在 data 中
+        // 数据嵌套在 data 字段中
         const stat = rawStat.data || rawStat;
-        const responseTime = stat.response_time_ms || 0;
+        const responseTime = Number(stat.response_time_ms) || 0;
+
+        log.debug('Processing stat:', stat.model_used, 'input:', stat.input_tokens, 'output:', stat.output_tokens);
 
         // 响应时间统计
         if (responseTime > 0) {
@@ -213,20 +215,20 @@ Deno.serve(async (req) => {
         if (stat.is_slow) dashboard.response_time.slow_count++;
 
         // Token 统计
-        dashboard.token_usage.total_input += stat.input_tokens || 0;
-        dashboard.token_usage.total_output += stat.output_tokens || 0;
-        dashboard.token_usage.total_cached += stat.cached_tokens || 0;
-        dashboard.token_usage.total_cache_creation += stat.cache_creation_tokens || 0;
+        dashboard.token_usage.total_input += Number(stat.input_tokens) || 0;
+        dashboard.token_usage.total_output += Number(stat.output_tokens) || 0;
+        dashboard.token_usage.total_cached += Number(stat.cached_tokens) || 0;
+        dashboard.token_usage.total_cache_creation += Number(stat.cache_creation_tokens) || 0;
 
         // 成本统计
-        dashboard.cost.total += stat.total_cost || 0;
+        dashboard.cost.total += Number(stat.total_cost) || 0;
 
         // 错误统计
         if (stat.is_error) {
           dashboard.errors.total_count++;
           if (dashboard.errors.recent_errors.length < 10) {
             dashboard.errors.recent_errors.push({
-              time: stat.created_date,
+              time: rawStat.created_date,  // created_date 在外层
               model: stat.model_used || 'unknown',
               error: stat.error_message || 'Unknown error'
             });
