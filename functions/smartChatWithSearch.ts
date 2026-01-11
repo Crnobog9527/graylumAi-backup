@@ -675,24 +675,26 @@ ${summaryToUse.summary_text}
     const responseTimeMs = Date.now() - startTime;
     log.info('Request completed in', responseTimeMs, 'ms');
 
-    // 步骤7：记录性能监控数据（同步等待，确保数据被记录）
+    // 步骤7：直接记录性能监控数据到 TokenStats（避免额外函数调用）
     try {
-      const monitorResult = await base44.functions.invoke('aiPerformanceMonitor', {
-        operation: 'record',
-        conversation_id: finalConversationId,
-        model_used: selectedModel.name,
-        response_time_ms: responseTimeMs,
-        input_tokens: inputTokens,
-        output_tokens: outputTokens,
+      await base44.asServiceRole.entities.TokenStats.create({
+        conversation_id: finalConversationId || 'unknown',
+        user_email: user.email,
+        model_used: selectedModel.name || 'unknown',
+        input_tokens: inputTokens || 0,
+        output_tokens: outputTokens || 0,
         cached_tokens: modelData.cached_tokens || 0,
         cache_creation_tokens: modelData.cache_creation_tokens || 0,
-        cache_hit_rate: modelData.cache_hit_rate || '0%',
-        total_cost: tokenCredits,
+        total_cost: tokenCredits || 0,
+        request_type: 'chat',
+        response_time_ms: responseTimeMs,
+        is_timeout: responseTimeMs >= 30000,
+        is_slow: responseTimeMs >= 10000,
         is_error: false
       });
-      log.debug('Performance recorded:', monitorResult?.data?.success);
+      log.debug('Performance recorded to TokenStats');
     } catch (e) {
-      log.warn('Performance monitor error:', e.message);
+      log.warn('TokenStats record error:', e.message);
     }
 
     return Response.json({
