@@ -706,6 +706,11 @@ ${summaryToUse.summary_text}
       await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
     } else {
       console.log('[smartChatWithSearch] Creating new conversation');
+      // 【诊断日志 Bug 1】对话创建
+      console.log('[DEBUG-BUG1-BACKEND] ========== 创建新对话 ==========');
+      console.log('[DEBUG-BUG1-BACKEND] user.email:', user.email);
+      console.log('[DEBUG-BUG1-BACKEND] user 完整信息:', JSON.stringify({ email: user.email, id: user.id }));
+
       const createData = {
         title: message.slice(0, 50),
         model_id: selectedModel.id,
@@ -714,6 +719,9 @@ ${summaryToUse.summary_text}
         is_archived: false,  // 确保新对话显示在列表中
         created_by: user.email  // 显式设置 created_by，确保 RLS 规则能匹配
       };
+
+      console.log('[DEBUG-BUG1-BACKEND] createData.created_by:', createData.created_by);
+      console.log('[DEBUG-BUG1-BACKEND] createData.is_archived:', createData.is_archived);
 
       // 【重要修复】保存系统提示词到对话记录，后续轮次可以读取
       if (hasNewSystemPrompt && system_prompt) {
@@ -729,6 +737,11 @@ ${summaryToUse.summary_text}
 
       const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
+
+      console.log('[DEBUG-BUG1-BACKEND] ✓ 对话创建成功！');
+      console.log('[DEBUG-BUG1-BACKEND] newConv.id:', newConv.id);
+      console.log('[DEBUG-BUG1-BACKEND] newConv.created_by:', newConv.created_by);
+      console.log('[DEBUG-BUG1-BACKEND] ========================================');
     }
     
     // 步骤5：更新Token预算（使用最新的用户余额）
