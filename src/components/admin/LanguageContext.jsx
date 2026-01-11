@@ -140,6 +140,11 @@ const translations = {
     // Announcements
     announcements: '公告管理',
 
+    // Performance
+    performance: 'AI性能监控',
+    performanceTitle: 'AI性能监控',
+    performanceSubtitle: '实时监控API响应和资源使用',
+
     // Finance
     finance: '财务统计',
     financeTitle: '财务统计',
@@ -322,6 +327,11 @@ const translations = {
     
     // Announcements
     announcements: 'Announcements',
+
+    // Performance
+    performance: 'AI Performance',
+    performanceTitle: 'AI Performance Monitor',
+    performanceSubtitle: 'Real-time API response and resource monitoring',
 
     // Finance
     finance: 'Finance',

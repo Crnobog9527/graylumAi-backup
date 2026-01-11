@@ -4,7 +4,7 @@ import { createPageUrl } from '@/utils';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, Bot, Wand2, Package, Users, 
-  CreditCard, Settings, ChevronLeft, Shield, Globe, DollarSign, Megaphone, Headphones, Gift
+  CreditCard, Settings, ChevronLeft, Shield, Globe, DollarSign, Megaphone, Headphones, Gift, Activity
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useLanguage } from './LanguageContext';
@@ -20,6 +20,7 @@ const menuItems = [
   { nameKey: 'announcements', icon: Megaphone, page: 'AdminAnnouncements' },
   { nameKey: 'tickets', icon: Headphones, page: 'AdminTickets' },
   { nameKey: 'invitations', icon: Gift, page: 'AdminInvitations' },
+  { nameKey: 'performance', icon: Activity, page: 'AdminPerformance' },
   { nameKey: 'settings', icon: Settings, page: 'AdminSettings' },
 ];
 
