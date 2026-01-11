@@ -1,5 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
+// ========== 日志级别控制 ==========
+// 级别: 0=ERROR, 1=WARN, 2=INFO, 3=DEBUG
+// 生产环境建议设置为 1 (WARN)，开发环境设置为 3 (DEBUG)
+const LOG_LEVEL = parseInt(Deno.env.get('LOG_LEVEL') || '2', 10);
+
+const log = {
+  error: (...args: unknown[]) => console.error('[callAIModel]', ...args),
+  warn: (...args: unknown[]) => LOG_LEVEL >= 1 && console.warn('[callAIModel]', ...args),
+  info: (...args: unknown[]) => LOG_LEVEL >= 2 && console.log('[callAIModel]', ...args),
+  debug: (...args: unknown[]) => LOG_LEVEL >= 3 && console.log('[callAIModel]', ...args),
+};
+
 // ========== 系统提示词常量（启用 Prompt Caching）==========
 const DEFAULT_SYSTEM_PROMPT = `你是一个专业、友好的 AI 助手，致力于帮助用户解决问题。
 
@@ -14,9 +26,9 @@ const DEFAULT_SYSTEM_PROMPT = `你是一个专业、友好的 AI 助手，致力
 4. 尊重用户隐私和数据安全`;
 
 Deno.serve(async (req) => {
-  console.log('[callAIModel] ========================================');
-  console.log('[callAIModel] VERSION: 2026-01-08-DEBUG-v2');
-  console.log('[callAIModel] ========================================');
+  log.debug('========================================');
+  log.debug('VERSION: 2026-01-11-OPTIMIZED');
+  log.debug('========================================');
 
   try {
     const base44 = createClientFromRequest(req);
@@ -32,13 +44,9 @@ Deno.serve(async (req) => {
       // CRITICAL: 只在首轮对话时使用 system_prompt（由 smartChatWithSearch 控制）
       const finalSystemPrompt = system_prompt || DEFAULT_SYSTEM_PROMPT;
 
-      console.log('[callAIModel] ===== RECEIVED REQUEST =====');
-    console.log('[callAIModel] - model_id:', model_id);
-    console.log('[callAIModel] - messages count:', messages?.length);
-    console.log('[callAIModel] - system_prompt (from caller):', system_prompt ? `"${system_prompt.slice(0, 100)}..."` : 'null (will use DEFAULT)');
-    console.log('[callAIModel] - finalSystemPrompt length:', finalSystemPrompt.length, 'chars, ~', Math.ceil(finalSystemPrompt.length / 4), 'tokens');
-    console.log('[callAIModel] - using_default_prompt:', !system_prompt);
-    console.log('[callAIModel] ==============================');
+      log.info('Request:', { model_id, messages_count: messages?.length, has_system_prompt: !!system_prompt });
+    log.debug('system_prompt preview:', system_prompt ? `"${system_prompt.slice(0, 100)}..."` : 'using DEFAULT');
+    log.debug('finalSystemPrompt:', finalSystemPrompt.length, 'chars, ~', Math.ceil(finalSystemPrompt.length / 4), 'tokens');
 
     // Token 估算函数 (字符数 / 4)
     const estimateTokens = (text) => Math.ceil((text || '').length / 4);
@@ -102,34 +110,20 @@ Deno.serve(async (req) => {
       // 缓存命中率
       const cacheHitRate = inputTokens > 0 ? (cacheReadTokens / inputTokens * 100).toFixed(1) : '0.0';
 
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(`[API Monitor] ${modelId}`);
-      console.log(`  📊 Token Usage:`);
-      console.log(`    • Input tokens:  ${inputTokens.toLocaleString()}`);
-      console.log(`    • Output tokens: ${outputTokens.toLocaleString()}`);
+      // 使用 info 级别输出关键成本信息
+      log.info(`[API Monitor] ${modelId} | Input: ${inputTokens} | Output: ${outputTokens} | Cost: $${totalCost.toFixed(4)}`);
 
-      if (cacheReadTokens > 0 || cacheCreationTokens > 0) {
-        console.log(`  🔄 Prompt Caching:`);
+      // 详细成本信息使用 debug 级别
+      if (LOG_LEVEL >= 3) {
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log(`[API Monitor] ${modelId}`);
+        console.log(`  📊 Token Usage: Input ${inputTokens.toLocaleString()} | Output ${outputTokens.toLocaleString()}`);
         if (cacheReadTokens > 0) {
-          console.log(`    ✅ Cache hit:    ${cacheReadTokens.toLocaleString()} tokens (${cacheHitRate}%)`);
-          console.log(`    💰 Saved:        $${savedCost.toFixed(4)}`);
+          console.log(`  🔄 Cache: Hit ${cacheReadTokens.toLocaleString()} tokens (${cacheHitRate}%) | Saved $${savedCost.toFixed(4)}`);
         }
-        if (cacheCreationTokens > 0) {
-          console.log(`    🔄 Cache created: ${cacheCreationTokens.toLocaleString()} tokens`);
-        }
+        console.log(`  💵 Total Cost: $${totalCost.toFixed(4)}`);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       }
-
-      console.log(`  💵 Cost Breakdown:`);
-      console.log(`    • Normal input:   $${inputCost.toFixed(4)} (${normalInputTokens.toLocaleString()} tokens @ $${rates.input}/M)`);
-      console.log(`    • Output:         $${outputCost.toFixed(4)} (${outputTokens.toLocaleString()} tokens @ $${rates.output}/M)`);
-      if (cacheCost > 0) {
-        console.log(`    • Cached input:   $${cacheCost.toFixed(4)} (${cacheReadTokens.toLocaleString()} tokens @ $${rates.cached}/M)`);
-      }
-      if (cacheCreationCost > 0) {
-        console.log(`    • Cache creation: $${cacheCreationCost.toFixed(4)}`);
-      }
-      console.log(`    • Total:          $${totalCost.toFixed(4)}`);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       return { totalCost, savedCost };
     };
@@ -262,14 +256,14 @@ Deno.serve(async (req) => {
     // 估算输入tokens
     const estimatedInputTokens = calculateTotalTokens(processedMessages, finalSystemPrompt);
     
-    console.log('[callAIModel] After truncation:');
-    console.log('[callAIModel] - processedMessages count:', processedMessages.length);
-    console.log('[callAIModel] - estimatedInputTokens:', estimatedInputTokens);
-    processedMessages.forEach((m, i) => {
-      const textContent = getMessageText(m.content);
-      const isCached = Array.isArray(m.content);
-      console.log(`[callAIModel]   [${i}] ${m.role}: ${textContent.slice(0, 100)}... (${Math.ceil(textContent.length / 4)} tokens, cached=${isCached})`);
-    });
+    log.debug('After truncation:', processedMessages.length, 'messages,', estimatedInputTokens, 'tokens');
+    if (LOG_LEVEL >= 3) {
+      processedMessages.forEach((m, i) => {
+        const textContent = getMessageText(m.content);
+        const isCached = Array.isArray(m.content);
+        log.debug(`  [${i}] ${m.role}: ${textContent.slice(0, 50)}... (${Math.ceil(textContent.length / 4)} tokens, cached=${isCached})`);
+      });
+    }
 
     // 只有当provider是builtin时才使用内置集成
     if (model.provider === 'builtin') {
@@ -286,7 +280,7 @@ Deno.serve(async (req) => {
 
       // 只在明确要求时才联网，不自动使用模型配置
       const shouldUseWebSearch = force_web_search === true;
-      console.log('[callAIModel] Using web search:', shouldUseWebSearch, '(force_web_search:', force_web_search, ')');
+      log.debug('Using web search:', shouldUseWebSearch);
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: finalPrompt,
@@ -330,13 +324,11 @@ Deno.serve(async (req) => {
 
     // CRITICAL: 只有当 finalSystemPrompt 有实际内容时才添加
     const hasValidSystemPrompt = finalSystemPrompt && finalSystemPrompt.trim().length > 0;
-    console.log('[callAIModel] hasValidSystemPrompt:', hasValidSystemPrompt);
+    log.debug('hasValidSystemPrompt:', hasValidSystemPrompt);
 
     if (hasValidSystemPrompt && !useOpenAIFormat && provider !== 'anthropic') {
-      console.log('[callAIModel] ✓ Adding system prompt to messages, length:', finalSystemPrompt.length);
+      log.debug('Adding system prompt to messages, length:', finalSystemPrompt.length);
       formattedMessages.unshift({ role: 'system', content: finalSystemPrompt });
-    } else {
-      console.log('[callAIModel] ✗ NOT adding system prompt to messages (will be handled separately)');
     }
 
     // 如果有图片文件，将最后一条用户消息转换为多模态格式
@@ -373,14 +365,7 @@ Deno.serve(async (req) => {
     }
 
     // 记录最终发送到API的消息
-    console.log('[callAIModel] Final messages to API:');
-    console.log('[callAIModel] - Total messages:', formattedMessages.length);
-    console.log('[callAIModel] - Has images:', !!(image_files && image_files.length > 0));
-    formattedMessages.forEach((m, i) => {
-      const contentStr = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
-      const tokens = estimateTokens(contentStr);
-      console.log(`[callAIModel]   [${i}] ${m.role}: ${tokens} tokens`);
-    });
+    log.debug('Final messages to API:', formattedMessages.length, 'messages, has_images:', !!(image_files && image_files.length > 0));
 
     if (useOpenAIFormat || provider === 'openai' || provider === 'custom') {
       const endpoint = model.api_endpoint || 'https://api.openai.com/v1/chat/completions';
@@ -403,10 +388,7 @@ Deno.serve(async (req) => {
         ];
       }
 
-      console.log('[callAIModel] ========== OPENAI/CUSTOM API REQUEST ==========');
-      console.log('[callAIModel] Endpoint:', endpoint);
-      console.log('[callAIModel] IsOpenRouter:', isOpenRouter);
-      console.log('[callAIModel] Force web search:', force_web_search);
+      log.info('OpenAI/Custom API:', endpoint, '| OpenRouter:', isOpenRouter);
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -482,9 +464,7 @@ Deno.serve(async (req) => {
           requestBody.plugins = [{ id: 'web', max_results: 5 }];
         }
 
-        console.log('[callAIModel] ========== ANTHROPIC API REQUEST (OpenRouter) ==========');
-        console.log('[callAIModel] Cache Enabled:', cacheEnabled);
-        console.log('[callAIModel] Force web search:', force_web_search);
+        log.info('Anthropic API (OpenRouter) | Cache:', cacheEnabled);
 
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -580,11 +560,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      console.log('[callAIModel] ========== ANTHROPIC API REQUEST (Official) ==========');
-      console.log('[callAIModel] Model ID:', model.model_id);
-      console.log('[callAIModel] System prompt included:', !!finalSystemPrompt);
-      console.log('[callAIModel] System prompt caching enabled:', shouldCacheSystem);
-      console.log('[callAIModel] System prompt tokens:', systemTokens);
+      log.info('Anthropic API (Official) | Model:', model.model_id, '| Cache:', shouldCacheSystem);
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -667,7 +643,7 @@ Deno.serve(async (req) => {
         requestBody.systemInstruction = { parts: [{ text: finalSystemPrompt }] };
       }
 
-      console.log('[callAIModel] ========== GOOGLE GEMINI API REQUEST ==========');
+      log.info('Google Gemini API | Model:', model.model_id);
 
       const res = await fetch(endpoint, {
         method: 'POST',

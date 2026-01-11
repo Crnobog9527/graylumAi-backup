@@ -1,5 +1,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
+// ========== 日志级别控制 ==========
+// 级别: 0=ERROR, 1=WARN, 2=INFO, 3=DEBUG
+const LOG_LEVEL = parseInt(Deno.env.get('LOG_LEVEL') || '2', 10);
+
+const log = {
+  error: (...args: unknown[]) => console.error('[smartChat]', ...args),
+  warn: (...args: unknown[]) => LOG_LEVEL >= 1 && console.warn('[smartChat]', ...args),
+  info: (...args: unknown[]) => LOG_LEVEL >= 2 && console.log('[smartChat]', ...args),
+  debug: (...args: unknown[]) => LOG_LEVEL >= 3 && console.log('[smartChat]', ...args),
+};
+
 // ========== 对话历史管理配置 ==========
 // 原则：在保持上下文记忆的同时降低 token 消耗
 const FULL_HISTORY_LIMIT = 10;          // 10 轮内保持完整历史（20 条消息）
@@ -81,7 +92,7 @@ const saveCache = async (query, searchType, results, base44) => {
       cost_saved: 0
     });
   } catch (error) {
-    console.error('Save cache error:', error);
+    // Silently ignore cache save errors
   }
 };
 
@@ -101,24 +112,21 @@ const executeSearch = async (query, searchType) => {
 
 Deno.serve(async (req) => {
   const startTime = Date.now();
-  console.log('[smartChatWithSearch] ========================================');
-  console.log('[smartChatWithSearch] VERSION: 2026-01-08-DEBUG-v2');
-  console.log('[smartChatWithSearch] Request started');
-  console.log('[smartChatWithSearch] ========================================');
-  
+  log.debug('VERSION: 2026-01-11-OPTIMIZED');
+
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    
+
     if (!user) {
-      console.log('[smartChatWithSearch] Unauthorized');
+      log.warn('Unauthorized request');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const requestData = await req.json();
     let conversation_id = requestData.conversation_id;
     const { message, system_prompt, image_files } = requestData;
-    console.log('[smartChatWithSearch] User:', user.email, 'Message:', message?.slice(0, 50));
+    log.info('User:', user.email, '| Message:', message?.slice(0, 50));
     
     if (!message) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
@@ -137,24 +145,20 @@ Deno.serve(async (req) => {
 
       enableSmartRouting = settingsMap.enable_smart_routing !== 'false';
       enableSmartSearchDecision = settingsMap.enable_smart_search_decision !== 'false';
-
-      console.log('[smartChatWithSearch] System settings loaded:');
-      console.log('[smartChatWithSearch]   - Smart routing:', enableSmartRouting);
-      console.log('[smartChatWithSearch]   - Smart search decision:', enableSmartSearchDecision);
+      log.debug('Settings: routing=' + enableSmartRouting + ', search=' + enableSmartSearchDecision);
     } catch (e) {
-      console.log('[smartChatWithSearch] Failed to load system settings, using defaults:', e.message);
+      log.debug('Settings load failed, using defaults');
     }
 
-    // 步骤1：获取模型配置，检查是否启用智能搜索
-    console.log('[smartChatWithSearch] Getting AI models...');
+    // 步骤1：获取模型配置
     const models = await base44.asServiceRole.entities.AIModel.filter({ is_active: true });
     if (models.length === 0) {
       throw new Error('No active AI models found');
     }
-    
+
     // 优先使用默认模型或对话指定的模型
     let selectedModel = models.find(m => m.is_default) || models[0];
-    
+
     if (conversation_id) {
       const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
       if (convs.length > 0 && convs[0].model_id) {
@@ -162,8 +166,8 @@ Deno.serve(async (req) => {
         if (convModel) selectedModel = convModel;
       }
     }
-    
-    console.log('[smartChatWithSearch] Using model:', selectedModel.name, 'Web search enabled:', selectedModel.enable_web_search);
+
+    log.debug('Model:', selectedModel.name);
     
     // 步骤1.5：Token预算检查
     try {
@@ -171,14 +175,14 @@ Deno.serve(async (req) => {
         conversation_id: conversation_id || 'temp',
         operation: 'check'
       });
-      
+
       if (budgetRes.data?.budget?.is_exceeded) {
-        console.log('[smartChatWithSearch] WARNING: Token budget exceeded');
+        log.warn('Token budget exceeded');
       } else if (budgetRes.data?.budget?.should_warn) {
-        console.log('[smartChatWithSearch] WARNING: Token budget at', budgetRes.data.budget.usage_percent);
+        log.warn('Token budget at', budgetRes.data.budget.usage_percent);
       }
     } catch (e) {
-      console.log('[smartChatWithSearch] Budget check skipped:', e.message);
+      log.debug('Budget check skipped');
     }
     
     // 步骤2：智能任务分类和模型选择
@@ -186,7 +190,6 @@ Deno.serve(async (req) => {
     let shouldUpdateSessionTaskType = false;
 
     if (enableSmartRouting) {
-      console.log('[smartChatWithSearch] Smart routing ENABLED, invoking taskClassifier...');
       try {
         const classifyRes = await base44.functions.invoke('taskClassifier', {
           message,
@@ -196,13 +199,9 @@ Deno.serve(async (req) => {
         if (classifyRes.data && !classifyRes.data.error) {
           taskClassification = classifyRes.data;
           shouldUpdateSessionTaskType = taskClassification.should_update_session_task_type;
+          log.debug('Task:', taskClassification.task_type, '| Model:', taskClassification.recommended_model);
 
-          console.log('[smartChatWithSearch] Task classification:', taskClassification.task_type,
-                      '| Model:', taskClassification.recommended_model,
-                      '| Complexity:', taskClassification.complexity_score,
-                      '| Continuation:', taskClassification.is_continuation);
-
-          // 根据任务分类结果选择模型（如果有对应的AI模型）
+          // 根据任务分类结果选择模型
           if (taskClassification.model_id) {
             const classifiedModel = models.find(m =>
               m.model_id === taskClassification.model_id ||
@@ -210,23 +209,19 @@ Deno.serve(async (req) => {
             );
             if (classifiedModel && classifiedModel.is_active) {
               selectedModel = classifiedModel;
-              console.log('[smartChatWithSearch] Switched to classified model:', selectedModel.name);
+              log.debug('Switched to:', selectedModel.name);
             }
           }
         }
       } catch (e) {
-        console.log('[smartChatWithSearch] Task classification failed:', e.message);
+        log.debug('Task classification failed');
       }
-    } else {
-      console.log('[smartChatWithSearch] Smart routing DISABLED, skipping taskClassifier');
     }
     
     // 步骤3：简化的搜索判断（关键词匹配或URL检测）
     let decision;
 
     if (enableSmartSearchDecision) {
-      console.log('[smartChatWithSearch] Smart search decision ENABLED, checking keywords...');
-
       const lowerMessage = message.toLowerCase();
       const searchKeywords = [
         "天气", "股价", "汇率", "比赛", "新闻", "最新", "今天", "昨天", "现在", "当前",
@@ -235,7 +230,6 @@ Deno.serve(async (req) => {
         "search", "查询", "查一下"
       ];
 
-      // URL 检测正则
       const hasUrl = /(https?:\/\/[^\s]+)/.test(message);
       const hasSearchKeyword = searchKeywords.some(kw => lowerMessage.includes(kw));
       const shouldSearch = hasSearchKeyword || hasUrl;
@@ -245,31 +239,29 @@ Deno.serve(async (req) => {
           need_search: true,
           search_type: 'general',
           confidence: 0.9,
-          reason: hasUrl ? '检测到URL链接' : '检测到搜索关键词',
+          reason: hasUrl ? 'URL detected' : 'Search keyword detected',
           decision_level: 'keyword',
           decision_time_ms: 0,
           will_use_web_search: true
         };
-        console.log('[smartChatWithSearch] ✓ Search enabled by', hasUrl ? 'URL detection' : 'keyword match');
+        log.debug('Search enabled:', decision.reason);
       } else {
         decision = {
           need_search: false,
           search_type: 'none',
           confidence: 0.9,
-          reason: shouldSearch ? 'Web search disabled in model settings' : '未检测到搜索关键词或URL',
+          reason: shouldSearch ? 'Web search disabled' : 'No search keywords',
           decision_level: 'keyword',
           decision_time_ms: 0,
           will_use_web_search: false
         };
-        console.log('[smartChatWithSearch] ✗ Search disabled -', decision.reason);
       }
     } else {
-      console.log('[smartChatWithSearch] Smart search decision DISABLED, search will not be used');
       decision = {
         need_search: false,
         search_type: 'none',
         confidence: 1.0,
-        reason: 'Smart search decision disabled in system settings',
+        reason: 'Search disabled in settings',
         decision_level: 'system',
         decision_time_ms: 0,
         will_use_web_search: false
@@ -292,7 +284,6 @@ Deno.serve(async (req) => {
 
     if (conversation_id) {
       try {
-        // 获取现有摘要
         const summaries = await base44.asServiceRole.entities.ConversationSummary.filter(
           { conversation_id },
           '-created_date',
@@ -301,10 +292,10 @@ Deno.serve(async (req) => {
 
         if (summaries.length > 0) {
           summaryToUse = summaries[0];
-          console.log('[smartChatWithSearch] Found existing summary covering', summaryToUse.covered_messages, 'messages');
+          log.debug('Found summary covering', summaryToUse.covered_messages, 'messages');
         }
       } catch (e) {
-        console.log('[smartChatWithSearch] Summary fetch skipped:', e.message);
+        log.debug('Summary fetch skipped');
       }
     }
 
@@ -313,26 +304,20 @@ Deno.serve(async (req) => {
     let conversationMessages = [];
 
     if (conversation_id) {
-      console.log('[smartChatWithSearch] Loading conversation:', conversation_id);
       try {
-        // 使用 asServiceRole 查询，获取完整字段（包括 system_prompt）
         const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
         if (convs.length > 0) {
           conversation = convs[0];
           conversationMessages = conversation.messages || [];
-          console.log('[smartChatWithSearch] Loaded', conversationMessages.length, 'messages');
-          console.log('[smartChatWithSearch] system_prompt:', conversation.system_prompt ? 'yes' : 'no');
+          log.debug('Loaded', conversationMessages.length, 'messages');
         } else {
-          console.log('[smartChatWithSearch] ⚠️ Conversation not found, treating as new');
-          console.log('[smartChatWithSearch] This may indicate a permission issue or conversation was deleted');
+          log.warn('Conversation not found:', conversation_id);
           conversation_id = null;
         }
       } catch (e) {
-        console.log('[smartChatWithSearch] Error loading conversation:', e.message, '- treating as new');
+        log.warn('Error loading conversation:', e.message);
         conversation_id = null;
       }
-    } else {
-      console.log('[smartChatWithSearch] New conversation, no history');
     }
     
     // 构建消息列表 - 使用摘要替换旧消息（如果存在）
@@ -428,11 +413,7 @@ ${summaryToUse.summary_text}
         compression_ratio: ((1 - afterCompressionTokens / beforeCompressionTokens) * 100).toFixed(1)
       };
 
-      console.log('[smartChatWithSearch] ===== SUMMARY MODE =====');
-      console.log('[smartChatWithSearch] Using summary + recent messages:', recentMessages.length);
-      console.log('[smartChatWithSearch] Summary attached to first message, NO fake assistant message');
-      console.log('[smartChatWithSearch] Compression:', beforeCompressionTokens, '→', afterCompressionTokens, 'tokens (saved:', compressionInfo.saved_tokens, ')');
-      console.log('[smartChatWithSearch] ===========================');
+      log.debug('Summary mode: saved', compressionInfo.saved_tokens, 'tokens');
     } else {
       // 没有摘要或消息较少，使用完整历史
       apiMessages = conversationMessages.map(m => ({
@@ -469,19 +450,11 @@ ${summaryToUse.summary_text}
       return typeof content === 'string' ? content : '';
     };
 
-    // 计算token估算 - 安全处理数组格式的 content
+    // 计算token估算
     const totalTokens = apiMessages.reduce((sum, m) => sum + estimateTokens(getMessageText(m.content)), 0) +
                         (system_prompt ? estimateTokens(system_prompt) : 0);
-    
-    console.log('[smartChatWithSearch] Calling AI model with', apiMessages.length, 'messages, estimated', totalTokens, 'tokens');
-    console.log('[smartChatWithSearch] Message details:');
-    apiMessages.forEach((m, i) => {
-      const textContent = getMessageText(m.content);
-      const tokens = estimateTokens(textContent);
-      const preview = textContent.slice(0, 50);
-      const isCached = Array.isArray(m.content);
-      console.log(`  [${i}] role=${m.role}, tokens=${tokens}, cached=${isCached}, preview=${preview}...`);
-    });
+
+    log.debug('API call:', apiMessages.length, 'messages,', totalTokens, 'tokens');
     
     // ========== 系统提示词处理 ==========
     // 【重要修复】系统提示词不再只在首轮使用，而是：
@@ -506,32 +479,10 @@ ${summaryToUse.summary_text}
 
     const shouldUseSystemPrompt = finalSystemPrompt && finalSystemPrompt.trim().length > 0;
 
-    console.log('[smartChatWithSearch] ===== SYSTEM PROMPT DECISION =====');
-    console.log('[smartChatWithSearch] isFirstTurn:', isFirstTurn, '(conversationMessages.length:', conversationMessages.length, ')');
-    console.log('[smartChatWithSearch] conversation exists:', !!conversation);
-    console.log('[smartChatWithSearch] new system_prompt from frontend:', hasNewSystemPrompt ? `"${system_prompt.slice(0, 100)}..."` : 'null/undefined');
-    console.log('[smartChatWithSearch] saved system_prompt in conversation:', conversation?.system_prompt ? `"${conversation.system_prompt.slice(0, 100)}..."` : 'null/undefined');
-    console.log('[smartChatWithSearch] finalSystemPrompt source:', systemPromptSource);
-    console.log('[smartChatWithSearch] shouldUseSystemPrompt:', shouldUseSystemPrompt);
-
-    if (shouldUseSystemPrompt) {
-      console.log('[smartChatWithSearch] ✓ WILL USE system prompt, tokens:', estimateTokens(finalSystemPrompt));
-    } else {
-      console.log('[smartChatWithSearch] ✗ WILL NOT USE system prompt');
-    }
-    console.log('[smartChatWithSearch] ========================================');
+    log.debug('System prompt:', shouldUseSystemPrompt ? 'YES (' + systemPromptSource + ')' : 'NO');
     
-    // 调用 AI 模型 - 启用联网搜索
-    console.log('[smartChatWithSearch] === ABOUT TO CALL callAIModel ===');
-    console.log('[smartChatWithSearch] Parameters:');
-    console.log('[smartChatWithSearch]   - model_id:', selectedModel.id);
-    console.log('[smartChatWithSearch]   - messages count:', apiMessages.length);
-    console.log('[smartChatWithSearch]   - system_prompt:', shouldUseSystemPrompt ? `YES (${finalSystemPrompt.length} chars, ~${Math.ceil(finalSystemPrompt.length / 4)} tokens)` : 'NO');
-    console.log('[smartChatWithSearch]   - force_web_search:', decision.will_use_web_search || false);
-    if (shouldUseSystemPrompt && finalSystemPrompt) {
-      console.log('[smartChatWithSearch]   - system_prompt preview:', finalSystemPrompt.slice(0, 200) + '...');
-    }
-    console.log('[smartChatWithSearch] === END PARAMETERS ===');
+    // 调用 AI 模型
+    log.info('Calling AI:', selectedModel.id, '| Messages:', apiMessages.length, '| Search:', decision.will_use_web_search);
 
     // 构建调用参数，只在需要时添加 system_prompt
     const callParams = {
@@ -552,9 +503,8 @@ ${summaryToUse.summary_text}
     }
     
     const modelData = modelRes.data;
-    console.log('[smartChatWithSearch] AI response received, web_search_used:', modelData.web_search_enabled);
 
-    // ========== API 性能和成本汇总 ==========
+    // API 性能和成本汇总
     const inputTokens = modelData.input_tokens || 0;
     const outputTokens = modelData.output_tokens || 0;
     const inputCredits = modelData.input_credits || 0;
@@ -564,26 +514,7 @@ ${summaryToUse.summary_text}
     const cacheHitRate = modelData.cache_hit_rate || '0%';
     const creditsSaved = modelData.credits_saved_by_cache || 0;
 
-    // 打印详细的成本汇总
-    console.log('┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓');
-    console.log('┃  💰 Smart Chat - Cost Summary                   ┃');
-    console.log('┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫');
-    console.log(`┃  📊 Token Usage:`);
-    console.log(`┃    • Input:  ${inputTokens.toLocaleString().padEnd(10)} tokens`);
-    console.log(`┃    • Output: ${outputTokens.toLocaleString().padEnd(10)} tokens`);
-    if (cachedTokens > 0) {
-      console.log(`┃  🔄 Cache Performance:`);
-      console.log(`┃    • Hit:     ${cachedTokens.toLocaleString().padEnd(10)} tokens (${cacheHitRate})`);
-      console.log(`┃    • Saved:   ${creditsSaved.toFixed(4).padEnd(10)} credits`);
-    }
-    console.log(`┃  💳 Credits Consumed:`);
-    console.log(`┃    • Input:  ${inputCredits.toFixed(4).padEnd(10)} credits`);
-    console.log(`┃    • Output: ${outputCredits.toFixed(4).padEnd(10)} credits`);
-    if (webSearchUsed) {
-      console.log(`┃    • Search: ${(0.005).toFixed(4).padEnd(10)} credits`);
-    }
-    console.log(`┃    • Total:  ${(inputCredits + outputCredits + (webSearchUsed ? 0.005 : 0)).toFixed(4).padEnd(10)} credits`);
-    console.log('┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛');
+    log.info('Response | Tokens:', inputTokens, '/', outputTokens, '| Cache:', cacheHitRate);
     
     // Token消耗（精确小数）
     const tokenCredits = inputCredits + outputCredits;
@@ -597,11 +528,7 @@ ${summaryToUse.summary_text}
     const currentBalance = userRecord.credits || 0;
     const currentPending = userRecord.pending_credits || 0;
     
-    console.log('[smartChatWithSearch] ===== 结算开始 =====');
-    console.log('[smartChatWithSearch] 当前余额:', currentBalance, '积分');
-    console.log('[smartChatWithSearch] 待结算余额:', currentPending, '积分');
-    console.log('[smartChatWithSearch] Token消耗:', tokenCredits.toFixed(4), '积分');
-    console.log('[smartChatWithSearch] 联网搜索:', webSearchUsed ? 'YES (5积分)' : 'NO');
+    log.debug('Settlement: balance=' + currentBalance + ', pending=' + currentPending.toFixed(4) + ', cost=' + tokenCredits.toFixed(4));
     
     let finalBalance = currentBalance;
     let finalPending = currentPending;
@@ -617,13 +544,10 @@ ${summaryToUse.summary_text}
       }
       finalBalance -= WEB_SEARCH_FEE;
       webSearchDeducted = WEB_SEARCH_FEE;
-      console.log('[smartChatWithSearch] → 扣除联网搜索费:', WEB_SEARCH_FEE, '积分，余额:', finalBalance);
     }
-    
+
     // 步骤2：Token费用加入待结算
     finalPending += tokenCredits;
-    console.log('[smartChatWithSearch] → Token费用加入待结算:', tokenCredits.toFixed(4), '积分');
-    console.log('[smartChatWithSearch] → 待结算余额更新为:', finalPending.toFixed(4), '积分');
     
     // 步骤3：待结算余额>=1时扣除整数部分
     if (finalPending >= 1) {
@@ -634,17 +558,10 @@ ${summaryToUse.summary_text}
       finalBalance -= toDeduct;
       finalPending -= toDeduct;
       tokenDeducted = toDeduct;
-      console.log('[smartChatWithSearch] → 待结算≥1，扣除Token费:', toDeduct, '积分，余额:', finalBalance);
-      console.log('[smartChatWithSearch] → 待结算余额更新为:', finalPending.toFixed(4), '积分');
     }
-    
+
     actualDeducted = webSearchDeducted + tokenDeducted;
-    
-    console.log('[smartChatWithSearch] ===== 结算完成 =====');
-    console.log('[smartChatWithSearch] 本次扣除: 功能费', webSearchDeducted, '+ Token费', tokenDeducted, '= 总计', actualDeducted, '积分');
-    console.log('[smartChatWithSearch] 最终余额:', finalBalance, '积分');
-    console.log('[smartChatWithSearch] 最终待结算:', finalPending.toFixed(4), '积分');
-    console.log('[smartChatWithSearch] ========================');
+    log.info('Deducted:', actualDeducted, '| Balance:', finalBalance, '| Pending:', finalPending.toFixed(4));
     
     // 更新用户余额和待结算余额
     await base44.asServiceRole.entities.User.update(userRecord.id, {
@@ -693,24 +610,19 @@ ${summaryToUse.summary_text}
     let finalConversationId = conversation_id;
     
     if (conversation) {
-      console.log('[smartChatWithSearch] Updating conversation:', conversation.id);
       const updateData = {
         messages: newMessages,
         total_credits_used: (conversation.total_credits_used || 0) + actualDeducted,
         updated_date: new Date().toISOString()
       };
 
-      // 如果需要更新 session_task_type
       if (shouldUpdateSessionTaskType && taskClassification) {
         updateData.session_task_type = taskClassification.task_type;
-        console.log('[smartChatWithSearch] Updating session_task_type to:', taskClassification.task_type);
       }
 
-      // 使用 asServiceRole 更新（可以更新任何对话）
       await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
-      console.log('[smartChatWithSearch] ✓ Updated');
+      log.debug('Updated conversation:', conversation.id);
     } else {
-      console.log('[smartChatWithSearch] Creating new conversation');
 
       const createData = {
         title: message.slice(0, 50),
@@ -730,13 +642,12 @@ ${summaryToUse.summary_text}
         createData.session_task_type = taskClassification.task_type;
       }
 
-      // 使用 entities 创建，让系统自动设置 created_by
       const newConv = await base44.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
-      console.log('[smartChatWithSearch] Created, id:', newConv.id);
+      log.debug('Created conversation:', newConv.id);
     }
-    
-    // 步骤5：更新Token预算（使用最新的用户余额）
+
+    // 步骤5：更新Token预算
     try {
       await base44.functions.invoke('tokenBudgetManager', {
         conversation_id: finalConversationId,
@@ -744,27 +655,24 @@ ${summaryToUse.summary_text}
         tokens: inputTokens + outputTokens
       });
     } catch (e) {
-      console.log('[smartChatWithSearch] Budget update skipped:', e.message);
+      log.debug('Budget update skipped');
     }
-    
+
     // 步骤6：检查是否需要触发压缩
-    // 使用配置的压缩触发阈值和检查间隔
-    const messageCount = conversationMessages.length + 2; // +2 = 当前一问一答
+    const messageCount = conversationMessages.length + 2;
     if (messageCount >= COMPRESSION_TRIGGER_MESSAGES && messageCount % COMPRESSION_CHECK_INTERVAL === 0) {
-      console.log('[smartChatWithSearch] Triggering compression check for', messageCount / 2, 'rounds');
+      log.debug('Triggering compression for', messageCount / 2, 'rounds');
       try {
-        // 异步触发压缩，不等待结果
-        // 保留最近的消息（基于 RECENT_MESSAGES_COUNT）
         base44.functions.invoke('compressConversation', {
           conversation_id: finalConversationId,
           messages_to_compress: messageCount - RECENT_MESSAGES_COUNT
-        }).catch(err => console.log('[smartChatWithSearch] Compression failed:', err.message));
+        }).catch(() => {});
       } catch (e) {
-        console.log('[smartChatWithSearch] Compression trigger skipped:', e.message);
+        // Silently ignore compression errors
       }
     }
-    
-    console.log('[smartChatWithSearch] Request completed successfully');
+
+    log.info('Request completed in', Date.now() - startTime, 'ms');
     
     return Response.json({
       conversation_id: finalConversationId,
@@ -791,11 +699,9 @@ ${summaryToUse.summary_text}
     });
     
   } catch (error) {
-    console.error('[smartChatWithSearch] Error:', error);
-    console.error('[smartChatWithSearch] Stack:', error.stack);
-    return Response.json({ 
+    log.error('Error:', error.message);
+    return Response.json({
       error: error.message,
-      stack: error.stack,
       time_ms: Date.now() - startTime
     }, { status: 500 });
   }
