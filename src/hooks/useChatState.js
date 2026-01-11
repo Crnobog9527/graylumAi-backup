@@ -44,6 +44,8 @@ export function useChatState() {
   const currentConversationRef = useRef(null);
   // 【修复 Bug 3】追踪待自动发送的消息，避免 setTimeout 竞态条件
   const pendingAutoSendRef = useRef(null);
+  // 【修复对话隔离】追踪当前选中的模块，避免 React 状态异步更新导致系统提示词串联
+  const selectedModuleRef = useRef(null);
 
   const queryClient = useQueryClient();
   const location = useLocation();
@@ -329,20 +331,16 @@ export function useChatState() {
   }, [currentConversation, editingTitleValue, updateConversationMutation]);
 
   const handleStartNewChat = useCallback((module = null) => {
-    // 【诊断日志 Bug 2】跟踪新对话创建
-    console.log('[DEBUG-BUG2] ========== handleStartNewChat 被调用 ==========');
-    console.log('[DEBUG-BUG2] 传入 module:', module?.id, module?.title);
-    console.log('[DEBUG-BUG2] 重置前 currentConversationRef:', currentConversationRef.current?.id);
+    console.log('[handleStartNewChat] module:', module?.id, module?.title);
 
-    // 【修复 Bug 2】同步更新 ref，确保状态立即生效
+    // 【修复】同步更新 ref，确保状态立即生效
     currentConversationRef.current = null;
+    selectedModuleRef.current = module || null;  // 同步更新模块 ref
+
     setCurrentConversation(null);
     setMessages([]);
-    setSelectedModule(module ? module : null);
+    setSelectedModule(module || null);
     setIsEditingTitle(false);
-
-    console.log('[DEBUG-BUG2] 重置后 currentConversationRef:', currentConversationRef.current);
-    console.log('[DEBUG-BUG2] ================================================');
 
     if (module?.model_id && models.length > 0) {
       const moduleModel = models.find(m => m.id === module.model_id);
@@ -356,8 +354,9 @@ export function useChatState() {
     try {
       // 使用带缓存的 API 获取对话
       const freshConv = await chatAPI.getConversationHistory(conv.id);
-      // 【修复 Bug 2】同步更新 ref
+      // 同步更新 ref
       currentConversationRef.current = freshConv;
+      selectedModuleRef.current = null;  // 切换对话时清空模块
       setCurrentConversation(freshConv);
       setMessages(freshConv.messages || []);
       setSelectedModule(null);
@@ -367,8 +366,8 @@ export function useChatState() {
       }
     } catch (e) {
       console.error('对话加载失败:', e);
-      // 【修复 Bug 2】同步更新 ref
       currentConversationRef.current = null;
+      selectedModuleRef.current = null;
       setCurrentConversation(null);
       setMessages([]);
       chatAPI.invalidateConversation(conv.id);
@@ -397,30 +396,23 @@ export function useChatState() {
 
     let systemPrompt = '';
     const isFirstTurn = messages.length === 0;
-    const hasModule = selectedModule !== null && selectedModule !== undefined;
-    // 【修复 Bug 2】使用 ref 判断是否新对话，避免 React 状态异步问题
+    // 【修复对话隔离】使用 ref 判断模块，避免 React 状态异步问题
+    const currentModule = selectedModuleRef.current;
+    const hasModule = currentModule !== null && currentModule !== undefined;
     const isNewConversation = !currentConversationRef.current;
 
-    // 【诊断日志 Bug 2】系统提示词决策
-    console.log('[DEBUG-BUG2] 系统提示词决策:');
-    console.log('[DEBUG-BUG2]   hasModule:', hasModule);
-    console.log('[DEBUG-BUG2]   isFirstTurn:', isFirstTurn);
-    console.log('[DEBUG-BUG2]   isNewConversation:', isNewConversation);
-    console.log('[DEBUG-BUG2]   条件满足 (hasModule && isFirstTurn && isNewConversation):', hasModule && isFirstTurn && isNewConversation);
+    console.log('[handleSendMessage] hasModule:', hasModule, 'isFirstTurn:', isFirstTurn, 'isNewConversation:', isNewConversation);
 
     if (hasModule && isFirstTurn && isNewConversation) {
-      systemPrompt = `【重要约束】你现在是"${selectedModule.title}"专用助手。
-  ${selectedModule.system_prompt}
+      systemPrompt = `【重要约束】你现在是"${currentModule.title}"专用助手。
+  ${currentModule.system_prompt}
 
   【行为规范】
   1. 你必须严格遵循上述角色定位和功能约束
   2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
   3. 保持专业、专注，不要偏离主题`;
-      console.log('[DEBUG-BUG2] ✓ 将发送系统提示词, 长度:', systemPrompt.length);
-    } else {
-      console.log('[DEBUG-BUG2] ✗ 不发送系统提示词');
+      console.log('[handleSendMessage] 发送系统提示词, 长度:', systemPrompt.length);
     }
-    console.log('[DEBUG-BUG2] ================================================');
 
     const attachments = await Promise.all(fileContents.map(async (f, idx) => {
       const file = uploadedFiles[idx];
