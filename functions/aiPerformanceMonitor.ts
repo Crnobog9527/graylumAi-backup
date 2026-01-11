@@ -73,7 +73,8 @@ Deno.serve(async (req) => {
       const is_timeout = response_time_ms >= TIMEOUT_THRESHOLD_MS;
       const is_slow = response_time_ms >= SLOW_RESPONSE_THRESHOLD_MS;
 
-      // 记录到 TokenStats
+      // 记录到 TokenStats（使用 service role 绕过 RLS）
+      log.info('Recording to TokenStats:', { model_used, response_time_ms, input_tokens, output_tokens });
       await base44.asServiceRole.entities.TokenStats.create({
         conversation_id: conversation_id || 'unknown',
         user_email: user.email,
