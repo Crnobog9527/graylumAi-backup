@@ -23,9 +23,22 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // 支持从 URL 参数或 POST body 读取 operation
     const url = new URL(req.url);
-    const operation = url.searchParams.get('operation') || 'dashboard';
-    const timeRange = url.searchParams.get('time_range') || '24h';
+    let operation = url.searchParams.get('operation') || 'dashboard';
+    let timeRange = url.searchParams.get('time_range') || '24h';
+    
+    // 如果是 POST 请求，尝试从 body 读取
+    let bodyData = null;
+    if (req.method === 'POST') {
+      try {
+        bodyData = await req.json();
+        if (bodyData.operation) operation = bodyData.operation;
+        if (bodyData.time_range) timeRange = bodyData.time_range;
+      } catch (e) {
+        // Body 解析失败，使用 URL 参数
+      }
+    }
 
     // 计算时间范围
     let startDate = new Date();
@@ -40,8 +53,8 @@ Deno.serve(async (req) => {
     }
 
     // ========== 记录性能数据 ==========
-    if (req.method === 'POST' && operation === 'record') {
-      const data = await req.json();
+    if (operation === 'record') {
+      const data = bodyData || {};
       const {
         conversation_id,
         model_used,

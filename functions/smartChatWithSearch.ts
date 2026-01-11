@@ -677,7 +677,8 @@ ${summaryToUse.summary_text}
 
     // 步骤7：记录性能监控数据（异步，不阻塞响应）
     try {
-      base44.functions.invoke('aiPerformanceMonitor?operation=record', {
+      base44.functions.invoke('aiPerformanceMonitor', {
+        operation: 'record',
         conversation_id: finalConversationId,
         model_used: selectedModel.name,
         response_time_ms: responseTimeMs,
@@ -688,9 +689,9 @@ ${summaryToUse.summary_text}
         cache_hit_rate: modelData.cache_hit_rate || '0%',
         total_cost: tokenCredits,
         is_error: false
-      }).catch(() => {});
+      }).catch((e) => log.warn('Performance monitor failed:', e.message));
     } catch (e) {
-      // Silently ignore monitoring errors
+      log.warn('Performance monitor error:', e.message);
     }
 
     return Response.json({
@@ -723,7 +724,9 @@ ${summaryToUse.summary_text}
 
     // 记录错误到性能监控
     try {
-      base44.functions.invoke('aiPerformanceMonitor?operation=record', {
+      const base44ForError = createClientFromRequest(req);
+      base44ForError.functions.invoke('aiPerformanceMonitor', {
+        operation: 'record',
         conversation_id: 'error',
         model_used: 'unknown',
         response_time_ms: errorTimeMs,
