@@ -150,7 +150,7 @@ Grayscale 是一个 AI 驱动的社交媒体增长平台，通过智能聊天机
 | 工单管理 | AdminTickets.jsx | 正常 |
 | 公告管理 | AdminAnnouncements.jsx | 正常 (1,116行) |
 | 系统设置 | AdminSettings.jsx | 正常 |
-| 精选管理 | AdminFeatured.jsx | **未实现** (空文件) |
+| AI 性能监控 | AdminPerformance.jsx | 正常 (新增) |
 
 ### 4. 市场与模板系统
 
@@ -170,11 +170,11 @@ Grayscale 是一个 AI 驱动的社交媒体增长平台，通过智能聊天机
 | 超大文件 | `AdminAnnouncements.jsx` (48,524行) | 维护困难、性能风险 | 拆分为多个子组件 |
 | 大型云函数 | `smartChatWithSearch.ts` (31,478行) | 部署时间长、调试困难 | 模块化重构 |
 
-### 2. 待实现功能 🟡
+### 2. 已完成清理 🟢
 
-| 功能 | 位置 | 状态 |
+| 项目 | 状态 | 说明 |
 |------|------|------|
-| 精选管理 | `AdminFeatured.jsx` | 空文件 (0字节) |
+| AdminFeatured.jsx | ✅ 已删除 | 空文件已清理 |
 
 ### 3. 文档现状 🟢
 
