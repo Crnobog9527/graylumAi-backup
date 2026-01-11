@@ -675,9 +675,9 @@ ${summaryToUse.summary_text}
     const responseTimeMs = Date.now() - startTime;
     log.info('Request completed in', responseTimeMs, 'ms');
 
-    // 步骤7：记录性能监控数据（异步，不阻塞响应）
+    // 步骤7：记录性能监控数据（同步等待，确保数据被记录）
     try {
-      base44.functions.invoke('aiPerformanceMonitor', {
+      const monitorResult = await base44.functions.invoke('aiPerformanceMonitor', {
         operation: 'record',
         conversation_id: finalConversationId,
         model_used: selectedModel.name,
@@ -689,7 +689,8 @@ ${summaryToUse.summary_text}
         cache_hit_rate: modelData.cache_hit_rate || '0%',
         total_cost: tokenCredits,
         is_error: false
-      }).catch((e) => log.warn('Performance monitor failed:', e.message));
+      });
+      log.debug('Performance recorded:', monitorResult?.data?.success);
     } catch (e) {
       log.warn('Performance monitor error:', e.message);
     }
