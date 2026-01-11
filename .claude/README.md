@@ -181,6 +181,7 @@ src/components.css
 | ESLint + Prettier | 项目根目录 | ✅ 已配置 |
 | 空文件清理 | `AdminFeatured.jsx` | ✅ 已删除 |
 | 知识库文档更新 | .claude/*.md | ✅ 已同步 (2026-01-11) |
+| Git 提交规范 | `scripts/commit-msg` | ✅ 新增 hook |
 
 ---
 
