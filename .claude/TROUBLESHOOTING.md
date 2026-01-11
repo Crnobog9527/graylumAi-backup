@@ -169,20 +169,39 @@ apiMessages = apiMessages.filter(m => {
 
 ## 🔍 AI 系统问题
 
-### 问题：AI 响应缓慢或超时
+### 问题：AI 响应缓慢或超时 ✅ 已有监控
 
 **症状**
 - 用户等待时间过长 (>30秒)
 - API 调用超时错误
 - 错误信息: "Request timeout" 或 "ETIMEDOUT"
 
+**当前状态**：已实现性能监控系统（2026-01-11）
+
+**监控机制**
+- `aiPerformanceMonitor.ts` 自动记录每次 API 调用
+- 超时阈值：30秒（自动警告）
+- 慢响应阈值：10秒（自动标记）
+- 管理后台可查看实时仪表板
+
+**查看监控数据**
+```bash
+# 获取性能仪表板
+GET /functions/aiPerformanceMonitor?operation=dashboard&time_range=24h
+
+# 获取超时警报列表
+GET /functions/aiPerformanceMonitor?operation=alerts&time_range=7d
+```
+
 **诊断步骤**
-1. 检查 `callAIModel.ts` 中的模型选择逻辑
-2. 验证 Token 预算设置是否合理
-3. 检查网络连接和 API 状态
-4. 查看 Claude API 状态页面
+1. 查看管理后台 AI 性能监控页面
+2. 检查 `callAIModel.ts` 中的模型选择逻辑
+3. 验证 Token 预算设置是否合理
+4. 检查网络连接和 API 状态
+5. 查看 Claude API 状态页面
 
 **检查点**
+- [ ] 查看监控仪表板的超时率和慢响应率
 - [ ] Sonnet 4.5 vs Haiku 4.5 选择是否正确
 - [ ] Token 上限是否过低
 - [ ] 是否有重试机制
@@ -210,18 +229,39 @@ for (let i = 0; i < MAX_RETRIES; i++) {
 }
 ```
 
+**相关文件**
+- `functions/aiPerformanceMonitor.ts` - 性能监控函数
+- `src/components/admin/AIPerformanceMonitor.jsx` - 管理后台组件
+- `src/pages/AdminPerformance.jsx` - 监控页面
+
 ---
-### 问题：Token 消耗过高
+### 问题：Token 消耗过高 ✅ 已有监控
 
 **症状**
 - 用户积分消耗过快
 - 成本超出预算
 - 单次对话消耗大量 Token
 
+**当前状态**：已实现 Token 消耗和缓存命中率监控（2026-01-11）
+
+**查看监控数据**
+```bash
+# 获取 Token 使用统计
+GET /functions/aiPerformanceMonitor?operation=dashboard&time_range=24h
+
+# 返回数据包含：
+# - total_input: 总输入 Token
+# - total_output: 总输出 Token
+# - total_cached: 缓存命中 Token
+# - cache_hit_rate: 缓存命中率（目标 ≥50%）
+# - estimated_savings: 估算节省成本
+```
+
 **诊断步骤**
-1. 检查 Prompt Caching 是否正常工作
-2. 验证模型选择是否合理
-3. 查看系统提示词长度
+1. 查看管理后台 AI 性能监控页面的 Token 统计
+2. 检查缓存命中率是否达到目标（≥50%）
+3. 验证模型选择是否合理
+4. 查看系统提示词长度
 
 **诊断命令**
 
@@ -240,6 +280,10 @@ console.log('[Token分析]', {
 - 确保 Prompt Caching 生效 (系统提示 ≥1024 tokens)
 - 简化系统提示词
 - 对长文本使用上下文压缩
+
+**相关文件**
+- `functions/aiPerformanceMonitor.ts` - 监控 Token 使用
+- `functions/callAIModel.ts` - Prompt Caching 实现
 
 ---
 
@@ -308,6 +352,63 @@ function Component() {
 ---
 
 ## ⚙️ 后端云函数问题
+
+### 案例：Base44 实体数据嵌套导致监控数据读取失败（2026-01-11）
+
+**案例背景**
+- 原问题：开发 AI 性能监控功能，需要从 TokenStats 实体读取数据
+- 第一次尝试：直接访问 `stat.response_time_ms` 等字段
+- 引入的新问题：仪表板数据全为 0，缓存命中率显示 "0%"
+
+**根本原因**
+
+Base44 实体返回的数据结构与预期不同：
+
+```typescript
+// ❌ 预期结构（错误假设）
+{
+  id: "xxx",
+  response_time_ms: 1500,
+  input_tokens: 100,
+  ...
+}
+
+// ✅ 实际结构（Base44 返回格式）
+{
+  id: "xxx",
+  created_date: "2026-01-11T...",
+  data: {
+    response_time_ms: 1500,
+    input_tokens: 100,
+    ...
+  }
+}
+```
+
+**正确的解决方案**
+
+```typescript
+// 兼容处理：数据可能嵌套在 data 字段中
+for (const rawStat of filteredStats) {
+  const stat = rawStat.data || rawStat;  // 关键：兼容两种结构
+  const responseTime = Number(stat.response_time_ms) || 0;
+
+  // created_date 在外层
+  const createdDate = new Date(rawStat.created_date);
+}
+```
+
+**经验教训**
+- 使用 Base44 实体前，先用 `console.log` 打印实际返回结构
+- 添加 `log.debug('Sample record:', JSON.stringify(stats[0]))` 便于调试
+- 始终使用 `Number()` 转换数值字段，避免字符串比较问题
+- 写入和读取时保持数据路径一致
+
+**相关文件**
+- `functions/aiPerformanceMonitor.ts:180-182` - 数据读取兼容处理
+- `functions/aiPerformanceMonitor.ts:110-115` - 调试日志
+
+---
 
 ### 问题：云函数冷启动慢
 

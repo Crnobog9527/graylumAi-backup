@@ -38,8 +38,22 @@
 
 ### 修改文件
 
-- **`functions/aiPerformanceMonitor.ts`**: 新增
+**后端**:
+- **`functions/aiPerformanceMonitor.ts`**: 新增性能监控函数
 - **`functions/smartChatWithSearch.ts`**: 添加性能数据记录调用
+
+**前端**:
+- **`src/components/admin/AIPerformanceMonitor.jsx`**: 新增监控面板组件
+- **`src/pages/AdminPerformance.jsx`**: 新增管理页面
+- **`src/pages/Admin.jsx`**: 集成监控页面路由
+- **`src/pages.config.js`**: 添加懒加载配置
+
+### 开发经验
+
+**Base44 实体数据结构注意事项**：
+- 实体返回数据嵌套在 `data` 字段中：`{ id, created_date, data: {...} }`
+- 读取时需使用 `rawStat.data || rawStat` 兼容处理
+- 详见 `TROUBLESHOOTING.md` 中的案例记录
 
 ### 使用方式
 

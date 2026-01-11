@@ -10,8 +10,8 @@
 | 状态项 | 值 |
 |--------|-----|
 | **最后全面更新** | 2026-01-11 |
-| **最后同步 Commit** | `c57ec48` |
-| **知识库版本** | 2.0 |
+| **最后同步 Commit** | `93dccdd` |
+| **知识库版本** | 2.1 |
 | **核心文件数** | 8个 |
 
 ### 待更新项
@@ -31,6 +31,7 @@ src/components/hooks/useChatState.jsx
 functions/smartChatWithSearch.ts
 functions/callAIModel.ts
 functions/compressConversation.ts
+functions/aiPerformanceMonitor.ts  # AI 性能监控
 
 # 配置文件 (变更时更新 PROJECT_CONTEXT.md)
 package.json
@@ -127,6 +128,7 @@ src/components.css
 | `smartChatWithSearch.ts` | 801 | 智能搜索聊天核心 |
 | `callAIModel.ts` | 718 | AI 模型调用封装 |
 | `useChatState.jsx` | 737 | 聊天状态管理（位于 components/hooks/）|
+| `aiPerformanceMonitor.ts` | 352 | AI 性能监控（新增 2026-01-11）|
 
 ### 设计系统要点
 
@@ -158,25 +160,26 @@ src/components.css
 | **功能模块不自动发送提示词** | ✅ 已修复 | 自动发送逻辑 + `autoSentRef` 防重复 |
 | **对话历史不显示** | ✅ 已修复 | `refetchConversations()` 多次刷新 |
 | **聊天上下文丢失** | ✅ 已修复 | 修复消息过滤逻辑处理数组格式 |
-| **AI 响应缓慢或超时** | ⏳ 待验证 | 已有重试机制，需要监控 |
+| **AI 响应缓慢或超时** | ✅ 已有监控 | `aiPerformanceMonitor.ts` 实时追踪 |
 
 **详细修复方案**: 见 `TROUBLESHOOTING.md` 和 `CHANGELOG.md`
 
-### P1 高优先级 🟡 （本月内）
+### P1 高优先级 🟡 - ✅ 已完成
 
 | 问题 | 位置 | 状态 |
 |------|------|------|
-| Token 消耗优化 | `callAIModel.ts` | 待优化 |
-| 前端代码分割 | `pages.config.js` | 待实现 |
-| 图片懒加载 | 各图片组件 | 待实现 |
+| Token 消耗优化 | `callAIModel.ts` | ✅ 已有监控机制 |
+| 前端代码分割 | `pages.config.js` | ✅ 已实现 React.lazy |
+| 图片懒加载 | 各图片组件 | ✅ 5个组件已添加 |
+| AI 性能监控 | `aiPerformanceMonitor.ts` | ✅ 新增实时监控 |
 
-### P2 中优先级 🟢 （本季度）
+### P2 中优先级 🟢 - ✅ 已完成
 
 | 问题 | 位置 | 状态 |
 |------|------|------|
-| 文档整合 | 旧文档与 .claude/ 系统 | 待整合 |
-| 暗色模式优化 | CSS Variables | 待优化 |
-| 空文件 | `AdminFeatured.jsx` | 待确认是否需要 |
+| 文档整合 | 旧文档与 .claude/ 系统 | ✅ 已整合 |
+| ESLint + Prettier | 项目根目录 | ✅ 已配置 |
+| 空文件 | `AdminFeatured.jsx` | ✅ 已删除 |
 
 ---
 
