@@ -195,7 +195,9 @@ Deno.serve(async (req) => {
 
       const responseTimes: number[] = [];
 
-      for (const stat of filteredStats) {
+      for (const rawStat of filteredStats) {
+        // 兼容两种数据格式：直接属性或嵌套在 data 中
+        const stat = rawStat.data || rawStat;
         const responseTime = stat.response_time_ms || 0;
 
         // 响应时间统计
