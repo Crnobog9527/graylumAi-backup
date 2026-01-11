@@ -50,7 +50,7 @@
 
 | 问题 | 位置 | 建议 |
 |------|------|------|
-| 空文件 | `AdminFeatured.jsx` (0字节) | 功能待实现 |
+| 空文件 | `AdminFeatured.jsx` (0字节) | 删除该文件 |
 | 大型云函数 | `smartChatWithSearch.ts` (31,478行) | 评估拆分必要性 |
 | 大型云函数 | `callAIModel.ts` (27,164行) | 评估拆分必要性 |
 
