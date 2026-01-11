@@ -120,12 +120,13 @@ Deno.serve(async (req) => {
       const stats = await base44.asServiceRole.entities.TokenStats.list();
       log.info('Found', stats.length, 'TokenStats records');
 
-      // 过滤时间范围
+      // 过滤时间范围 - created_date 在外层，数据在 data 字段中
       const filteredStats = stats.filter(s => {
         const createdDate = new Date(s.created_date);
         return createdDate >= startDate;
       });
       log.info('Filtered to', filteredStats.length, 'records for time range', timeRange);
+      log.debug('Sample record structure:', JSON.stringify(stats[0] || {}).slice(0, 500));
 
       // 聚合统计
       const dashboard = {
