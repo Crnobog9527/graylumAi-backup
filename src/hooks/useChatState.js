@@ -83,8 +83,11 @@ export function useChatState() {
   const { data: conversations = [] } = useQuery({
     queryKey: ['conversations', user?.email],
     queryFn: async () => {
-      // 使用后端函数 listMyConversations 绕过 RLS 限制
-      const result = await chatAPI.getConversations(user?.email, { forceRefresh: true });
+      // 使用系统 created_by 字段查询对话列表
+      const result = await base44.entities.Conversation.filter(
+        { created_by: user?.email, is_archived: false },
+        '-updated_date'
+      );
       console.log('[conversations] 数量:', result?.length || 0);
       return result;
     },
@@ -324,18 +327,11 @@ export function useChatState() {
   }, [currentConversation, editingTitleValue, updateConversationMutation]);
 
   const handleStartNewChat = useCallback((module = null) => {
-    console.log('[handleStartNewChat] ========== 开始新对话 ==========');
-    console.log('[handleStartNewChat] 传入 module:', module?.id, module?.title);
-    console.log('[handleStartNewChat] 之前 selectedModuleRef:', selectedModuleRef.current?.id);
-    console.log('[handleStartNewChat] 之前 currentConversationRef:', currentConversationRef.current?.id);
+    console.log('[handleStartNewChat] module:', module?.id, module?.title);
 
-    // 【重要】同步清除所有状态，确保新对话不继承任何旧状态
+    // 【修复】同步更新 ref，确保状态立即生效
     currentConversationRef.current = null;
-    selectedModuleRef.current = module || null;
-    processedModuleRef.current = null;  // 同时清除已处理模块标记，允许重新使用
-
-    console.log('[handleStartNewChat] 更新后 selectedModuleRef:', selectedModuleRef.current?.id);
-    console.log('[handleStartNewChat] ================================');
+    selectedModuleRef.current = module || null;  // 同步更新模块 ref
 
     setCurrentConversation(null);
     setMessages([]);
@@ -351,21 +347,12 @@ export function useChatState() {
   }, [models]);
 
   const handleSelectConversation = useCallback(async (conv) => {
-    console.log('[handleSelectConversation] ========== 选择对话 ==========');
-    console.log('[handleSelectConversation] 选择对话:', conv.id);
-    console.log('[handleSelectConversation] 之前 selectedModuleRef:', selectedModuleRef.current?.id);
-
     try {
       // 使用带缓存的 API 获取对话
       const freshConv = await chatAPI.getConversationHistory(conv.id);
-      // 【重要】同步更新 ref，清空模块状态
+      // 同步更新 ref
       currentConversationRef.current = freshConv;
       selectedModuleRef.current = null;  // 切换对话时清空模块
-      processedModuleRef.current = null;  // 清除已处理模块标记
-
-      console.log('[handleSelectConversation] 更新后 selectedModuleRef:', selectedModuleRef.current);
-      console.log('[handleSelectConversation] ==============================');
-
       setCurrentConversation(freshConv);
       setMessages(freshConv.messages || []);
       setSelectedModule(null);
@@ -374,10 +361,9 @@ export function useChatState() {
         if (model) setSelectedModel(model);
       }
     } catch (e) {
-      console.error('[handleSelectConversation] 对话加载失败:', e);
+      console.error('对话加载失败:', e);
       currentConversationRef.current = null;
       selectedModuleRef.current = null;
-      processedModuleRef.current = null;
       setCurrentConversation(null);
       setMessages([]);
       chatAPI.invalidateConversation(conv.id);
@@ -408,17 +394,10 @@ export function useChatState() {
     const isFirstTurn = messages.length === 0;
     // 【修复对话隔离】使用 ref 判断模块，避免 React 状态异步问题
     const currentModule = selectedModuleRef.current;
-    // 严格检查：模块必须存在且有有效内容
-    const hasModule = currentModule && currentModule.id && currentModule.system_prompt;
+    const hasModule = currentModule !== null && currentModule !== undefined;
     const isNewConversation = !currentConversationRef.current;
 
-    console.log('[handleSendMessage] ========== 系统提示词判断 ==========');
-    console.log('[handleSendMessage] isFirstTurn:', isFirstTurn, '(messages.length:', messages.length, ')');
-    console.log('[handleSendMessage] currentModule:', currentModule ? `id=${currentModule.id}, title=${currentModule.title}` : 'null');
-    console.log('[handleSendMessage] hasModule:', hasModule);
-    console.log('[handleSendMessage] isNewConversation:', isNewConversation);
-    console.log('[handleSendMessage] currentConversationRef.current:', currentConversationRef.current?.id || 'null');
-    console.log('[handleSendMessage] 条件 (hasModule && isFirstTurn && isNewConversation):', hasModule && isFirstTurn && isNewConversation);
+    console.log('[handleSendMessage] hasModule:', hasModule, 'isFirstTurn:', isFirstTurn, 'isNewConversation:', isNewConversation);
 
     if (hasModule && isFirstTurn && isNewConversation) {
       systemPrompt = `【重要约束】你现在是"${currentModule.title}"专用助手。
@@ -428,11 +407,8 @@ export function useChatState() {
   1. 你必须严格遵循上述角色定位和功能约束
   2. 如果用户的问题超出此模块范围，请礼貌引导用户使用正确的功能模块
   3. 保持专业、专注，不要偏离主题`;
-      console.log('[handleSendMessage] ✓ 发送系统提示词, 长度:', systemPrompt.length);
-    } else {
-      console.log('[handleSendMessage] ✗ 不发送系统提示词');
+      console.log('[handleSendMessage] 发送系统提示词, 长度:', systemPrompt.length);
     }
-    console.log('[handleSendMessage] ========================================');
 
     const attachments = await Promise.all(fileContents.map(async (f, idx) => {
       const file = uploadedFiles[idx];
