@@ -307,21 +307,25 @@ Deno.serve(async (req) => {
         console.log('[smartChatWithSearch] Summary fetch skipped:', e.message);
       }
     }
-    
+
     // 步骤4：获取对话历史
     let conversation;
     let conversationMessages = [];
-    
+
     if (conversation_id) {
       console.log('[smartChatWithSearch] Loading conversation:', conversation_id);
       try {
-        const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
+        // 【修复】使用普通客户端查询对话，与创建保持一致
+        // 之前使用 asServiceRole 导致查询不到普通客户端创建的对话
+        const convs = await base44.entities.Conversation.filter({ id: conversation_id });
         if (convs.length > 0) {
           conversation = convs[0];
           conversationMessages = conversation.messages || [];
           console.log('[smartChatWithSearch] Loaded', conversationMessages.length, 'messages from conversation');
+          console.log('[smartChatWithSearch] Conversation created_by:', conversation.created_by);
         } else {
-          console.log('[smartChatWithSearch] Conversation not found, treating as new');
+          console.log('[smartChatWithSearch] ⚠️ Conversation not found, treating as new');
+          console.log('[smartChatWithSearch] This may indicate a permission issue or conversation was deleted');
           conversation_id = null;
         }
       } catch (e) {
@@ -690,20 +694,22 @@ ${summaryToUse.summary_text}
     let finalConversationId = conversation_id;
     
     if (conversation) {
-      console.log('[smartChatWithSearch] Updating conversation');
+      console.log('[smartChatWithSearch] Updating conversation:', conversation.id);
       const updateData = {
         messages: newMessages,
         total_credits_used: (conversation.total_credits_used || 0) + actualDeducted,
         updated_date: new Date().toISOString()
       };
-      
+
       // 如果需要更新 session_task_type
       if (shouldUpdateSessionTaskType && taskClassification) {
         updateData.session_task_type = taskClassification.task_type;
         console.log('[smartChatWithSearch] Updating session_task_type to:', taskClassification.task_type);
       }
-      
-      await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
+
+      // 【修复】使用普通客户端更新对话，与查询和创建保持一致
+      await base44.entities.Conversation.update(conversation.id, updateData);
+      console.log('[smartChatWithSearch] ✓ Conversation updated successfully');
     } else {
       console.log('[smartChatWithSearch] Creating new conversation');
       // 【修复 Bug 1】使用普通客户端创建对话，让 SDK 自动设置 created_by
