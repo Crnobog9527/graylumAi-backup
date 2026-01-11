@@ -672,8 +672,27 @@ ${summaryToUse.summary_text}
       }
     }
 
-    log.info('Request completed in', Date.now() - startTime, 'ms');
-    
+    const responseTimeMs = Date.now() - startTime;
+    log.info('Request completed in', responseTimeMs, 'ms');
+
+    // 步骤7：记录性能监控数据（异步，不阻塞响应）
+    try {
+      base44.functions.invoke('aiPerformanceMonitor?operation=record', {
+        conversation_id: finalConversationId,
+        model_used: selectedModel.name,
+        response_time_ms: responseTimeMs,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        cached_tokens: modelData.cached_tokens || 0,
+        cache_creation_tokens: modelData.cache_creation_tokens || 0,
+        cache_hit_rate: modelData.cache_hit_rate || '0%',
+        total_cost: tokenCredits,
+        is_error: false
+      }).catch(() => {});
+    } catch (e) {
+      // Silently ignore monitoring errors
+    }
+
     return Response.json({
       conversation_id: finalConversationId,
       response: modelData.response,
@@ -699,10 +718,29 @@ ${summaryToUse.summary_text}
     });
     
   } catch (error) {
+    const errorTimeMs = Date.now() - startTime;
     log.error('Error:', error.message);
+
+    // 记录错误到性能监控
+    try {
+      base44.functions.invoke('aiPerformanceMonitor?operation=record', {
+        conversation_id: 'error',
+        model_used: 'unknown',
+        response_time_ms: errorTimeMs,
+        input_tokens: 0,
+        output_tokens: 0,
+        cached_tokens: 0,
+        total_cost: 0,
+        is_error: true,
+        error_message: error.message
+      }).catch(() => {});
+    } catch (e) {
+      // Silently ignore
+    }
+
     return Response.json({
       error: error.message,
-      time_ms: Date.now() - startTime
+      time_ms: errorTimeMs
     }, { status: 500 });
   }
 });
