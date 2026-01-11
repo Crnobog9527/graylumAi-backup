@@ -141,7 +141,7 @@
 | 调整模型选择逻辑 | callAIModel.ts | 必须考虑成本和性能平衡 |
 | 修改 Token 预算 | callAIModel.ts | 避免过度限制影响回答质量 |
 | 优化上下文管理 | useChatState.js | 确保历史正确传递 |
-| 添加搜索功能 | smartChatWithSearch.ts | 理解现有搜索逻辑 |
+| 优化智能搜索判断功能 | smartChatWithSearch.ts | 理解现有智能搜索判断逻辑 |
 
 ---
 
