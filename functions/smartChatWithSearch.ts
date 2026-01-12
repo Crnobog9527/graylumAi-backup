@@ -629,7 +629,8 @@ ${summaryToUse.summary_text}
         model_id: selectedModel.id,
         messages: newMessages,
         total_credits_used: actualDeducted,
-        is_archived: false
+        is_archived: false,
+        user_email: user.email  // 用户隔离：关联用户邮箱
       };
 
       // 保存系统提示词

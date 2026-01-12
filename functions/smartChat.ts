@@ -151,7 +151,8 @@ Deno.serve(async (req) => {
       conversation = await base44.asServiceRole.entities.Conversation.create({
         title: message.slice(0, 50),
         messages: [],
-        total_credits_used: 0
+        total_credits_used: 0,
+        user_email: user.email  // 用户隔离：关联用户邮箱
       });
     }
     
