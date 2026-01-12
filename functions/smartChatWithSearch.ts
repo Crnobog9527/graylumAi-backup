@@ -643,7 +643,8 @@ ${summaryToUse.summary_text}
         createData.session_task_type = taskClassification.task_type;
       }
 
-      const newConv = await base44.entities.Conversation.create(createData);
+      // 使用 asServiceRole 绕过 RLS，确保 user_email 字段能正确写入
+      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
       log.debug('Created conversation:', newConv.id);
     }
