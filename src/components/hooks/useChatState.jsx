@@ -87,6 +87,7 @@ export function useChatState() {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const autoSentRef = useRef(false);  // 跟踪是否已经自动发送过
+  const conversationIdRef = useRef(null);  // 【关键修复】同步跟踪 conversation_id，解决异步状态更新竞态条件
 
   // 获取用户信息
   useEffect(() => {
@@ -180,6 +181,7 @@ export function useChatState() {
     setInputMessage('');
     setUploadedFiles([]);
     setFileContents([]);
+    conversationIdRef.current = null;  // 【关键修复】重置 ref
 
     // 【修复 Bug 1】清除 URL 中的 module_id 参数，防止系统提示词跨对话串联
     const urlParams = new URLSearchParams(window.location.search);
@@ -199,6 +201,7 @@ export function useChatState() {
     setCurrentConversation(conv);
     setMessages(conv.messages || []);
     setEditingTitleValue(conv.title || '');
+    conversationIdRef.current = conv.id;  // 【关键修复】更新 ref
   }, []);
 
   // 删除对话
@@ -323,9 +326,13 @@ export function useChatState() {
       }
 
       // 调用 API
+      // 【关键修复】使用 ref 来获取 conversation_id，避免 React 异步状态更新导致的竞态条件
+      const currentConvId = conversationIdRef.current || currentConversation?.id || null;
+      console.log('[handleSendMessage] 发送请求 conversation_id:', currentConvId);
+
       const response = await base44.functions.invoke('smartChatWithSearch', {
         message: fullMessage,
-        conversation_id: currentConversation?.id || null,
+        conversation_id: currentConvId,
         system_prompt: systemPrompt
       });
 
@@ -357,6 +364,10 @@ export function useChatState() {
       // 更新当前对话
       if (responseData.conversation_id) {
         const convId = responseData.conversation_id;
+        // 【关键修复】立即更新 ref，确保后续消息使用正确的 conversation_id
+        conversationIdRef.current = convId;
+        console.log('[handleSendMessage] 更新 conversationIdRef:', convId);
+
         if (!currentConversation) {
           // 新对话 - 创建本地对话对象并立即刷新列表
           const newConv = {
@@ -629,6 +640,10 @@ export function useChatState() {
 
                     // 更新对话
                     if (responseData.conversation_id) {
+                      // 【关键修复】立即更新 ref
+                      conversationIdRef.current = responseData.conversation_id;
+                      console.log('[AutoSend] 更新 conversationIdRef:', responseData.conversation_id);
+
                       const newConv = {
                         id: responseData.conversation_id,
                         title: userPrompt.slice(0, 50),
