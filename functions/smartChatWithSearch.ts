@@ -116,27 +116,17 @@ const executeSearch = async (query, searchType) => {
 Deno.serve(async (req) => {
   const startTime = Date.now();
 
-  // 【版本确认】如果看到这条日志，说明新代码已部署
-  log.info('==================== VERSION:', VERSION, '====================');
-
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
     if (!user) {
-      log.warn('[Chat] Unauthorized request');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    // 【调试】打印完整的 user 对象
-    log.info('[USER] email:', user.email);
-    log.info('[USER] id:', user.id);
-    log.info('[USER] keys:', Object.keys(user).join(', '));
 
     const requestData = await req.json();
     let conversation_id = requestData.conversation_id;
     const { message, system_prompt, image_files } = requestData;
-    log.info('[Chat] User:', user.email?.slice(0, 20));
     
     if (!message) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
