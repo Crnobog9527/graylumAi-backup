@@ -299,23 +299,20 @@ Deno.serve(async (req) => {
     if (conversation_id) {
       try {
         log.info('[Chat] Querying conversation with id:', conversation_id);
-        // 【修复】尝试多种查询方式
-        // 方式1: 使用 .get()
-        let conv = null;
-        try {
-          conv = await base44.asServiceRole.entities.Conversation.get(conversation_id);
-          log.info('[Chat] .get() result:', conv ? 'found' : 'null');
-        } catch (getError) {
-          log.warn('[Chat] .get() failed:', getError.message);
-        }
 
-        // 方式2: 如果 .get() 失败，尝试 list + find
-        if (!conv) {
-          log.info('[Chat] Trying list + find method...');
-          const allConvs = await base44.asServiceRole.entities.Conversation.list('-updated_date', 100);
-          log.info('[Chat] Listed conversations count:', allConvs.length);
-          conv = allConvs.find(c => c.id === conversation_id);
-          log.info('[Chat] Find result:', conv ? 'found' : 'not found');
+        // 【关键修复】使用 base44.entities（用户身份）而不是 asServiceRole
+        // 因为 base44 是从用户请求创建的，包含用户认证信息
+        // 这样可以利用 RLS 规则自动过滤到用户自己的对话
+        const userConvs = await base44.entities.Conversation.list('-updated_date', 100);
+        log.info('[Chat] User conversations count:', userConvs.length);
+
+        // 在用户的对话中查找指定 ID
+        const conv = userConvs.find(c => c.id === conversation_id);
+        log.info('[Chat] Find by id result:', conv ? 'found' : 'not found');
+
+        // 如果找不到，记录前5个对话的 ID 用于诊断
+        if (!conv && userConvs.length > 0) {
+          log.info('[Chat] Available IDs:', userConvs.slice(0, 5).map(c => c.id).join(', '));
         }
 
         if (conv) {
@@ -323,7 +320,7 @@ Deno.serve(async (req) => {
           conversationMessages = conversation.messages || [];
           log.info('[Chat] Loaded conversation, messages count:', conversationMessages.length);
         } else {
-          log.warn('[Chat] Conversation not found by any method:', conversation_id);
+          log.warn('[Chat] Conversation not found:', conversation_id);
           conversation_id = null;
         }
       } catch (e) {
