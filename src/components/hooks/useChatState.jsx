@@ -650,6 +650,10 @@ export function useChatState() {
 
                     // 更新对话
                     if (responseData.conversation_id) {
+                      // 【修复】立即更新 ref
+                      conversationIdRef.current = responseData.conversation_id;
+                      console.log('[AutoSend] Updated conversationIdRef to:', responseData.conversation_id);
+
                       const newConv = {
                         id: responseData.conversation_id,
                         title: userPrompt.slice(0, 50),
