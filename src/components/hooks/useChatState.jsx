@@ -444,6 +444,12 @@ export function useChatState() {
 
   // 键盘事件
   const handleKeyDown = useCallback((e) => {
+    // 【关键修复】检查是否正在使用输入法（IME）组合输入
+    // 中文/日文等输入法按 Enter 确认候选词时，不应触发发送
+    if (e.isComposing || e.keyCode === 229) {
+      return;
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage(false);
