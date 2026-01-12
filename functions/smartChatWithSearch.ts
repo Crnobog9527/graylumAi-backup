@@ -117,6 +117,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // 【关键修复】验证 user.email 不为空，确保 RLS 规则能正确工作
+    if (!user.email || typeof user.email !== 'string' || user.email.trim() === '') {
+      log.error('[Chat] User email is empty or invalid:', user);
+      return Response.json({ error: 'User email is required for conversation isolation' }, { status: 400 });
+    }
+    const userEmail = user.email.trim();  // 标准化 email，后续统一使用
+
     const requestData = await req.json();
     let conversation_id = requestData.conversation_id;
     const { message, system_prompt, image_files } = requestData;
@@ -499,7 +506,7 @@ ${summaryToUse.summary_text}
     const tokenCredits = inputCredits + outputCredits;
     
     // 获取用户当前状态
-    const currentUser = await base44.asServiceRole.entities.User.filter({ email: user.email });
+    const currentUser = await base44.asServiceRole.entities.User.filter({ email: userEmail });
     if (currentUser.length === 0) {
       throw new Error('User not found');
     }
@@ -553,7 +560,7 @@ ${summaryToUse.summary_text}
       : `对话消耗 - ${selectedModel.name} (输入:${inputTokens}/${inputCredits.toFixed(3)}积分, 输出:${outputTokens}/${outputCredits.toFixed(3)}积分)`;
     
     await base44.asServiceRole.entities.CreditTransaction.create({
-      user_email: user.email,
+      user_email: userEmail,  // 【关键修复】使用验证过的 userEmail
       type: 'usage',
       amount: -actualDeducted,
       balance_after: finalBalance,
@@ -606,7 +613,7 @@ ${summaryToUse.summary_text}
         messages: newMessages,
         total_credits_used: actualDeducted,
         is_archived: false,
-        user_email: user.email
+        user_email: userEmail  // 【关键修复】使用验证过的 userEmail
       };
 
       // 保存系统提示词
@@ -619,9 +626,11 @@ ${summaryToUse.summary_text}
         createData.session_task_type = taskClassification.task_type;
       }
 
-      // 使用普通 entities 创建（用户身份）
-      const newConv = await base44.entities.Conversation.create(createData);
+      // 【关键修复】使用 asServiceRole 创建，确保 user_email 字段正确写入
+      // 这样 RLS "Entity-User Field Comparison" 规则可以正确过滤
+      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
+      log.info('[Chat] Created new conversation:', finalConversationId, 'for user:', userEmail);
     }
 
     // 步骤5：更新Token预算
@@ -653,9 +662,10 @@ ${summaryToUse.summary_text}
 
     // 步骤7：记录性能监控数据到 TokenStats
     try {
-      await base44.entities.TokenStats.create({
+      // 【关键修复】使用 asServiceRole 和验证过的 userEmail
+      await base44.asServiceRole.entities.TokenStats.create({
         conversation_id: finalConversationId || 'unknown',
-        user_email: user.email,
+        user_email: userEmail,
         model_used: selectedModel.name || 'unknown',
         input_tokens: inputTokens || 0,
         output_tokens: outputTokens || 0,
@@ -704,9 +714,11 @@ ${summaryToUse.summary_text}
     try {
       const base44ForError = createClientFromRequest(req);
       const errorUser = await base44ForError.auth.me().catch(() => null);
-      await base44ForError.entities.TokenStats.create({
+      const errorUserEmail = errorUser?.email?.trim() || 'unknown';
+      // 【关键修复】使用 asServiceRole 和验证过的 email
+      await base44ForError.asServiceRole.entities.TokenStats.create({
         conversation_id: 'error',
-        user_email: errorUser?.email || 'unknown',
+        user_email: errorUserEmail,
         model_used: 'unknown',
         input_tokens: 0,
         output_tokens: 0,
