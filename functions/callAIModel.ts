@@ -222,9 +222,13 @@ Deno.serve(async (req) => {
       return { truncatedMsgs, totalTokens };
     };
 
-    // 获取模型配置
-    const models = await base44.asServiceRole.entities.AIModel.filter({ id: model_id });
-    const model = models[0];
+    // 【修复】使用 .get() 方法按 ID 获取模型配置
+    let model;
+    try {
+      model = await base44.asServiceRole.entities.AIModel.get(model_id);
+    } catch (e) {
+      return Response.json({ error: 'Failed to load model: ' + e.message }, { status: 500 });
+    }
 
     if (!model) {
       return Response.json({ error: 'Model not found' }, { status: 404 });

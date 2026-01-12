@@ -155,10 +155,14 @@ Deno.serve(async (req) => {
     let selectedModel = models.find(m => m.is_default) || models[0];
 
     if (conversation_id) {
-      const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
-      if (convs.length > 0 && convs[0].model_id) {
-        const convModel = models.find(m => m.id === convs[0].model_id);
-        if (convModel) selectedModel = convModel;
+      try {
+        const conv = await base44.asServiceRole.entities.Conversation.get(conversation_id);
+        if (conv && conv.model_id) {
+          const convModel = models.find(m => m.id === conv.model_id);
+          if (convModel) selectedModel = convModel;
+        }
+      } catch (e) {
+        // 忽略查询错误，使用默认模型
       }
     }
     
@@ -295,10 +299,11 @@ Deno.serve(async (req) => {
     if (conversation_id) {
       try {
         log.info('[Chat] Querying conversation with id:', conversation_id);
-        const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
-        log.info('[Chat] Query result count:', convs.length);
-        if (convs.length > 0) {
-          conversation = convs[0];
+        // 【修复】使用 .get() 方法按 ID 获取对话，而不是 filter({ id: xxx })
+        // filter({ id: xxx }) 在 Base44 中可能不支持按 id 字段查询
+        const conv = await base44.asServiceRole.entities.Conversation.get(conversation_id);
+        if (conv) {
+          conversation = conv;
           conversationMessages = conversation.messages || [];
           log.info('[Chat] Loaded conversation, messages count:', conversationMessages.length);
         } else {
