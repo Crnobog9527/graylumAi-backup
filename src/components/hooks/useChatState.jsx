@@ -88,6 +88,7 @@ export function useChatState() {
   const fileInputRef = useRef(null);
   const autoSentRef = useRef(false);  // 跟踪是否已经自动发送过
   const conversationIdRef = useRef(null);  // 【关键修复】同步跟踪 conversation_id，解决异步状态更新竞态条件
+  const isStreamingRef = useRef(false);  // 【关键修复】同步跟踪 streaming 状态，防止重复发送
 
   // 获取用户信息
   useEffect(() => {
@@ -271,7 +272,16 @@ export function useChatState() {
   const handleSendMessage = useCallback(async (skipWarning = false) => {
     const trimmedMessage = inputMessage.trim();
     if (!trimmedMessage && fileContents.length === 0) return;
+
+    // 【关键修复】使用 ref 同步检查，防止 React setState 异步导致的重复发送
+    if (isStreamingRef.current) {
+      console.log('[handleSendMessage] ✗ 已在发送中 (ref check)，跳过重复请求');
+      return;
+    }
     if (isStreaming) return;
+
+    // 【关键修复】立即设置 ref，阻止并发调用
+    isStreamingRef.current = true;
 
     // 估算 tokens
     const estimatedTokens = Math.ceil(trimmedMessage.length / 4);
@@ -279,6 +289,7 @@ export function useChatState() {
 
     // 长文本警告
     if (!skipWarning && estimatedTokens > 2000) {
+      isStreamingRef.current = false;  // 重置 ref，因为还没真正开始发送
       setLongTextWarning({
         open: true,
         estimatedTokens,
@@ -427,6 +438,7 @@ export function useChatState() {
       }]);
     } finally {
       setIsStreaming(false);
+      isStreamingRef.current = false;  // 【关键修复】同步重置 ref
     }
   }, [inputMessage, fileContents, uploadedFiles, isStreaming, currentConversation, messages, user, queryClient]);
 
@@ -616,6 +628,7 @@ export function useChatState() {
                 setMessages([userMessage]);
                 setInputMessage('');
                 setIsStreaming(true);
+                isStreamingRef.current = true;  // 【关键修复】同步设置 ref
 
                 // 调用 API
                 console.log('[AutoSend] 调用 smartChatWithSearch API');
@@ -676,6 +689,7 @@ export function useChatState() {
                   }]);
                 }).finally(() => {
                   setIsStreaming(false);
+                  isStreamingRef.current = false;  // 【关键修复】同步重置 ref
                 });
               }, 100);
             } else {
