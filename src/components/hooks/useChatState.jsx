@@ -394,6 +394,7 @@ export function useChatState() {
       if (!currentConversation) {
         // 新对话 - 使用前端的 base44 创建
         console.log('[useChatState] Creating new conversation via frontend base44...');
+        console.log('[useChatState] User email for RLS:', user?.email);
         try {
           const newConv = await base44.entities.Conversation.create({
             title: trimmedMessage.slice(0, 50),
@@ -401,7 +402,8 @@ export function useChatState() {
             model_id: selectedModel?.id || null,
             total_credits_used: responseData.credits_used || 0,
             is_archived: false,
-            system_prompt: systemPrompt || null
+            system_prompt: systemPrompt || null,
+            user_email: user?.email  // 【关键】设置 user_email 以满足 RLS 规则
           });
           console.log('[useChatState] Conversation created successfully, id:', newConv.id);
 
