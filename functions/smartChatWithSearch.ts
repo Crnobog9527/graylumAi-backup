@@ -112,21 +112,20 @@ const executeSearch = async (query, searchType) => {
 
 Deno.serve(async (req) => {
   const startTime = Date.now();
-  log.debug('VERSION: 2026-01-11-OPTIMIZED');
 
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
     if (!user) {
-      log.warn('Unauthorized request');
+      log.warn('[Chat] Unauthorized request');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const requestData = await req.json();
     let conversation_id = requestData.conversation_id;
     const { message, system_prompt, image_files } = requestData;
-    log.info('User:', user.email, '| Message:', message?.slice(0, 50));
+    log.info('[Chat] User:', user.email?.slice(0, 20));
     
     if (!message) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
@@ -145,9 +144,8 @@ Deno.serve(async (req) => {
 
       enableSmartRouting = settingsMap.enable_smart_routing !== 'false';
       enableSmartSearchDecision = settingsMap.enable_smart_search_decision !== 'false';
-      log.debug('Settings: routing=' + enableSmartRouting + ', search=' + enableSmartSearchDecision);
     } catch (e) {
-      log.debug('Settings load failed, using defaults');
+      // 使用默认设置
     }
 
     // 步骤1：获取模型配置
@@ -166,8 +164,6 @@ Deno.serve(async (req) => {
         if (convModel) selectedModel = convModel;
       }
     }
-
-    log.debug('Model:', selectedModel.name);
     
     // 步骤1.5：Token预算检查
     try {
@@ -177,12 +173,12 @@ Deno.serve(async (req) => {
       });
 
       if (budgetRes.data?.budget?.is_exceeded) {
-        log.warn('Token budget exceeded');
+        log.warn('[Chat] Token budget exceeded');
       } else if (budgetRes.data?.budget?.should_warn) {
-        log.warn('Token budget at', budgetRes.data.budget.usage_percent);
+        log.warn('[Chat] Budget warning:', budgetRes.data.budget.usage_percent + '%');
       }
     } catch (e) {
-      log.debug('Budget check skipped');
+      // 预算检查跳过
     }
     
     // 步骤2：智能任务分类和模型选择
@@ -199,7 +195,6 @@ Deno.serve(async (req) => {
         if (classifyRes.data && !classifyRes.data.error) {
           taskClassification = classifyRes.data;
           shouldUpdateSessionTaskType = taskClassification.should_update_session_task_type;
-          log.debug('Task:', taskClassification.task_type, '| Model:', taskClassification.recommended_model);
 
           // 根据任务分类结果选择模型
           if (taskClassification.model_id) {
@@ -209,12 +204,11 @@ Deno.serve(async (req) => {
             );
             if (classifiedModel && classifiedModel.is_active) {
               selectedModel = classifiedModel;
-              log.debug('Switched to:', selectedModel.name);
             }
           }
         }
       } catch (e) {
-        log.debug('Task classification failed');
+        // 任务分类跳过
       }
     }
     
@@ -244,7 +238,6 @@ Deno.serve(async (req) => {
           decision_time_ms: 0,
           will_use_web_search: true
         };
-        log.debug('Search enabled:', decision.reason);
       } else {
         decision = {
           need_search: false,
@@ -292,10 +285,9 @@ Deno.serve(async (req) => {
 
         if (summaries.length > 0) {
           summaryToUse = summaries[0];
-          log.debug('Found summary covering', summaryToUse.covered_messages, 'messages');
         }
       } catch (e) {
-        log.debug('Summary fetch skipped');
+        // 摘要获取跳过
       }
     }
 
@@ -309,13 +301,12 @@ Deno.serve(async (req) => {
         if (convs.length > 0) {
           conversation = convs[0];
           conversationMessages = conversation.messages || [];
-          log.debug('Loaded', conversationMessages.length, 'messages');
         } else {
-          log.warn('Conversation not found:', conversation_id);
+          log.warn('[Chat] Conversation not found:', conversation_id);
           conversation_id = null;
         }
       } catch (e) {
-        log.warn('Error loading conversation:', e.message);
+        log.warn('[Chat] Load error:', e.message);
         conversation_id = null;
       }
     }
@@ -412,8 +403,6 @@ ${summaryToUse.summary_text}
         saved_tokens: beforeCompressionTokens - afterCompressionTokens,
         compression_ratio: ((1 - afterCompressionTokens / beforeCompressionTokens) * 100).toFixed(1)
       };
-
-      log.debug('Summary mode: saved', compressionInfo.saved_tokens, 'tokens');
     } else {
       // 没有摘要或消息较少，使用完整历史
       apiMessages = conversationMessages.map(m => ({
@@ -453,8 +442,6 @@ ${summaryToUse.summary_text}
     // 计算token估算
     const totalTokens = apiMessages.reduce((sum, m) => sum + estimateTokens(getMessageText(m.content)), 0) +
                         (system_prompt ? estimateTokens(system_prompt) : 0);
-
-    log.debug('API call:', apiMessages.length, 'messages,', totalTokens, 'tokens');
     
     // ========== 系统提示词处理 ==========
     // 【重要修复】系统提示词不再只在首轮使用，而是：
@@ -479,10 +466,8 @@ ${summaryToUse.summary_text}
 
     const shouldUseSystemPrompt = finalSystemPrompt && finalSystemPrompt.trim().length > 0;
 
-    log.debug('System prompt:', shouldUseSystemPrompt ? 'YES (' + systemPromptSource + ')' : 'NO');
-    
     // 调用 AI 模型
-    log.info('Calling AI:', selectedModel.id, '| Messages:', apiMessages.length, '| Search:', decision.will_use_web_search);
+    log.info('[Chat] Call:', { model: selectedModel.id, msgs: apiMessages.length, search: decision.will_use_web_search });
 
     // 构建调用参数，只在需要时添加 system_prompt
     const callParams = {
@@ -514,7 +499,7 @@ ${summaryToUse.summary_text}
     const cacheHitRate = modelData.cache_hit_rate || '0%';
     const creditsSaved = modelData.credits_saved_by_cache || 0;
 
-    log.info('Response | Tokens:', inputTokens, '/', outputTokens, '| Cache:', cacheHitRate);
+    log.info('[Chat] Response: In:', inputTokens, 'Out:', outputTokens, cacheHitRate !== '0%' ? 'Cache:' + cacheHitRate : '');
     
     // Token消耗（精确小数）
     const tokenCredits = inputCredits + outputCredits;
@@ -527,8 +512,6 @@ ${summaryToUse.summary_text}
     const userRecord = currentUser[0];
     const currentBalance = userRecord.credits || 0;
     const currentPending = userRecord.pending_credits || 0;
-    
-    log.debug('Settlement: balance=' + currentBalance + ', pending=' + currentPending.toFixed(4) + ', cost=' + tokenCredits.toFixed(4));
     
     let finalBalance = currentBalance;
     let finalPending = currentPending;
@@ -561,7 +544,7 @@ ${summaryToUse.summary_text}
     }
 
     actualDeducted = webSearchDeducted + tokenDeducted;
-    log.info('Deducted:', actualDeducted, '| Balance:', finalBalance, '| Pending:', finalPending.toFixed(4));
+    log.info('[Chat] Deducted:', actualDeducted, 'Balance:', finalBalance);
     
     // 更新用户余额和待结算余额
     await base44.asServiceRole.entities.User.update(userRecord.id, {
@@ -621,7 +604,6 @@ ${summaryToUse.summary_text}
       }
 
       await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
-      log.debug('Updated conversation:', conversation.id);
     } else {
 
       const createData = {
@@ -648,7 +630,7 @@ ${summaryToUse.summary_text}
       // asServiceRole 会绕过用户上下文，导致 {{user.email}} 为空
       const newConv = await base44.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
-      log.debug('Created conversation:', newConv.id, 'user_email:', user.email);
+      log.info('[Chat] Created:', { id: newConv.id, user: user.email?.slice(0, 15) });
     }
 
     // 步骤5：更新Token预算
@@ -659,29 +641,28 @@ ${summaryToUse.summary_text}
         tokens: inputTokens + outputTokens
       });
     } catch (e) {
-      log.debug('Budget update skipped');
+      // 预算更新跳过
     }
 
     // 步骤6：检查是否需要触发压缩
     const messageCount = conversationMessages.length + 2;
     if (messageCount >= COMPRESSION_TRIGGER_MESSAGES && messageCount % COMPRESSION_CHECK_INTERVAL === 0) {
-      log.debug('Triggering compression for', messageCount / 2, 'rounds');
       try {
         base44.functions.invoke('compressConversation', {
           conversation_id: finalConversationId,
           messages_to_compress: messageCount - RECENT_MESSAGES_COUNT
         }).catch(() => {});
       } catch (e) {
-        // Silently ignore compression errors
+        // 压缩错误静默处理
       }
     }
 
     const responseTimeMs = Date.now() - startTime;
-    log.info('Request completed in', responseTimeMs, 'ms');
+    log.info('[Chat] Done:', responseTimeMs, 'ms');
 
-    // 步骤7：直接记录性能监控数据到 TokenStats（使用用户身份，RLS 已设为 public）
+    // 步骤7：记录性能监控数据到 TokenStats
     try {
-      const tokenStatsData = {
+      await base44.entities.TokenStats.create({
         conversation_id: finalConversationId || 'unknown',
         user_email: user.email,
         model_used: selectedModel.name || 'unknown',
@@ -695,13 +676,9 @@ ${summaryToUse.summary_text}
         is_timeout: responseTimeMs >= 30000,
         is_slow: responseTimeMs >= 10000,
         is_error: false
-      };
-      log.info('Creating TokenStats record:', JSON.stringify(tokenStatsData));
-      // 使用普通用户身份创建（RLS 已设为 public）
-      const tokenStatsResult = await base44.entities.TokenStats.create(tokenStatsData);
-      log.info('TokenStats created:', tokenStatsResult?.id || 'no id returned');
+      });
     } catch (e) {
-      log.error('TokenStats record error:', e.message, e.stack);
+      log.error('[Chat] TokenStats error:', e.message);
     }
 
     return Response.json({
@@ -730,13 +707,12 @@ ${summaryToUse.summary_text}
     
   } catch (error) {
     const errorTimeMs = Date.now() - startTime;
-    log.error('Error:', error.message);
+    log.error('[Chat] Error:', error.message);
 
     // 记录错误到 TokenStats
     try {
       const base44ForError = createClientFromRequest(req);
       const errorUser = await base44ForError.auth.me().catch(() => null);
-      // 使用普通用户身份创建（RLS 已设为 public）
       await base44ForError.entities.TokenStats.create({
         conversation_id: 'error',
         user_email: errorUser?.email || 'unknown',
@@ -754,7 +730,7 @@ ${summaryToUse.summary_text}
         error_message: error.message
       });
     } catch (e) {
-      log.error('Error recording TokenStats for error:', e.message);
+      // TokenStats 错误记录失败，静默处理
     }
 
     return Response.json({
