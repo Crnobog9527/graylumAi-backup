@@ -159,10 +159,15 @@ Deno.serve(async (req) => {
     let selectedModel = models.find(m => m.is_default) || models[0];
 
     if (conversation_id) {
-      const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
-      if (convs.length > 0 && convs[0].model_id) {
-        const convModel = models.find(m => m.id === convs[0].model_id);
-        if (convModel) selectedModel = convModel;
+      try {
+        // 尝试直接获取对话
+        const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
+        if (convs.length > 0 && convs[0].model_id) {
+          const convModel = models.find(m => m.id === convs[0].model_id);
+          if (convModel) selectedModel = convModel;
+        }
+      } catch (e) {
+        // 忽略模型选择错误
       }
     }
     
@@ -298,13 +303,26 @@ Deno.serve(async (req) => {
 
     if (conversation_id) {
       try {
+        log.info('[Chat] Looking for conversation:', conversation_id);
         const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
+        log.info('[Chat] Query result count:', convs.length);
         if (convs.length > 0) {
           conversation = convs[0];
           conversationMessages = conversation.messages || [];
+          log.info('[Chat] Found conversation, messages:', conversationMessages.length);
         } else {
           log.warn('[Chat] Conversation not found:', conversation_id);
-          conversation_id = null;
+          // 【诊断】尝试不带条件列出所有对话，检查是否是 RLS 问题
+          const allConvs = await base44.asServiceRole.entities.Conversation.list();
+          log.warn('[Chat] Total conversations visible:', allConvs.length);
+          const matchingConv = allConvs.find(c => c.id === conversation_id);
+          if (matchingConv) {
+            log.warn('[Chat] Found via list! RLS or filter issue detected');
+            conversation = matchingConv;
+            conversationMessages = matchingConv.messages || [];
+          } else {
+            conversation_id = null;
+          }
         }
       } catch (e) {
         log.warn('[Chat] Load error:', e.message);
