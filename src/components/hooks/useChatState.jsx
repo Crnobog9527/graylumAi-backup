@@ -88,6 +88,7 @@ export function useChatState() {
   const fileInputRef = useRef(null);
   const autoSentRef = useRef(false);  // 跟踪是否已经自动发送过
   const conversationIdRef = useRef(null);  // 【修复】存储最新的 conversation_id，避免闭包问题
+  const isSendingRef = useRef(false);  // 【新增】防止重复发送
 
   // 获取用户信息
   useEffect(() => {
@@ -213,11 +214,34 @@ export function useChatState() {
 
   // 选择对话
   const handleSelectConversation = useCallback(async (conv) => {
-    setCurrentConversation(conv);
-    conversationIdRef.current = conv?.id || null;  // 【修复】同步更新 ref
-    console.log('[useChatState] Selected conversation, ref updated to:', conv?.id);
-    setMessages(conv.messages || []);
-    setEditingTitleValue(conv.title || '');
+    console.log('[useChatState] Selecting conversation:', conv?.id);
+
+    // 【关键修复】从数据库重新获取对话，确保获取最新数据
+    // 避免使用缓存中的旧数据
+    try {
+      const freshConv = await base44.entities.Conversation.get(conv.id);
+      if (freshConv) {
+        setCurrentConversation(freshConv);
+        conversationIdRef.current = freshConv.id;
+        setMessages(freshConv.messages || []);
+        setEditingTitleValue(freshConv.title || '');
+        console.log('[useChatState] Loaded fresh conversation, messages count:', (freshConv.messages || []).length);
+      } else {
+        // 如果获取失败，使用传入的数据
+        setCurrentConversation(conv);
+        conversationIdRef.current = conv?.id || null;
+        setMessages(conv.messages || []);
+        setEditingTitleValue(conv.title || '');
+        console.log('[useChatState] Using cached conversation data');
+      }
+    } catch (e) {
+      console.error('[useChatState] Failed to fetch fresh conversation:', e);
+      // 回退到使用传入的数据
+      setCurrentConversation(conv);
+      conversationIdRef.current = conv?.id || null;
+      setMessages(conv.messages || []);
+      setEditingTitleValue(conv.title || '');
+    }
   }, []);
 
   // 删除对话
@@ -288,6 +312,13 @@ export function useChatState() {
     const trimmedMessage = inputMessage.trim();
     if (!trimmedMessage && fileContents.length === 0) return;
     if (isStreaming) return;
+
+    // 【关键修复】使用 ref 防止重复发送（state 更新是异步的）
+    if (isSendingRef.current) {
+      console.log('[useChatState] Duplicate send prevented by ref');
+      return;
+    }
+    isSendingRef.current = true;
 
     // 估算 tokens
     const estimatedTokens = Math.ceil(trimmedMessage.length / 4);
@@ -478,6 +509,7 @@ export function useChatState() {
       }]);
     } finally {
       setIsStreaming(false);
+      isSendingRef.current = false;  // 【关键】重置发送标志
     }
   }, [inputMessage, fileContents, uploadedFiles, isStreaming, currentConversation, messages, user, queryClient, selectedModel, refetchConversations]);
 
