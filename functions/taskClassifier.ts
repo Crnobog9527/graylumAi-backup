@@ -83,9 +83,9 @@ Deno.serve(async (req) => {
 
     if (conversation_id) {
       try {
-        const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
-        if (convs.length > 0) {
-          const conversation = convs[0];
+        // 【修复】使用 .get() 方法按 ID 获取对话
+        const conversation = await base44.asServiceRole.entities.Conversation.get(conversation_id);
+        if (conversation) {
           const messages = conversation.messages || [];
           conversationTurns = Math.floor(messages.length / 2); // 一问一答 = 1 轮
         }

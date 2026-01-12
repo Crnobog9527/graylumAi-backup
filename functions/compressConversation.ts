@@ -25,10 +25,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'conversation_id is required' }, { status: 400 });
     }
     
-    // 获取对话
-    const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
-    const conversation = convs[0];
-    
+    // 【修复】使用 .get() 方法按 ID 获取对话
+    let conversation;
+    try {
+      conversation = await base44.asServiceRole.entities.Conversation.get(conversation_id);
+    } catch (e) {
+      return Response.json({ error: 'Failed to load conversation: ' + e.message }, { status: 500 });
+    }
+
     if (!conversation) {
       return Response.json({ error: 'Conversation not found' }, { status: 404 });
     }
