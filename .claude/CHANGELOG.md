@@ -10,6 +10,36 @@
 
 ---
 
+## 2026-01-12 (对话隔离性修复) 🐛
+
+### 问题
+
+简化代码后引入新问题：对话隔离性失效，每轮对话都创建新记录。
+
+### 根因
+
+对话创建从 `asServiceRole.entities` 改为 `entities`（用户身份），导致后续 `asServiceRole` 更新操作无法正确关联对话。
+
+### 修复
+
+```javascript
+// 修复前（引入问题）
+const newConv = await base44.entities.Conversation.create(createData);
+
+// 修复后
+const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
+```
+
+### 修改文件
+
+- `functions/smartChatWithSearch.ts:622-624`
+
+### 经验教训
+
+Base44 的 `entities` 和 `asServiceRole.entities` 权限模型不同，创建和更新操作应使用一致的权限模式。
+
+---
+
 ## 2026-01-12 (smartChatWithSearch 简化与修复) 🔧
 
 ### 背景
@@ -50,13 +80,11 @@ const log = {
 - ❌ 对话创建调试日志
 - ❌ TypeScript 类型注解 `unknown[]`
 
-**对话创建方式变更**：
+**对话创建方式变更** ⚠️ 已回滚：
 ```javascript
-// 修改前：使用 asServiceRole
+// 此变更导致对话隔离性问题，已在后续修复中回滚
+// 保持使用 asServiceRole
 const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
-
-// 修改后：使用普通 entities（用户身份）
-const newConv = await base44.entities.Conversation.create(createData);
 ```
 
 ### 文件统计
