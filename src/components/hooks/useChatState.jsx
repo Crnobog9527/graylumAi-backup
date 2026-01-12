@@ -175,9 +175,18 @@ export function useChatState() {
   }, [messages, scrollToBottom]);
 
   // 【修复】同步 conversationIdRef 与 currentConversation
+  // 注意：只在 ref 为 null 时同步，避免覆盖立即设置的新值
   useEffect(() => {
-    conversationIdRef.current = currentConversation?.id || null;
-    console.log('[useChatState] conversationIdRef synced:', conversationIdRef.current);
+    // 如果 ref 已经有值且与 currentConversation.id 相同，不需要同步
+    // 如果 ref 为 null 但 currentConversation 有值，需要同步（比如用户点击历史对话）
+    if (conversationIdRef.current === null && currentConversation?.id) {
+      conversationIdRef.current = currentConversation.id;
+      console.log('[useChatState] conversationIdRef synced from currentConversation:', conversationIdRef.current);
+    } else if (currentConversation === null) {
+      // 如果 currentConversation 被清空（新建对话），也清空 ref
+      conversationIdRef.current = null;
+      console.log('[useChatState] conversationIdRef cleared');
+    }
   }, [currentConversation]);
 
   // 开始新对话
@@ -205,6 +214,8 @@ export function useChatState() {
   // 选择对话
   const handleSelectConversation = useCallback(async (conv) => {
     setCurrentConversation(conv);
+    conversationIdRef.current = conv?.id || null;  // 【修复】同步更新 ref
+    console.log('[useChatState] Selected conversation, ref updated to:', conv?.id);
     setMessages(conv.messages || []);
     setEditingTitleValue(conv.title || '');
   }, []);
@@ -399,8 +410,17 @@ export function useChatState() {
             refetchConversations();
           }, 1500);
         } else {
+          // 【修复】检查后端返回的 ID 是否与当前对话 ID 不同
+          // 如果不同，说明后端创建了新对话（可能因为原对话找不到了）
+          const serverReturnedDifferentId = convId !== currentConversation?.id;
+          if (serverReturnedDifferentId) {
+            console.log('[useChatState] Server returned different conversation_id, updating local state');
+            console.log('[useChatState] Old ID:', currentConversation?.id, 'New ID:', convId);
+          }
+
           setCurrentConversation(prev => ({
             ...prev,
+            id: convId,  // 【关键修复】总是使用后端返回的 ID
             messages: [...(prev?.messages || []), userMessage, assistantMessage]
           }));
           queryClient.invalidateQueries({ queryKey: ['conversations'] });
