@@ -26,10 +26,6 @@ const DEFAULT_SYSTEM_PROMPT = `你是一个专业、友好的 AI 助手，致力
 4. 尊重用户隐私和数据安全`;
 
 Deno.serve(async (req) => {
-  log.debug('========================================');
-  log.debug('VERSION: 2026-01-11-OPTIMIZED');
-  log.debug('========================================');
-
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -44,9 +40,7 @@ Deno.serve(async (req) => {
       // CRITICAL: 只在首轮对话时使用 system_prompt（由 smartChatWithSearch 控制）
       const finalSystemPrompt = system_prompt || DEFAULT_SYSTEM_PROMPT;
 
-      log.info('Request:', { model_id, messages_count: messages?.length, has_system_prompt: !!system_prompt });
-    log.debug('system_prompt preview:', system_prompt ? `"${system_prompt.slice(0, 100)}..."` : 'using DEFAULT');
-    log.debug('finalSystemPrompt:', finalSystemPrompt.length, 'chars, ~', Math.ceil(finalSystemPrompt.length / 4), 'tokens');
+      log.info('[AI] Request:', { model: model_id, msgs: messages?.length, hasSystem: !!system_prompt });
 
     // Token 估算函数 (字符数 / 4)
     const estimateTokens = (text) => Math.ceil((text || '').length / 4);
@@ -110,20 +104,9 @@ Deno.serve(async (req) => {
       // 缓存命中率
       const cacheHitRate = inputTokens > 0 ? (cacheReadTokens / inputTokens * 100).toFixed(1) : '0.0';
 
-      // 使用 info 级别输出关键成本信息
-      log.info(`[API Monitor] ${modelId} | Input: ${inputTokens} | Output: ${outputTokens} | Cost: $${totalCost.toFixed(4)}`);
-
-      // 详细成本信息使用 debug 级别
-      if (LOG_LEVEL >= 3) {
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log(`[API Monitor] ${modelId}`);
-        console.log(`  📊 Token Usage: Input ${inputTokens.toLocaleString()} | Output ${outputTokens.toLocaleString()}`);
-        if (cacheReadTokens > 0) {
-          console.log(`  🔄 Cache: Hit ${cacheReadTokens.toLocaleString()} tokens (${cacheHitRate}%) | Saved $${savedCost.toFixed(4)}`);
-        }
-        console.log(`  💵 Total Cost: $${totalCost.toFixed(4)}`);
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      }
+      // 关键成本信息
+      log.info(`[AI] Cost: ${modelId} | In:${inputTokens} Out:${outputTokens} | $${totalCost.toFixed(4)}` +
+               (cacheReadTokens > 0 ? ` | Cache:${cacheHitRate}%` : ''));
 
       return { totalCost, savedCost };
     };
@@ -256,14 +239,6 @@ Deno.serve(async (req) => {
     // 估算输入tokens
     const estimatedInputTokens = calculateTotalTokens(processedMessages, finalSystemPrompt);
     
-    log.debug('After truncation:', processedMessages.length, 'messages,', estimatedInputTokens, 'tokens');
-    if (LOG_LEVEL >= 3) {
-      processedMessages.forEach((m, i) => {
-        const textContent = getMessageText(m.content);
-        const isCached = Array.isArray(m.content);
-        log.debug(`  [${i}] ${m.role}: ${textContent.slice(0, 50)}... (${Math.ceil(textContent.length / 4)} tokens, cached=${isCached})`);
-      });
-    }
 
     // 只有当provider是builtin时才使用内置集成
     if (model.provider === 'builtin') {
@@ -280,7 +255,6 @@ Deno.serve(async (req) => {
 
       // 只在明确要求时才联网，不自动使用模型配置
       const shouldUseWebSearch = force_web_search === true;
-      log.debug('Using web search:', shouldUseWebSearch);
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: finalPrompt,
@@ -324,10 +298,8 @@ Deno.serve(async (req) => {
 
     // CRITICAL: 只有当 finalSystemPrompt 有实际内容时才添加
     const hasValidSystemPrompt = finalSystemPrompt && finalSystemPrompt.trim().length > 0;
-    log.debug('hasValidSystemPrompt:', hasValidSystemPrompt);
 
     if (hasValidSystemPrompt && !useOpenAIFormat && provider !== 'anthropic') {
-      log.debug('Adding system prompt to messages, length:', finalSystemPrompt.length);
       formattedMessages.unshift({ role: 'system', content: finalSystemPrompt });
     }
 
@@ -364,9 +336,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 记录最终发送到API的消息
-    log.debug('Final messages to API:', formattedMessages.length, 'messages, has_images:', !!(image_files && image_files.length > 0));
-
     if (useOpenAIFormat || provider === 'openai' || provider === 'custom') {
       const endpoint = model.api_endpoint || 'https://api.openai.com/v1/chat/completions';
       const isOpenRouter = model.api_endpoint && model.api_endpoint.includes('openrouter.ai');
@@ -388,7 +357,7 @@ Deno.serve(async (req) => {
         ];
       }
 
-      log.info('OpenAI/Custom API:', endpoint, '| OpenRouter:', isOpenRouter);
+      log.info('[AI] OpenAI:', { model: model.model_id, openRouter: isOpenRouter });
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -464,7 +433,7 @@ Deno.serve(async (req) => {
           requestBody.plugins = [{ id: 'web', max_results: 5 }];
         }
 
-        log.info('Anthropic API (OpenRouter) | Cache:', cacheEnabled);
+        log.info('[AI] Anthropic/OpenRouter:', { model: model.model_id, cache: cacheEnabled });
 
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -560,7 +529,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      log.info('Anthropic API (Official) | Model:', model.model_id, '| Cache:', shouldCacheSystem);
+      log.info('[AI] Anthropic:', { model: model.model_id, cache: shouldCacheSystem });
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -643,7 +612,7 @@ Deno.serve(async (req) => {
         requestBody.systemInstruction = { parts: [{ text: finalSystemPrompt }] };
       }
 
-      log.info('Google Gemini API | Model:', model.model_id);
+      log.info('[AI] Gemini:', { model: model.model_id });
 
       const res = await fetch(endpoint, {
         method: 'POST',
