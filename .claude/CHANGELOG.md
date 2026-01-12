@@ -1,12 +1,57 @@
 # 开发日志
 
 <!--
-  最后更新: 2026-01-11
+  最后更新: 2026-01-12
   维护说明: 每次代码变更后必须更新此文件
   格式要求: 按时间倒序排列，最新的变更在最上面
 -->
 
 > Grayscale 项目变更记录
+
+---
+
+## 2026-01-12 (对话隔离功能完全修复) ✅
+
+### 最终状态
+
+对话隔离功能已完全修复，经过验证：
+- ✅ 创建对话：成功
+- ✅ 更新对话：成功
+- ✅ 对话持久化：成功
+- ✅ 对话历史上下文：成功
+
+### 最后一个问题
+
+创建对话时没有设置 `user_email` 字段，导致 RLS 规则无法匹配，更新操作返回 403。
+
+### 修复
+
+```javascript
+// 创建对话时必须设置 user_email
+await base44.entities.Conversation.create({
+  ...
+  user_email: user?.email  // 满足 RLS 规则
+});
+```
+
+### 完整解决方案总结
+
+| 问题 | 根因 | 解决方案 |
+|------|------|----------|
+| 后端无法访问 Conversation | `createClientFromRequest` 认证问题 | 前端负责所有对话 CRUD |
+| 后端无法获取历史 | 同上 | 前端发送 `conversation_history` |
+| 更新返回 403 | 创建时缺少 `user_email` | 添加 `user_email: user?.email` |
+
+### 架构变更
+
+```
+修复前：
+Frontend → Backend (create/update conversation) → Database
+
+修复后：
+Frontend → Backend (AI processing only)
+Frontend → Database (conversation CRUD directly)
+```
 
 ---
 
