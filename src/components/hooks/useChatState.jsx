@@ -87,6 +87,7 @@ export function useChatState() {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const autoSentRef = useRef(false);  // 跟踪是否已经自动发送过
+  const conversationIdRef = useRef(null);  // 【修复】存储最新的 conversation_id，避免闭包问题
 
   // 获取用户信息
   useEffect(() => {
@@ -173,9 +174,16 @@ export function useChatState() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // 【修复】同步 conversationIdRef 与 currentConversation
+  useEffect(() => {
+    conversationIdRef.current = currentConversation?.id || null;
+    console.log('[useChatState] conversationIdRef synced:', conversationIdRef.current);
+  }, [currentConversation]);
+
   // 开始新对话
   const handleStartNewChat = useCallback(() => {
     setCurrentConversation(null);
+    conversationIdRef.current = null;  // 【修复】同时重置 ref
     setMessages([]);
     setInputMessage('');
     setUploadedFiles([]);
@@ -323,11 +331,13 @@ export function useChatState() {
       }
 
       // 调用 API
-      // 【诊断日志】追踪 conversation_id
-      console.log('[useChatState] Sending message with conversation_id:', currentConversation?.id || null);
+      // 【修复】使用 ref 获取最新的 conversation_id，避免闭包问题
+      const conversationIdToSend = conversationIdRef.current;
+      console.log('[useChatState] Sending message with conversation_id:', conversationIdToSend);
+      console.log('[useChatState] currentConversation?.id for comparison:', currentConversation?.id || null);
       const response = await base44.functions.invoke('smartChatWithSearch', {
         message: fullMessage,
-        conversation_id: currentConversation?.id || null,
+        conversation_id: conversationIdToSend,
         system_prompt: systemPrompt
       });
 
@@ -363,6 +373,10 @@ export function useChatState() {
 
       if (responseData.conversation_id) {
         const convId = responseData.conversation_id;
+        // 【修复】立即更新 ref，不等待 React 状态更新
+        conversationIdRef.current = convId;
+        console.log('[useChatState] Updated conversationIdRef immediately to:', convId);
+
         if (!currentConversation) {
           // 新对话 - 创建本地对话对象并立即刷新列表
           console.log('[useChatState] Creating new local conversation with id:', convId);
