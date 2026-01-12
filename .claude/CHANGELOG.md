@@ -10,6 +10,64 @@
 
 ---
 
+## 2026-01-12 (关键修复 - 使用用户身份操作对话) 🐛
+
+### 问题
+
+`asServiceRole.entities.Conversation.create()` 返回了 ID，但对话实际上**没有保存到数据库**！
+
+### 诊断日志证据
+
+```
+[Chat] Created conversation result: {"id":"6964c97e7df5f39b38972c2f",...}
+[Chat] Verify after create FAILED: Entity Conversation with ID 6964c97e7df5f39b38972c2f not found
+[Chat] All recent conversations: 0 IDs:
+```
+
+### 根因分析
+
+`asServiceRole` 与 Conversation 实体的 RLS 规则 (`user_email = {{user.email}}`) 不兼容，导致：
+- 创建操作返回虚假的成功结果
+- 数据实际上没有持久化到数据库
+
+### 修复方案
+
+**统一使用 `base44.entities`（用户身份）处理所有 Conversation 操作**：
+
+```javascript
+// 创建 - 修复前
+await base44.asServiceRole.entities.Conversation.create(createData);
+
+// 创建 - 修复后
+await base44.entities.Conversation.create(createData);
+
+// 更新 - 修复前
+await base44.asServiceRole.entities.Conversation.update(id, data);
+
+// 更新 - 修复后
+await base44.entities.Conversation.update(id, data);
+
+// 查询 - 修复前
+await base44.asServiceRole.entities.Conversation.get(id);
+
+// 查询 - 修复后
+await base44.entities.Conversation.get(id);
+```
+
+### 修改文件
+
+- `functions/smartChatWithSearch.ts:159-167` - 模型选择查询
+- `functions/smartChatWithSearch.ts:305-348` - 对话查询逻辑
+- `functions/smartChatWithSearch.ts:647-698` - 对话创建和更新
+
+### 经验教训
+
+1. **RLS 规则与 asServiceRole 可能不兼容**：即使 create 返回成功，数据可能未持久化
+2. **始终验证写入操作**：创建后立即查询验证是有效的调试方法
+3. **保持一致的权限模型**：所有对同一实体的操作应使用相同的权限模式
+
+---
+
 ## 2026-01-12 (对话查询修复 - ID 类型与多方案回退) 🐛
 
 ### 问题
