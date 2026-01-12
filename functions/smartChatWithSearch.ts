@@ -624,20 +624,12 @@ ${summaryToUse.summary_text}
       log.debug('Updated conversation:', conversation.id);
     } else {
 
-      // 【调试】详细打印各字段来源
-      log.info('【DEBUG】字段来源对比:');
-      log.info('  - model_id 来源: selectedModel.id =', selectedModel.id, '(类型:', typeof selectedModel.id, ')');
-      log.info('  - total_credits_used 来源: actualDeducted =', actualDeducted, '(类型:', typeof actualDeducted, ')');
-      log.info('  - user_email 来源: user.email =', user.email, '(类型:', typeof user.email, ')');
-      log.info('  - user 对象完整内容:', JSON.stringify(user));
-
       const createData = {
         title: message.slice(0, 50),
         model_id: selectedModel.id,
         messages: newMessages,
         total_credits_used: actualDeducted,
-        is_archived: false,
-        user_email: user.email  // 用户隔离
+        is_archived: false
       };
 
       // 保存系统提示词
@@ -650,19 +642,16 @@ ${summaryToUse.summary_text}
         createData.session_task_type = taskClassification.task_type;
       }
 
-      log.info('【DEBUG】createData 发送前:', JSON.stringify({
-        title: createData.title,
-        model_id: createData.model_id,
-        total_credits_used: createData.total_credits_used,
-        is_archived: createData.is_archived,
-        user_email: createData.user_email
-      }));
-
-      // 使用 asServiceRole 确保 user_email 字段能正确写入
+      // 先创建对话（不包含 user_email）
       const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
+      log.debug('Created conversation:', newConv.id);
 
-      log.info('【DEBUG】createData 返回结果:', JSON.stringify(newConv));
+      // 然后立即更新 user_email 字段
+      await base44.asServiceRole.entities.Conversation.update(newConv.id, {
+        user_email: user.email
+      });
+      log.debug('Updated user_email:', user.email);
     }
 
     // 步骤5：更新Token预算
