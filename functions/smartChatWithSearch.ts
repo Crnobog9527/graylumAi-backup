@@ -1,5 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
+// ========== 版本标识 ==========
+const VERSION = 'V2026-01-12-USER-EMAIL-FIX';
+
 // ========== 日志级别控制 ==========
 // 级别: 0=ERROR, 1=WARN, 2=INFO, 3=DEBUG
 const LOG_LEVEL = parseInt(Deno.env.get('LOG_LEVEL') || '2', 10);
@@ -113,6 +116,9 @@ const executeSearch = async (query, searchType) => {
 Deno.serve(async (req) => {
   const startTime = Date.now();
 
+  // 【版本确认】如果看到这条日志，说明新代码已部署
+  log.info('==================== VERSION:', VERSION, '====================');
+
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -121,6 +127,11 @@ Deno.serve(async (req) => {
       log.warn('[Chat] Unauthorized request');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // 【调试】打印完整的 user 对象
+    log.info('[USER] email:', user.email);
+    log.info('[USER] id:', user.id);
+    log.info('[USER] keys:', Object.keys(user).join(', '));
 
     const requestData = await req.json();
     let conversation_id = requestData.conversation_id;
