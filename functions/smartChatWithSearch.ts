@@ -619,8 +619,9 @@ ${summaryToUse.summary_text}
         createData.session_task_type = taskClassification.task_type;
       }
 
-      // 使用普通 entities 创建（用户身份）
-      const newConv = await base44.entities.Conversation.create(createData);
+      // 【修复】使用 asServiceRole 创建对话，确保 user_email 字段正确设置
+      // 原因：使用 entities（用户身份）创建时，后续 asServiceRole 更新操作可能无法正确关联对话
+      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
     }
 

@@ -138,6 +138,36 @@ setTimeout(() => {
 
 ---
 
+### ✅ 问题已修复：对话隔离性失效（2026-01-12）
+
+**症状**
+- 用户新建对话 A 窗口后，每轮对话都会在聊天记录中创建新记录
+- 新建对话功能完全失效
+- 所有对话都受影响
+
+**根本原因**
+在简化代码时，对话创建从 `asServiceRole.entities.Conversation.create()` 改为 `entities.Conversation.create()`，导致：
+1. 使用用户身份创建对话时，`user_email` 字段可能未正确设置
+2. 后续使用 `asServiceRole` 更新操作无法正确关联到用户身份创建的对话
+3. 系统将每次对话都识别为新对话
+
+**修复方案**（`functions/smartChatWithSearch.ts:622-624`）
+
+```javascript
+// 修复前（错误）
+const newConv = await base44.entities.Conversation.create(createData);
+
+// 修复后（正确）
+const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
+```
+
+**经验教训**
+- Base44 的 `entities` 和 `asServiceRole.entities` 权限模型不同
+- 创建和更新操作应使用一致的权限模式
+- 涉及 `user_email` 等用户关联字段时，优先使用 `asServiceRole`
+
+---
+
 ### ✅ 问题已修复：聊天上下文丢失（2026-01-11）
 
 **症状**

@@ -10,6 +10,96 @@
 
 ---
 
+## 2026-01-12 (对话隔离性修复) 🐛
+
+### 问题
+
+简化代码后引入新问题：对话隔离性失效，每轮对话都创建新记录。
+
+### 根因
+
+对话创建从 `asServiceRole.entities` 改为 `entities`（用户身份），导致后续 `asServiceRole` 更新操作无法正确关联对话。
+
+### 修复
+
+```javascript
+// 修复前（引入问题）
+const newConv = await base44.entities.Conversation.create(createData);
+
+// 修复后
+const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
+```
+
+### 修改文件
+
+- `functions/smartChatWithSearch.ts:622-624`
+
+### 经验教训
+
+Base44 的 `entities` 和 `asServiceRole.entities` 权限模型不同，创建和更新操作应使用一致的权限模式。
+
+---
+
+## 2026-01-12 (smartChatWithSearch 简化与修复) 🔧
+
+### 背景
+
+使用 Base44 调整 smartChatWithSearch 函数，修复运行时错误并简化代码。
+
+### 修复问题
+
+| 问题 | 原因 | 解决方案 |
+|------|------|----------|
+| `log is not defined` 错误 | TypeScript 类型注解在 Deno JS 环境不兼容 | 移除类型注解 |
+| 调试日志过多 | 生产环境遗留的调试代码 | 清理多余日志 |
+
+### 变更详情
+
+**日志系统简化**：
+```javascript
+// 修改前：带类型注解和日志级别控制
+const LOG_LEVEL = parseInt(Deno.env.get('LOG_LEVEL') || '2', 10);
+const log = {
+  error: (...args: unknown[]) => console.error('[smartChat]', ...args),
+  debug: (...args: unknown[]) => LOG_LEVEL >= 3 && console.log('[smartChat]', ...args),
+};
+
+// 修改后：简洁无类型注解
+const log = {
+  error: (...args) => console.error('[smartChat]', ...args),
+  warn: (...args) => console.warn('[smartChat]', ...args),
+  info: (...args) => console.log('[smartChat]', ...args),
+};
+```
+
+**移除的内容**：
+- ❌ `VERSION` 版本常量和版本日志
+- ❌ `LOG_LEVEL` 环境变量控制
+- ❌ `log.debug` 调试级别
+- ❌ 用户对象详细打印 `[USER] email/id/keys`
+- ❌ 对话创建调试日志
+- ❌ TypeScript 类型注解 `unknown[]`
+
+**对话创建方式变更** ⚠️ 已回滚：
+```javascript
+// 此变更导致对话隔离性问题，已在后续修复中回滚
+// 保持使用 asServiceRole
+const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
+```
+
+### 文件统计
+
+| 指标 | 变更前 | 变更后 |
+|------|--------|--------|
+| 代码行数 | ~752 行 | 731 行 |
+| 日志调用 | ~17 条 | ~10 条 |
+
+### 修改文件
+
+- `functions/smartChatWithSearch.ts`
+
+---
+
 ## 2026-01-12 (日志清理优化) 🧹
 
 ### 目标
