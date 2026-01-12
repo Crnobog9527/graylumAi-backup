@@ -119,10 +119,11 @@ Deno.serve(async (req) => {
 
     const requestData = await req.json();
     let conversation_id = requestData.conversation_id;
-    const { message, system_prompt, image_files } = requestData;
+    const { message, system_prompt, image_files, conversation_history } = requestData;
 
     // 【诊断日志】追踪 conversation_id
     log.info('[Chat] Received conversation_id:', conversation_id, 'type:', typeof conversation_id);
+    log.info('[Chat] Has conversation_history from frontend:', !!conversation_history, 'length:', conversation_history?.length || 0);
 
     if (!message) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
@@ -294,58 +295,20 @@ Deno.serve(async (req) => {
     }
 
     // 步骤4：获取对话历史
-    let conversation;
+    // 【关键修复】优先使用前端传来的对话历史，不再从数据库查询
+    // 原因：后端的 base44 客户端无法可靠访问 Conversation 实体
     let conversationMessages = [];
 
-    if (conversation_id) {
-      try {
-        // 【关键修复】将 conversation_id 转换为字符串，确保类型一致
-        const targetId = String(conversation_id);
-        log.info('[Chat] Querying conversation with id:', targetId, 'original type:', typeof conversation_id);
-
-        // 【关键修复】使用 base44.entities（用户身份）查询
-        // 原因：asServiceRole 无法正确访问用户创建的对话
-        // 使用用户身份查询，RLS 规则会自动过滤到当前用户的对话
-        try {
-          const directConv = await base44.entities.Conversation.get(targetId);
-          if (directConv) {
-            conversation = directConv;
-            conversationMessages = conversation.messages || [];
-            log.info('[Chat] Direct get succeeded, messages count:', conversationMessages.length);
-          } else {
-            log.warn('[Chat] Direct get returned null');
-            conversation_id = null;
-          }
-        } catch (getError) {
-          log.warn('[Chat] Direct get failed:', getError.message);
-
-          // 【方案2】get 失败时，回退到 list + find
-          const userConvs = await base44.entities.Conversation.list('-updated_date', 100);
-          log.info('[Chat] Fallback: User conversations count:', userConvs.length);
-
-          // 【关键】使用字符串比较，避免类型不匹配
-          const conv = userConvs.find(c => String(c.id) === targetId);
-          log.info('[Chat] Find by string id result:', conv ? 'found' : 'not found');
-
-          if (!conv && userConvs.length > 0) {
-            log.info('[Chat] Available IDs (first 5):', userConvs.slice(0, 5).map(c => `${c.id}(${typeof c.id})`).join(', '));
-          }
-
-          if (conv) {
-            conversation = conv;
-            conversationMessages = conversation.messages || [];
-            log.info('[Chat] Loaded conversation, messages count:', conversationMessages.length);
-          } else {
-            log.warn('[Chat] Conversation not found:', targetId);
-            conversation_id = null;
-          }
-        }
-      } catch (e) {
-        log.warn('[Chat] Load error:', e.message);
-        conversation_id = null;
-      }
+    if (conversation_history && Array.isArray(conversation_history) && conversation_history.length > 0) {
+      // 使用前端传来的对话历史
+      conversationMessages = conversation_history;
+      log.info('[Chat] Using conversation history from frontend, messages count:', conversationMessages.length);
+    } else if (conversation_id) {
+      // 如果前端没传历史但传了 ID，说明是已有对话的后续消息
+      // 这种情况理论上不应该发生（前端应该总是传历史）
+      log.warn('[Chat] conversation_id provided but no history, treating as new conversation');
     } else {
-      log.info('[Chat] No conversation_id provided, will create new conversation');
+      log.info('[Chat] No conversation_id provided, starting new conversation');
     }
     
     // 构建消息列表 - 使用摘要替换旧消息（如果存在）
@@ -609,93 +572,12 @@ ${summaryToUse.summary_text}
       web_search_used: webSearchUsed
     });
     
-    // 更新或创建对话
-    const newMessages = [
-      ...conversationMessages,
-      { 
-        role: 'user', 
-        content: message, 
-        timestamp: new Date().toISOString() 
-      },
-      { 
-        role: 'assistant', 
-        content: modelData.response, 
-        timestamp: new Date().toISOString(),
-        credits_used: actualDeducted,
-        input_tokens: inputTokens,
-        output_tokens: outputTokens
-      }
-    ];
-    
-    let finalConversationId = conversation_id;
+    // 【关键修复】后端不再创建/更新对话，完全由前端处理
+    // 原因：后端的 base44 客户端无法可靠访问 Conversation 实体
+    // 只返回 AI 响应，让前端负责对话持久化
+    let finalConversationId = conversation_id || null;
 
-    // 【诊断日志】决策：更新还是创建
-    log.info('[Chat] Decision: conversation exists?', !!conversation, 'conversation_id:', conversation_id);
-
-    if (conversation) {
-      log.info('[Chat] Updating existing conversation:', conversation.id);
-      const updateData = {
-        messages: newMessages,
-        total_credits_used: (conversation.total_credits_used || 0) + actualDeducted,
-        updated_date: new Date().toISOString()
-      };
-
-      if (shouldUpdateSessionTaskType && taskClassification) {
-        updateData.session_task_type = taskClassification.task_type;
-      }
-
-      // 【关键修复】使用 base44.entities（用户身份）而不是 asServiceRole
-      // 原因：asServiceRole 创建的对话无法被持久化到数据库
-      await base44.entities.Conversation.update(conversation.id, updateData);
-      log.info('[Chat] Conversation updated successfully');
-    } else {
-      log.info('[Chat] Creating new conversation for user:', user.email);
-
-      const createData = {
-        title: message.slice(0, 50),
-        model_id: selectedModel.id,
-        messages: newMessages,
-        total_credits_used: actualDeducted,
-        is_archived: false,
-        user_email: user.email
-      };
-
-      // 保存系统提示词
-      if (hasNewSystemPrompt && system_prompt) {
-        createData.system_prompt = system_prompt;
-      }
-
-      // 如果是创作类任务，记录 session_task_type
-      if (shouldUpdateSessionTaskType && taskClassification) {
-        createData.session_task_type = taskClassification.task_type;
-      }
-
-      // 【关键修复】使用 base44.entities（用户身份）创建对话
-      // 原因：asServiceRole.create() 返回 ID 但不持久化数据到数据库
-      // 使用用户身份创建可以确保 RLS 规则正确应用
-      const newConv = await base44.entities.Conversation.create(createData);
-      finalConversationId = newConv.id;
-
-      // 【诊断】记录创建结果的完整结构
-      log.info('[Chat] Created conversation result:', JSON.stringify({
-        id: newConv.id,
-        keys: Object.keys(newConv),
-        user_email: newConv.user_email,
-        hasData: !!newConv.data
-      }));
-
-      // 【诊断】立即验证对话是否可查询
-      try {
-        const verifyConv = await base44.entities.Conversation.get(String(newConv.id));
-        log.info('[Chat] Verify after create:', verifyConv ? 'SUCCESS' : 'FAILED', 'id:', newConv.id);
-      } catch (verifyErr) {
-        log.error('[Chat] Verify after create FAILED:', verifyErr.message);
-
-        // 如果 get 失败，尝试 list 所有对话
-        const allConvs = await base44.entities.Conversation.list('-created_date', 10);
-        log.info('[Chat] All recent conversations:', allConvs.length, 'IDs:', allConvs.map(c => c.id).join(', '));
-      }
-    }
+    log.info('[Chat] Skipping conversation persistence (handled by frontend)');
 
     // 步骤5：更新Token预算
     try {

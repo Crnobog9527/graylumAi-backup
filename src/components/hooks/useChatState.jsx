@@ -346,10 +346,20 @@ export function useChatState() {
       const conversationIdToSend = conversationIdRef.current;
       console.log('[useChatState] Sending message with conversation_id:', conversationIdToSend);
       console.log('[useChatState] currentConversation?.id for comparison:', currentConversation?.id || null);
+
+      // 【关键修复】发送对话历史给后端，因为后端无法访问 Conversation 实体
+      // 将现有消息转换为后端需要的格式
+      const conversationHistory = messages.map(m => ({
+        role: m.role,
+        content: m.content || m.text || ''
+      }));
+      console.log('[useChatState] Sending conversation_history, length:', conversationHistory.length);
+
       const response = await base44.functions.invoke('smartChatWithSearch', {
         message: fullMessage,
         conversation_id: conversationIdToSend,
-        system_prompt: systemPrompt
+        system_prompt: systemPrompt,
+        conversation_history: conversationHistory
       });
 
       // 安全检查响应
@@ -377,53 +387,62 @@ export function useChatState() {
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // 更新当前对话
-      // 【诊断日志】追踪响应中的 conversation_id
-      console.log('[useChatState] Response conversation_id:', responseData.conversation_id);
-      console.log('[useChatState] Current conversation before update:', currentConversation?.id || null);
+      // 【关键修复】前端负责对话持久化，因为后端无法可靠访问 Conversation 实体
+      // 使用前端的 base44 客户端创建/更新对话
+      const allMessages = [...messages, userMessage, assistantMessage];
 
-      if (responseData.conversation_id) {
-        const convId = responseData.conversation_id;
-        // 【修复】立即更新 ref，不等待 React 状态更新
-        conversationIdRef.current = convId;
-        console.log('[useChatState] Updated conversationIdRef immediately to:', convId);
-
-        if (!currentConversation) {
-          // 新对话 - 创建本地对话对象并立即刷新列表
-          console.log('[useChatState] Creating new local conversation with id:', convId);
-          const newConv = {
-            id: convId,
+      if (!currentConversation) {
+        // 新对话 - 使用前端的 base44 创建
+        console.log('[useChatState] Creating new conversation via frontend base44...');
+        try {
+          const newConv = await base44.entities.Conversation.create({
             title: trimmedMessage.slice(0, 50),
-            messages: [...messages, userMessage, assistantMessage],
-            created_date: new Date().toISOString(),
-            updated_date: new Date().toISOString(),
-            is_archived: false
-          };
-          setCurrentConversation(newConv);
-          // 延迟后强制刷新对话列表，多次尝试确保数据同步
-          setTimeout(() => {
-            console.log('[useChatState] First refetch attempt...');
-            refetchConversations();
-          }, 500);
-          setTimeout(() => {
-            console.log('[useChatState] Second refetch attempt...');
-            refetchConversations();
-          }, 1500);
-        } else {
-          // 【修复】检查后端返回的 ID 是否与当前对话 ID 不同
-          // 如果不同，说明后端创建了新对话（可能因为原对话找不到了）
-          const serverReturnedDifferentId = convId !== currentConversation?.id;
-          if (serverReturnedDifferentId) {
-            console.log('[useChatState] Server returned different conversation_id, updating local state');
-            console.log('[useChatState] Old ID:', currentConversation?.id, 'New ID:', convId);
-          }
+            messages: allMessages,
+            model_id: selectedModel?.id || null,
+            total_credits_used: responseData.credits_used || 0,
+            is_archived: false,
+            system_prompt: systemPrompt || null
+          });
+          console.log('[useChatState] Conversation created successfully, id:', newConv.id);
+
+          // 更新状态
+          conversationIdRef.current = newConv.id;
+          setCurrentConversation({
+            ...newConv,
+            messages: allMessages
+          });
+
+          // 刷新对话列表
+          setTimeout(() => refetchConversations(), 500);
+        } catch (createErr) {
+          console.error('[useChatState] Failed to create conversation:', createErr);
+          // 即使创建失败也不影响用户体验，对话仍在内存中
+        }
+      } else {
+        // 已有对话 - 更新
+        console.log('[useChatState] Updating existing conversation:', currentConversation.id);
+        try {
+          await base44.entities.Conversation.update(currentConversation.id, {
+            messages: allMessages,
+            total_credits_used: (currentConversation.total_credits_used || 0) + (responseData.credits_used || 0),
+            updated_date: new Date().toISOString()
+          });
+          console.log('[useChatState] Conversation updated successfully');
 
           setCurrentConversation(prev => ({
             ...prev,
-            id: convId,  // 【关键修复】总是使用后端返回的 ID
-            messages: [...(prev?.messages || []), userMessage, assistantMessage]
+            messages: allMessages,
+            total_credits_used: (prev?.total_credits_used || 0) + (responseData.credits_used || 0)
           }));
+
           queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        } catch (updateErr) {
+          console.error('[useChatState] Failed to update conversation:', updateErr);
+          // 即使更新失败也继续，消息已经在内存中
+          setCurrentConversation(prev => ({
+            ...prev,
+            messages: allMessages
+          }));
         }
       }
 
@@ -458,7 +477,7 @@ export function useChatState() {
     } finally {
       setIsStreaming(false);
     }
-  }, [inputMessage, fileContents, uploadedFiles, isStreaming, currentConversation, messages, user, queryClient]);
+  }, [inputMessage, fileContents, uploadedFiles, isStreaming, currentConversation, messages, user, queryClient, selectedModel, refetchConversations]);
 
   // 键盘事件
   const handleKeyDown = useCallback((e) => {

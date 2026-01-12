@@ -10,6 +10,76 @@
 
 ---
 
+## 2026-01-12 (前端负责对话持久化 - 终极修复) 🐛
+
+### 问题
+
+后端的 `createClientFromRequest(req)` 无法可靠访问 Conversation 实体：
+- 后端查询返回 0 个对话
+- 后端创建对话后立即查询失败
+- 前端却能正常看到 13 个对话
+
+### 根因分析
+
+Base44 云函数中的 `createClientFromRequest(req)` 可能无法正确传递用户认证上下文，导致实体操作失败。
+
+### 解决方案
+
+**架构重构：让前端负责所有对话 CRUD 操作**
+
+1. **前端发送对话历史给后端**（解决后端无法读取历史的问题）
+2. **后端只处理 AI 请求**，不操作 Conversation 实体
+3. **前端在收到响应后创建/更新对话**
+
+### 代码变更
+
+**后端 `functions/smartChatWithSearch.ts`**：
+```javascript
+// 接收前端传来的对话历史
+const { conversation_history } = requestData;
+
+// 使用前端历史而不是从数据库查询
+if (conversation_history && conversation_history.length > 0) {
+  conversationMessages = conversation_history;
+}
+
+// 跳过对话持久化（由前端处理）
+log.info('[Chat] Skipping conversation persistence (handled by frontend)');
+```
+
+**前端 `useChatState.jsx`**：
+```javascript
+// 发送对话历史
+const conversationHistory = messages.map(m => ({
+  role: m.role,
+  content: m.content || m.text || ''
+}));
+await base44.functions.invoke('smartChatWithSearch', {
+  ...
+  conversation_history: conversationHistory
+});
+
+// 前端负责创建/更新对话
+if (!currentConversation) {
+  const newConv = await base44.entities.Conversation.create({...});
+} else {
+  await base44.entities.Conversation.update(currentConversation.id, {...});
+}
+```
+
+### 修改文件
+
+- `functions/smartChatWithSearch.ts` - 移除对话 CRUD，使用前端历史
+- `src/components/hooks/useChatState.jsx` - 添加发送历史和对话持久化
+
+### 优势
+
+1. 利用前端 base44 客户端（已验证可以正常工作）
+2. 完全绕过后端实体访问问题
+3. 对话历史始终可用于 AI 上下文
+
+---
+
 ## 2026-01-12 (关键修复 - 使用用户身份操作对话) 🐛
 
 ### 问题
