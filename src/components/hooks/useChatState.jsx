@@ -128,17 +128,27 @@ export function useChatState() {
 
   // 获取对话列表
   const { data: conversations = [], refetch: refetchConversations } = useQuery({
-    queryKey: ['conversations'],
+    queryKey: ['conversations', user?.email],  // 添加 user.email 到 queryKey
     queryFn: async () => {
-      console.log('[useChatState] Fetching conversations...');
-      // 获取所有对话，然后在前端过滤掉已归档的
-      const convs = await base44.entities.Conversation.list('-updated_date', 100);
+      if (!user?.email) {
+        console.log('[useChatState] No user email, skipping fetch');
+        return [];
+      }
+      console.log('[useChatState] Fetching conversations for:', user.email);
+      // 【关键修复】使用 filter 按 user_email 过滤，确保用户只能看到自己的对话
+      // 因为 RLS Read 已改为 No Restrictions，需要在代码中手动过滤
+      const convs = await base44.entities.Conversation.filter(
+        { user_email: user.email },
+        '-updated_date',
+        100
+      );
       console.log('[useChatState] Fetched conversations:', convs.length);
       // 过滤：is_archived 不为 true 的对话（包括 false、undefined、null）
       const filtered = convs.filter(c => c.is_archived !== true);
       console.log('[useChatState] After filter:', filtered.length);
       return filtered;
     },
+    enabled: !!user?.email,  // 只在有用户 email 时才查询
     staleTime: 5000,  // 缩短缓存时间以更快刷新
     refetchOnWindowFocus: true
   });
