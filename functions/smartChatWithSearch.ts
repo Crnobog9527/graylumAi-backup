@@ -643,10 +643,20 @@ ${summaryToUse.summary_text}
         createData.session_task_type = taskClassification.task_type;
       }
 
+      // 【调试】打印 createData 看看 user_email 是否正确设置
+      log.info('【DEBUG】Creating conversation with data:', JSON.stringify({
+        title: createData.title,
+        model_id: createData.model_id,
+        user_email: createData.user_email,
+        is_archived: createData.is_archived
+      }));
+
       // 使用 asServiceRole 绕过 RLS，确保 user_email 字段能正确写入
       const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
-      log.debug('Created conversation:', newConv.id);
+
+      // 【调试】打印创建结果
+      log.info('【DEBUG】Created conversation result:', JSON.stringify(newConv));
     }
 
     // 步骤5：更新Token预算
