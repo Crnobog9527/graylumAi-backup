@@ -92,6 +92,19 @@ export const AuthProvider = ({ children }) => {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
+
+      // 【调试】打印 user 对象结构，用于验证可用字段
+      console.log('[AuthContext] ========== User 对象结构 ==========');
+      console.log('[AuthContext] 完整对象:', currentUser);
+      console.log('[AuthContext] email:', currentUser?.email);
+      console.log('[AuthContext] id:', currentUser?.id);
+      console.log('[AuthContext] username:', currentUser?.username);
+      console.log('[AuthContext] full_name:', currentUser?.full_name);
+      console.log('[AuthContext] nickname:', currentUser?.nickname);
+      console.log('[AuthContext] role:', currentUser?.role);
+      console.log('[AuthContext] 所有字段:', Object.keys(currentUser || {}));
+      console.log('[AuthContext] ===========================================');
+
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
