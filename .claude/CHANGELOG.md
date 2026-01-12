@@ -10,6 +10,61 @@
 
 ---
 
+## 2026-01-12 (日志清理优化) 🧹
+
+### 目标
+
+解决 Base44 日志截断问题，减少冗余日志输出。
+
+### 清理统计
+
+| 文件 | 清理前 | 清理后 | 减少 |
+|------|--------|--------|------|
+| `callAIModel.ts` | 25 条日志 | 10 条 | -15 条 (60%) |
+| `smartChatWithSearch.ts` | 33 条日志 | 17 条 | -16 条 (48%) |
+| **代码行数** | 1460 行 | 1401 行 | -59 行 |
+
+### 清理规则
+
+1. ✅ 删除完整对象输出（如 `JSON.stringify(tokenStatsData)`）
+2. ✅ 删除版本分隔线和调试步骤日志
+3. ✅ 保留错误日志和关键业务节点
+4. ✅ 单行日志 < 200 字符
+
+### 日志前缀统一
+
+| 文件 | 前缀 |
+|------|------|
+| `callAIModel.ts` | `[AI]` |
+| `smartChatWithSearch.ts` | `[Chat]` |
+
+### 保留的日志类型
+
+- **[AI] Request**: 模型调用请求信息
+- **[AI] Cost**: API 成本和 Token 统计
+- **[AI] OpenAI/Anthropic/Gemini**: 各模型调用日志
+- **[Chat] User**: 用户请求
+- **[Chat] Call**: AI 调用开始
+- **[Chat] Response**: 响应 Token 统计
+- **[Chat] Deducted**: 积分扣除
+- **[Chat] Created**: 对话创建
+- **[Chat] Done**: 请求完成时间
+- **[Chat] Error**: 错误日志（保留完整上下文）
+
+### 预期效果
+
+- 日志总量减少约 **53%**
+- 日志截断风险 **显著降低**
+- 关键信息完整保留 **100%**
+- 错误诊断不受影响
+
+### 修改文件
+
+- `functions/callAIModel.ts`
+- `functions/smartChatWithSearch.ts`
+
+---
+
 ## 2026-01-11 (可选优化完成) ⚡
 
 ### 完成的优化
