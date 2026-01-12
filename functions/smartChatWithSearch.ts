@@ -120,7 +120,10 @@ Deno.serve(async (req) => {
     const requestData = await req.json();
     let conversation_id = requestData.conversation_id;
     const { message, system_prompt, image_files } = requestData;
-    
+
+    // 【诊断日志】追踪 conversation_id
+    log.info('[Chat] Received conversation_id:', conversation_id, 'type:', typeof conversation_id);
+
     if (!message) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
     }
@@ -291,10 +294,13 @@ Deno.serve(async (req) => {
 
     if (conversation_id) {
       try {
+        log.info('[Chat] Querying conversation with id:', conversation_id);
         const convs = await base44.asServiceRole.entities.Conversation.filter({ id: conversation_id });
+        log.info('[Chat] Query result count:', convs.length);
         if (convs.length > 0) {
           conversation = convs[0];
           conversationMessages = conversation.messages || [];
+          log.info('[Chat] Loaded conversation, messages count:', conversationMessages.length);
         } else {
           log.warn('[Chat] Conversation not found:', conversation_id);
           conversation_id = null;
@@ -303,6 +309,8 @@ Deno.serve(async (req) => {
         log.warn('[Chat] Load error:', e.message);
         conversation_id = null;
       }
+    } else {
+      log.info('[Chat] No conversation_id provided, will create new conversation');
     }
     
     // 构建消息列表 - 使用摘要替换旧消息（如果存在）
@@ -585,8 +593,12 @@ ${summaryToUse.summary_text}
     ];
     
     let finalConversationId = conversation_id;
-    
+
+    // 【诊断日志】决策：更新还是创建
+    log.info('[Chat] Decision: conversation exists?', !!conversation, 'conversation_id:', conversation_id);
+
     if (conversation) {
+      log.info('[Chat] Updating existing conversation:', conversation.id);
       const updateData = {
         messages: newMessages,
         total_credits_used: (conversation.total_credits_used || 0) + actualDeducted,
@@ -598,7 +610,9 @@ ${summaryToUse.summary_text}
       }
 
       await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
+      log.info('[Chat] Conversation updated successfully');
     } else {
+      log.info('[Chat] Creating new conversation for user:', user.email);
 
       const createData = {
         title: message.slice(0, 50),
