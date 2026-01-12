@@ -156,7 +156,8 @@ Deno.serve(async (req) => {
 
     if (conversation_id) {
       try {
-        const conv = await base44.asServiceRole.entities.Conversation.get(String(conversation_id));
+        // 使用用户身份查询对话，与 RLS 规则一致
+        const conv = await base44.entities.Conversation.get(String(conversation_id));
         if (conv && conv.model_id) {
           const convModel = models.find(m => m.id === conv.model_id);
           if (convModel) selectedModel = convModel;
@@ -302,16 +303,15 @@ Deno.serve(async (req) => {
         const targetId = String(conversation_id);
         log.info('[Chat] Querying conversation with id:', targetId, 'original type:', typeof conversation_id);
 
-        // 【方案1】先尝试直接用 asServiceRole.get() 获取
+        // 【关键修复】使用 base44.entities（用户身份）查询
+        // 原因：asServiceRole 无法正确访问用户创建的对话
+        // 使用用户身份查询，RLS 规则会自动过滤到当前用户的对话
         try {
-          const directConv = await base44.asServiceRole.entities.Conversation.get(targetId);
-          if (directConv && directConv.user_email === user.email) {
+          const directConv = await base44.entities.Conversation.get(targetId);
+          if (directConv) {
             conversation = directConv;
             conversationMessages = conversation.messages || [];
             log.info('[Chat] Direct get succeeded, messages count:', conversationMessages.length);
-          } else if (directConv) {
-            log.warn('[Chat] Found conversation but user_email mismatch:', directConv.user_email, 'vs', user.email);
-            conversation_id = null;
           } else {
             log.warn('[Chat] Direct get returned null');
             conversation_id = null;
@@ -320,7 +320,7 @@ Deno.serve(async (req) => {
           log.warn('[Chat] Direct get failed:', getError.message);
 
           // 【方案2】get 失败时，回退到 list + find
-          const userConvs = await base44.asServiceRole.entities.Conversation.filter({ user_email: user.email }, '-updated_date', 100);
+          const userConvs = await base44.entities.Conversation.list('-updated_date', 100);
           log.info('[Chat] Fallback: User conversations count:', userConvs.length);
 
           // 【关键】使用字符串比较，避免类型不匹配
@@ -644,7 +644,9 @@ ${summaryToUse.summary_text}
         updateData.session_task_type = taskClassification.task_type;
       }
 
-      await base44.asServiceRole.entities.Conversation.update(conversation.id, updateData);
+      // 【关键修复】使用 base44.entities（用户身份）而不是 asServiceRole
+      // 原因：asServiceRole 创建的对话无法被持久化到数据库
+      await base44.entities.Conversation.update(conversation.id, updateData);
       log.info('[Chat] Conversation updated successfully');
     } else {
       log.info('[Chat] Creating new conversation for user:', user.email);
@@ -668,9 +670,10 @@ ${summaryToUse.summary_text}
         createData.session_task_type = taskClassification.task_type;
       }
 
-      // 【修复】使用 asServiceRole 创建对话，确保 user_email 字段正确设置
-      // 原因：使用 entities（用户身份）创建时，后续 asServiceRole 更新操作可能无法正确关联对话
-      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
+      // 【关键修复】使用 base44.entities（用户身份）创建对话
+      // 原因：asServiceRole.create() 返回 ID 但不持久化数据到数据库
+      // 使用用户身份创建可以确保 RLS 规则正确应用
+      const newConv = await base44.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
 
       // 【诊断】记录创建结果的完整结构
@@ -683,13 +686,13 @@ ${summaryToUse.summary_text}
 
       // 【诊断】立即验证对话是否可查询
       try {
-        const verifyConv = await base44.asServiceRole.entities.Conversation.get(String(newConv.id));
+        const verifyConv = await base44.entities.Conversation.get(String(newConv.id));
         log.info('[Chat] Verify after create:', verifyConv ? 'SUCCESS' : 'FAILED', 'id:', newConv.id);
       } catch (verifyErr) {
         log.error('[Chat] Verify after create FAILED:', verifyErr.message);
 
         // 如果 get 失败，尝试 list 所有对话
-        const allConvs = await base44.asServiceRole.entities.Conversation.list('-created_date', 10);
+        const allConvs = await base44.entities.Conversation.list('-created_date', 10);
         log.info('[Chat] All recent conversations:', allConvs.length, 'IDs:', allConvs.map(c => c.id).join(', '));
       }
     }

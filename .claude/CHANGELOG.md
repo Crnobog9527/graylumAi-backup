@@ -10,6 +10,119 @@
 
 ---
 
+## 2026-01-12 (关键修复 - 使用用户身份操作对话) 🐛
+
+### 问题
+
+`asServiceRole.entities.Conversation.create()` 返回了 ID，但对话实际上**没有保存到数据库**！
+
+### 诊断日志证据
+
+```
+[Chat] Created conversation result: {"id":"6964c97e7df5f39b38972c2f",...}
+[Chat] Verify after create FAILED: Entity Conversation with ID 6964c97e7df5f39b38972c2f not found
+[Chat] All recent conversations: 0 IDs:
+```
+
+### 根因分析
+
+`asServiceRole` 与 Conversation 实体的 RLS 规则 (`user_email = {{user.email}}`) 不兼容，导致：
+- 创建操作返回虚假的成功结果
+- 数据实际上没有持久化到数据库
+
+### 修复方案
+
+**统一使用 `base44.entities`（用户身份）处理所有 Conversation 操作**：
+
+```javascript
+// 创建 - 修复前
+await base44.asServiceRole.entities.Conversation.create(createData);
+
+// 创建 - 修复后
+await base44.entities.Conversation.create(createData);
+
+// 更新 - 修复前
+await base44.asServiceRole.entities.Conversation.update(id, data);
+
+// 更新 - 修复后
+await base44.entities.Conversation.update(id, data);
+
+// 查询 - 修复前
+await base44.asServiceRole.entities.Conversation.get(id);
+
+// 查询 - 修复后
+await base44.entities.Conversation.get(id);
+```
+
+### 修改文件
+
+- `functions/smartChatWithSearch.ts:159-167` - 模型选择查询
+- `functions/smartChatWithSearch.ts:305-348` - 对话查询逻辑
+- `functions/smartChatWithSearch.ts:647-698` - 对话创建和更新
+
+### 经验教训
+
+1. **RLS 规则与 asServiceRole 可能不兼容**：即使 create 返回成功，数据可能未持久化
+2. **始终验证写入操作**：创建后立即查询验证是有效的调试方法
+3. **保持一致的权限模型**：所有对同一实体的操作应使用相同的权限模式
+
+---
+
+## 2026-01-12 (对话查询修复 - ID 类型与多方案回退) 🐛
+
+### 问题
+
+后端无法找到已存在的对话，日志显示 `Conversation not found`，导致每轮对话都创建新记录。
+
+### 根因分析
+
+1. **ID 类型不匹配**：`conversation_id` 可能是字符串或数字，使用严格相等 `===` 比较时类型不同导致匹配失败
+2. **查询方法不稳定**：Base44 的 `.get()` 和 `.filter()` 方法在不同场景下行为不一致
+
+### 修复方案
+
+```javascript
+// 【关键修复1】将 conversation_id 转换为字符串，确保类型一致
+const targetId = String(conversation_id);
+
+// 【方案1】先尝试直接用 asServiceRole.get() 获取
+try {
+  const directConv = await base44.asServiceRole.entities.Conversation.get(targetId);
+  if (directConv && directConv.user_email === user.email) {
+    conversation = directConv;
+    // 成功找到对话
+  }
+} catch (getError) {
+  // 【方案2】get 失败时，回退到 filter + find
+  const userConvs = await base44.asServiceRole.entities.Conversation.filter(
+    { user_email: user.email }, '-updated_date', 100
+  );
+
+  // 【关键修复2】使用字符串比较，避免类型不匹配
+  const conv = userConvs.find(c => String(c.id) === targetId);
+}
+```
+
+### 修改文件
+
+- `functions/smartChatWithSearch.ts:299-349` - 对话查询逻辑
+- `functions/smartChatWithSearch.ts:159` - 模型选择查询
+
+### 诊断日志
+
+添加详细日志帮助追踪问题：
+- `[Chat] Querying conversation with id: xxx, original type: string/number`
+- `[Chat] Direct get succeeded/failed`
+- `[Chat] Available IDs (first 5): xxx(number), yyy(string)...`
+
+### 经验教训
+
+1. Base44 的 `id` 字段类型可能不固定，比较时应统一转换为字符串
+2. 单一查询方法不可靠时，应实现多方案回退机制
+3. 详细的类型日志有助于快速定位问题
+
+---
+
 ## 2026-01-12 (对话隔离性修复) 🐛
 
 ### 问题
