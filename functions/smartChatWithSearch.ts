@@ -636,12 +636,9 @@ ${summaryToUse.summary_text}
         createData.session_task_type = taskClassification.task_type;
       }
 
-      // 使用 asServiceRole 创建（与 CreditTransaction 保持一致）
-      // CreditTransaction 用 asServiceRole 能成功写入 user_email
-      log.info('[DEBUG] Creating conversation with user_email:', user.email);
-      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
+      // 使用普通 entities 创建（用户身份）
+      const newConv = await base44.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
-      log.info('[DEBUG] Created conversation:', newConv.id, 'user_email:', newConv.user_email);
     }
 
     // 步骤5：更新Token预算
