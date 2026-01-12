@@ -672,6 +672,26 @@ ${summaryToUse.summary_text}
       // 原因：使用 entities（用户身份）创建时，后续 asServiceRole 更新操作可能无法正确关联对话
       const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
+
+      // 【诊断】记录创建结果的完整结构
+      log.info('[Chat] Created conversation result:', JSON.stringify({
+        id: newConv.id,
+        keys: Object.keys(newConv),
+        user_email: newConv.user_email,
+        hasData: !!newConv.data
+      }));
+
+      // 【诊断】立即验证对话是否可查询
+      try {
+        const verifyConv = await base44.asServiceRole.entities.Conversation.get(String(newConv.id));
+        log.info('[Chat] Verify after create:', verifyConv ? 'SUCCESS' : 'FAILED', 'id:', newConv.id);
+      } catch (verifyErr) {
+        log.error('[Chat] Verify after create FAILED:', verifyErr.message);
+
+        // 如果 get 失败，尝试 list 所有对话
+        const allConvs = await base44.asServiceRole.entities.Conversation.list('-created_date', 10);
+        log.info('[Chat] All recent conversations:', allConvs.length, 'IDs:', allConvs.map(c => c.id).join(', '));
+      }
     }
 
     // 步骤5：更新Token预算
