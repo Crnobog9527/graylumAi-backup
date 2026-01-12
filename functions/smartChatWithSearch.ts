@@ -1,15 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
-// ========== 日志级别控制 ==========
-// 级别: 0=ERROR, 1=WARN, 2=INFO, 3=DEBUG
-const LOG_LEVEL = parseInt(Deno.env.get('LOG_LEVEL') || '2', 10);
-
-const log = {
-  error: (...args: unknown[]) => console.error('[smartChat]', ...args),
-  warn: (...args: unknown[]) => LOG_LEVEL >= 1 && console.warn('[smartChat]', ...args),
-  info: (...args: unknown[]) => LOG_LEVEL >= 2 && console.log('[smartChat]', ...args),
-  debug: (...args: unknown[]) => LOG_LEVEL >= 3 && console.log('[smartChat]', ...args),
-};
+// ========== 版本标识 ==========
+const VERSION = 'V2026-01-12-USER-EMAIL-FIX';
 
 // ========== 对话历史管理配置 ==========
 // 原则：在保持上下文记忆的同时降低 token 消耗
@@ -113,6 +105,9 @@ const executeSearch = async (query, searchType) => {
 Deno.serve(async (req) => {
   const startTime = Date.now();
 
+  // 【版本确认】如果看到这条日志，说明新代码已部署
+  log.info('==================== VERSION:', VERSION, '====================');
+
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -121,6 +116,11 @@ Deno.serve(async (req) => {
       log.warn('[Chat] Unauthorized request');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // 【调试】打印完整的 user 对象
+    log.info('[USER] email:', user.email);
+    log.info('[USER] id:', user.id);
+    log.info('[USER] keys:', Object.keys(user).join(', '));
 
     const requestData = await req.json();
     let conversation_id = requestData.conversation_id;
