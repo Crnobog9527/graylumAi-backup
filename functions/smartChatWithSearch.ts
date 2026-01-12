@@ -612,7 +612,7 @@ ${summaryToUse.summary_text}
         messages: newMessages,
         total_credits_used: actualDeducted,
         is_archived: false,
-        user_email: user.email  // RLS 规则要求此字段等于当前用户邮箱
+        user_email: user.email
       };
 
       // 保存系统提示词
@@ -625,12 +625,12 @@ ${summaryToUse.summary_text}
         createData.session_task_type = taskClassification.task_type;
       }
 
-      // 使用普通 entities（不是 asServiceRole）
-      // 因为 RLS write 规则要求 data.user_email === {{user.email}}
-      // asServiceRole 会绕过用户上下文，导致 {{user.email}} 为空
-      const newConv = await base44.entities.Conversation.create(createData);
+      // 使用 asServiceRole 创建（与 CreditTransaction 保持一致）
+      // CreditTransaction 用 asServiceRole 能成功写入 user_email
+      log.info('[DEBUG] Creating conversation with user_email:', user.email);
+      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
-      log.info('[Chat] Created:', { id: newConv.id, user: user.email?.slice(0, 15) });
+      log.info('[DEBUG] Created conversation:', newConv.id, 'user_email:', newConv.user_email);
     }
 
     // 步骤5：更新Token预算
