@@ -299,15 +299,31 @@ Deno.serve(async (req) => {
     if (conversation_id) {
       try {
         log.info('[Chat] Querying conversation with id:', conversation_id);
-        // 【修复】使用 .get() 方法按 ID 获取对话，而不是 filter({ id: xxx })
-        // filter({ id: xxx }) 在 Base44 中可能不支持按 id 字段查询
-        const conv = await base44.asServiceRole.entities.Conversation.get(conversation_id);
+        // 【修复】尝试多种查询方式
+        // 方式1: 使用 .get()
+        let conv = null;
+        try {
+          conv = await base44.asServiceRole.entities.Conversation.get(conversation_id);
+          log.info('[Chat] .get() result:', conv ? 'found' : 'null');
+        } catch (getError) {
+          log.warn('[Chat] .get() failed:', getError.message);
+        }
+
+        // 方式2: 如果 .get() 失败，尝试 list + find
+        if (!conv) {
+          log.info('[Chat] Trying list + find method...');
+          const allConvs = await base44.asServiceRole.entities.Conversation.list('-updated_date', 100);
+          log.info('[Chat] Listed conversations count:', allConvs.length);
+          conv = allConvs.find(c => c.id === conversation_id);
+          log.info('[Chat] Find result:', conv ? 'found' : 'not found');
+        }
+
         if (conv) {
           conversation = conv;
           conversationMessages = conversation.messages || [];
           log.info('[Chat] Loaded conversation, messages count:', conversationMessages.length);
         } else {
-          log.warn('[Chat] Conversation not found:', conversation_id);
+          log.warn('[Chat] Conversation not found by any method:', conversation_id);
           conversation_id = null;
         }
       } catch (e) {
