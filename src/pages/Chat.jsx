@@ -50,6 +50,7 @@ export default function Chat() {
     setDebugInfo,
     isExporting,
     canExport,
+    conversationKey,  // 【新增】用于强制重新渲染消息列表
 
     // Refs
     messagesEndRef,
@@ -150,6 +151,7 @@ export default function Chat() {
 
         {/* 消息区域 */}
         <ChatMessages
+          key={`messages-${conversationKey}`}  // 【关键修复】使用 key 强制重新渲染
           messages={messages}
           isStreaming={isStreaming}
           user={user}

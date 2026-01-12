@@ -50,6 +50,7 @@ export function useChatState() {
   const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
+  const [conversationKey, setConversationKey] = useState(0);  // 【新增】用于强制重新渲染消息列表
 
   // 选择模式
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -192,12 +193,20 @@ export function useChatState() {
 
   // 开始新对话
   const handleStartNewChat = useCallback(() => {
+    console.log('[useChatState] Starting new chat, clearing all state...');
+
+    // 【关键修复】强制清空所有相关状态
     setCurrentConversation(null);
     conversationIdRef.current = null;  // 【修复】同时重置 ref
-    setMessages([]);
+    setMessages([]);  // 清空消息
     setInputMessage('');
     setUploadedFiles([]);
     setFileContents([]);
+    setEditingTitleValue('');
+
+    // 【新增】递增 key 强制 React 重新渲染消息列表组件
+    setConversationKey(prev => prev + 1);
+    console.log('[useChatState] conversationKey incremented, messages cleared');
 
     // 【修复 Bug 1】清除 URL 中的 module_id 参数，防止系统提示词跨对话串联
     const urlParams = new URLSearchParams(window.location.search);
@@ -215,6 +224,10 @@ export function useChatState() {
   // 选择对话
   const handleSelectConversation = useCallback(async (conv) => {
     console.log('[useChatState] Selecting conversation:', conv?.id);
+
+    // 【新增】先清空当前状态，防止显示旧数据
+    setMessages([]);
+    setConversationKey(prev => prev + 1);  // 强制重新渲染
 
     // 【关键修复】从数据库重新获取对话，确保获取最新数据
     // 避免使用缓存中的旧数据
@@ -309,22 +322,24 @@ export function useChatState() {
 
   // 发送消息
   const handleSendMessage = useCallback(async (skipWarning = false) => {
-    const trimmedMessage = inputMessage.trim();
-    if (!trimmedMessage && fileContents.length === 0) return;
-    if (isStreaming) return;
-
-    // 【关键修复】使用 ref 防止重复发送（state 更新是异步的）
+    // 【关键修复】在函数最开始检查并设置 ref，防止任何竞态条件
     if (isSendingRef.current) {
-      console.log('[useChatState] Duplicate send prevented by ref');
+      console.log('[useChatState] Duplicate send prevented by ref (early check)');
       return;
     }
-    isSendingRef.current = true;
+
+    const trimmedMessage = inputMessage.trim();
+    if (!trimmedMessage && fileContents.length === 0) return;
+    if (isStreaming) {
+      console.log('[useChatState] Already streaming, ignoring send');
+      return;
+    }
 
     // 估算 tokens
     const estimatedTokens = Math.ceil(trimmedMessage.length / 4);
     const estimatedCredits = Math.ceil(estimatedTokens / 1000) + Math.ceil(estimatedTokens / 5);
 
-    // 长文本警告
+    // 长文本警告 - 注意：这里不设置 isSendingRef，因为用户可能取消
     if (!skipWarning && estimatedTokens > 2000) {
       setLongTextWarning({
         open: true,
@@ -333,6 +348,10 @@ export function useChatState() {
       });
       return;
     }
+
+    // 【关键】只有在确定要发送时才设置 ref
+    isSendingRef.current = true;
+    console.log('[useChatState] isSendingRef set to true, starting send...');
 
     setIsStreaming(true);
 
@@ -788,6 +807,7 @@ export function useChatState() {
     isStreaming,
     inputMessage,
     setInputMessage,
+    conversationKey,  // 【新增】用于强制重新渲染消息列表
     isSelectMode,
     setIsSelectMode,
     selectedConversations,
