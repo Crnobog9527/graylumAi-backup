@@ -630,7 +630,7 @@ ${summaryToUse.summary_text}
         messages: newMessages,
         total_credits_used: actualDeducted,
         is_archived: false,
-        user_email: user.email  // 用户隔离：关联用户邮箱
+        created_by: user.email  // 用户隔离：正确字段名是 created_by
       };
 
       // 保存系统提示词
@@ -643,10 +643,10 @@ ${summaryToUse.summary_text}
         createData.session_task_type = taskClassification.task_type;
       }
 
-      // 使用 asServiceRole 绕过 RLS，确保 user_email 字段能正确写入
-      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
+      // 使用普通 entities 创建（会自动设置 created_by，但我们也手动设置以确保）
+      const newConv = await base44.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
-      log.debug('Created conversation:', newConv.id);
+      log.debug('Created conversation:', newConv.id, 'created_by:', user.email);
     }
 
     // 步骤5：更新Token预算
