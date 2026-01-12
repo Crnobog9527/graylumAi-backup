@@ -3,6 +3,17 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 // ========== 版本标识 ==========
 const VERSION = 'V2026-01-12-USER-EMAIL-FIX';
 
+// ========== 日志级别控制 ==========
+// 级别: 0=ERROR, 1=WARN, 2=INFO, 3=DEBUG
+const LOG_LEVEL = parseInt(Deno.env.get('LOG_LEVEL') || '2', 10);
+
+const log = {
+  error: (...args: unknown[]) => console.error('[smartChat]', ...args),
+  warn: (...args: unknown[]) => LOG_LEVEL >= 1 && console.warn('[smartChat]', ...args),
+  info: (...args: unknown[]) => LOG_LEVEL >= 2 && console.log('[smartChat]', ...args),
+  debug: (...args: unknown[]) => LOG_LEVEL >= 3 && console.log('[smartChat]', ...args),
+};
+
 // ========== 对话历史管理配置 ==========
 // 原则：在保持上下文记忆的同时降低 token 消耗
 const FULL_HISTORY_LIMIT = 10;          // 10 轮内保持完整历史（20 条消息）
