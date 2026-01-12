@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
 
     if (conversation_id) {
       try {
-        const conv = await base44.asServiceRole.entities.Conversation.get(conversation_id);
+        const conv = await base44.asServiceRole.entities.Conversation.get(String(conversation_id));
         if (conv && conv.model_id) {
           const convModel = models.find(m => m.id === conv.model_id);
           if (convModel) selectedModel = convModel;
@@ -298,30 +298,47 @@ Deno.serve(async (req) => {
 
     if (conversation_id) {
       try {
-        log.info('[Chat] Querying conversation with id:', conversation_id);
+        // 【关键修复】将 conversation_id 转换为字符串，确保类型一致
+        const targetId = String(conversation_id);
+        log.info('[Chat] Querying conversation with id:', targetId, 'original type:', typeof conversation_id);
 
-        // 【关键修复】使用 base44.entities（用户身份）而不是 asServiceRole
-        // 因为 base44 是从用户请求创建的，包含用户认证信息
-        // 这样可以利用 RLS 规则自动过滤到用户自己的对话
-        const userConvs = await base44.entities.Conversation.list('-updated_date', 100);
-        log.info('[Chat] User conversations count:', userConvs.length);
+        // 【方案1】先尝试直接用 asServiceRole.get() 获取
+        try {
+          const directConv = await base44.asServiceRole.entities.Conversation.get(targetId);
+          if (directConv && directConv.user_email === user.email) {
+            conversation = directConv;
+            conversationMessages = conversation.messages || [];
+            log.info('[Chat] Direct get succeeded, messages count:', conversationMessages.length);
+          } else if (directConv) {
+            log.warn('[Chat] Found conversation but user_email mismatch:', directConv.user_email, 'vs', user.email);
+            conversation_id = null;
+          } else {
+            log.warn('[Chat] Direct get returned null');
+            conversation_id = null;
+          }
+        } catch (getError) {
+          log.warn('[Chat] Direct get failed:', getError.message);
 
-        // 在用户的对话中查找指定 ID
-        const conv = userConvs.find(c => c.id === conversation_id);
-        log.info('[Chat] Find by id result:', conv ? 'found' : 'not found');
+          // 【方案2】get 失败时，回退到 list + find
+          const userConvs = await base44.asServiceRole.entities.Conversation.filter({ user_email: user.email }, '-updated_date', 100);
+          log.info('[Chat] Fallback: User conversations count:', userConvs.length);
 
-        // 如果找不到，记录前5个对话的 ID 用于诊断
-        if (!conv && userConvs.length > 0) {
-          log.info('[Chat] Available IDs:', userConvs.slice(0, 5).map(c => c.id).join(', '));
-        }
+          // 【关键】使用字符串比较，避免类型不匹配
+          const conv = userConvs.find(c => String(c.id) === targetId);
+          log.info('[Chat] Find by string id result:', conv ? 'found' : 'not found');
 
-        if (conv) {
-          conversation = conv;
-          conversationMessages = conversation.messages || [];
-          log.info('[Chat] Loaded conversation, messages count:', conversationMessages.length);
-        } else {
-          log.warn('[Chat] Conversation not found:', conversation_id);
-          conversation_id = null;
+          if (!conv && userConvs.length > 0) {
+            log.info('[Chat] Available IDs (first 5):', userConvs.slice(0, 5).map(c => `${c.id}(${typeof c.id})`).join(', '));
+          }
+
+          if (conv) {
+            conversation = conv;
+            conversationMessages = conversation.messages || [];
+            log.info('[Chat] Loaded conversation, messages count:', conversationMessages.length);
+          } else {
+            log.warn('[Chat] Conversation not found:', targetId);
+            conversation_id = null;
+          }
         }
       } catch (e) {
         log.warn('[Chat] Load error:', e.message);
