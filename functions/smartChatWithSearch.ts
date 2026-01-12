@@ -629,7 +629,8 @@ ${summaryToUse.summary_text}
         model_id: selectedModel.id,
         messages: newMessages,
         total_credits_used: actualDeducted,
-        is_archived: false
+        is_archived: false,
+        user_email: user.email  // RLS 规则要求此字段等于当前用户邮箱
       };
 
       // 保存系统提示词
@@ -642,16 +643,12 @@ ${summaryToUse.summary_text}
         createData.session_task_type = taskClassification.task_type;
       }
 
-      // 先创建对话（不包含 user_email）
-      const newConv = await base44.asServiceRole.entities.Conversation.create(createData);
+      // 使用普通 entities（不是 asServiceRole）
+      // 因为 RLS write 规则要求 data.user_email === {{user.email}}
+      // asServiceRole 会绕过用户上下文，导致 {{user.email}} 为空
+      const newConv = await base44.entities.Conversation.create(createData);
       finalConversationId = newConv.id;
-      log.debug('Created conversation:', newConv.id);
-
-      // 然后立即更新 user_email 字段
-      await base44.asServiceRole.entities.Conversation.update(newConv.id, {
-        user_email: user.email
-      });
-      log.debug('Updated user_email:', user.email);
+      log.debug('Created conversation:', newConv.id, 'user_email:', user.email);
     }
 
     // 步骤5：更新Token预算
