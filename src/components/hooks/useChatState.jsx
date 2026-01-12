@@ -323,6 +323,8 @@ export function useChatState() {
       }
 
       // 调用 API
+      // 【诊断日志】追踪 conversation_id
+      console.log('[useChatState] Sending message with conversation_id:', currentConversation?.id || null);
       const response = await base44.functions.invoke('smartChatWithSearch', {
         message: fullMessage,
         conversation_id: currentConversation?.id || null,
@@ -355,10 +357,15 @@ export function useChatState() {
       setMessages(prev => [...prev, assistantMessage]);
 
       // 更新当前对话
+      // 【诊断日志】追踪响应中的 conversation_id
+      console.log('[useChatState] Response conversation_id:', responseData.conversation_id);
+      console.log('[useChatState] Current conversation before update:', currentConversation?.id || null);
+
       if (responseData.conversation_id) {
         const convId = responseData.conversation_id;
         if (!currentConversation) {
           // 新对话 - 创建本地对话对象并立即刷新列表
+          console.log('[useChatState] Creating new local conversation with id:', convId);
           const newConv = {
             id: convId,
             title: trimmedMessage.slice(0, 50),
