@@ -110,7 +110,63 @@
 
 ## 🟢 已修复问题（2026-01-13）
 
-> **P0 紧急问题：对话窗口隔离性失效 - 多层修复完成**
+> **P0 紧急问题全部修复：对话窗口隔离性 + 即时反馈机制**
+
+### ✅ 功能模块跳转即时反馈 [已修复]
+
+| 属性 | 详情 |
+|------|------|
+| **状态** | ✅ 已修复 |
+| **修复日期** | 2026-01-13 |
+| **影响等级** | P0 紧急（用户体验） |
+
+**问题表现**：
+- 点击功能模块"使用"按钮跳转对话后，页面显示空白
+- 用户需要等待 AI 响应完成后才能看到新对话
+- 需要手动刷新页面才能看到对话状态
+- 用户在等待过程中重复点击，导致重复发送
+
+**根本原因（React 18 生命周期问题）**：
+
+| 层级 | 问题 | 原因 |
+|------|------|------|
+| **useEffect 时机** | 首次渲染时无即时反馈 | useEffect 在渲染**之后**才执行 |
+| **sessionStorage 时机** | 数据保存太晚 | 在异步 API 调用之后才保存 |
+| **StrictMode 影响** | 状态丢失 | mount → unmount → mount 重置组件 |
+
+**修复方案**：
+
+1. **useState 初始化 + useMemo 同步读取**
+   ```javascript
+   // 模块级函数，首次渲染时同步读取
+   const getInitialPendingState = () => {
+     const pendingData = sessionStorage.getItem('pendingAutoSendMessage');
+     // ... 返回初始状态
+   };
+
+   // useMemo 确保只执行一次
+   const initialPendingState = useMemo(() => getInitialPendingState(), []);
+   const [messages, setMessages] = useState(initialPendingState.messages);
+   const [isStreaming, setIsStreaming] = useState(initialPendingState.isStreaming);
+   ```
+
+2. **提前保存 pending 状态**
+   ```javascript
+   // 在异步操作之前立即保存
+   sessionStorage.setItem('pendingAutoSendMessage', JSON.stringify({...}));
+   // 然后才执行 API 调用
+   ```
+
+3. **多层防重复机制**
+   - 模块级变量 `globalAutoSendTriggered`
+   - 时间戳窗口（30秒内不重复）
+   - sessionStorage 检查
+
+**关键发现 ⚠️**：
+> **useEffect 不适合做"首次渲染前"的状态恢复，它是"渲染后"的副作用。**
+> **useState 初始化函数是同步的，可以在首次渲染时立即提供正确状态。**
+
+---
 
 ### ✅ 对话窗口隔离性失效 [已修复]
 

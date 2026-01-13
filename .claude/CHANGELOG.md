@@ -10,6 +10,123 @@
 
 ---
 
+## 2026-01-13 (功能模块跳转即时反馈修复) 🔧
+
+### 问题描述
+
+**严重性**: HIGH - 用户体验严重受损
+
+**症状**:
+- 点击功能模块"使用"按钮跳转对话后，页面显示空白
+- 用户需要等待 AI 响应完成后才能看到新对话
+- 需要手动刷新页面才能看到对话状态
+- 用户在等待过程中可能重复点击，导致重复发送
+
+### 根本原因
+
+**useEffect 时机问题 + sessionStorage 读取时机不当**
+
+1. `useEffect` 在组件渲染**之后**才执行，无法在首次渲染时提供即时反馈
+2. 原来在 useEffect 中读取 `pendingAutoSendMessage`，但此时组件已经渲染了空状态
+3. sessionStorage 保存在异步 API 调用之后，StrictMode 重挂载时还未写入
+
+```
+用户点击"使用" → 跳转到 /chat?module_id=xxx&auto_start=true
+                    ↓
+组件首次渲染 → useState 初始化为空 [] → 页面显示空白
+                    ↓
+useEffect 执行 → 读取 sessionStorage → 但已经太晚了
+                    ↓
+用户看到空白页面 → 以为功能没生效 → 重复点击
+```
+
+### 修复方案
+
+**方案 1：useState 初始化函数 + useMemo 同步读取**
+
+```javascript
+// 模块级函数，在组件初始化时同步读取 sessionStorage
+const getInitialPendingState = () => {
+  const pendingData = sessionStorage.getItem('pendingAutoSendMessage');
+  if (pendingData) {
+    const { moduleId, timestamp, userMessage } = JSON.parse(pendingData);
+    if (moduleId === urlModuleId && (Date.now() - timestamp) < 5 * 60 * 1000) {
+      return { messages: userMessage ? [userMessage] : [], isStreaming: true };
+    }
+  }
+  return { messages: [], isStreaming: false };
+};
+
+// useMemo 确保只执行一次
+const initialPendingState = useMemo(() => getInitialPendingState(), []);
+const [messages, setMessages] = useState(initialPendingState.messages);
+const [isStreaming, setIsStreaming] = useState(initialPendingState.isStreaming);
+```
+
+**方案 2：提前保存 pending 状态**
+
+```javascript
+// 在 AutoSend useEffect 中，立即保存（在任何异步操作之前）
+const initialPendingData = {
+  moduleId,
+  timestamp: Date.now(),
+  status: 'loading'
+};
+sessionStorage.setItem('pendingAutoSendMessage', JSON.stringify(initialPendingData));
+setIsStreaming(true);
+
+// 然后才执行异步操作
+const modules = await base44.entities.PromptModule.filter({ id: moduleId });
+```
+
+**方案 3：加强版防重复机制**
+
+```javascript
+let globalAutoSendTimestamp = 0;
+
+// 30 秒内不重复触发
+if (globalAutoSendTriggered && (Date.now() - globalAutoSendTimestamp) < 30000) {
+  console.log('[AutoSend] 跳过：30秒内已触发过');
+  return;
+}
+
+// 检查 sessionStorage 中是否已有 pending 数据
+const existingPending = sessionStorage.getItem('pendingAutoSendMessage');
+if (existingPending) {
+  const { moduleId: pendingModuleId, timestamp } = JSON.parse(existingPending);
+  if (pendingModuleId === moduleId && (Date.now() - timestamp) < 60000) {
+    return;
+  }
+}
+```
+
+### 代码变更
+
+| 文件 | 变更说明 |
+|------|----------|
+| `useChatState.jsx` | 添加 `getInitialPendingState()` 模块级函数 |
+| `useChatState.jsx` | 使用 `useMemo` + `useState` 初始化同步读取 sessionStorage |
+| `useChatState.jsx` | 添加 `globalAutoSendTimestamp` 时间戳防重复 |
+| `useChatState.jsx` | 在异步操作前立即保存 pending 状态到 sessionStorage |
+
+### 经验教训
+
+1. **useEffect 不适合首次渲染状态恢复**：它是"渲染后"的副作用，不是"渲染前"的初始化
+2. **useState 初始化函数是同步的**：可以在首次渲染时立即提供正确状态
+3. **sessionStorage 写入时机关键**：必须在异步操作之前写入，否则 StrictMode 重挂载时无法读取
+4. **多层防重复更可靠**：模块级变量 + 时间戳窗口 + sessionStorage 检查三重保险
+5. **即时反馈对 UX 至关重要**：空白等待会导致用户误以为功能失效而重复操作
+
+### 相关提交
+
+- `afc3dfa` - fix: 修复即时反馈和重复发送问题
+- `ecde384` - feat: 实现即时反馈机制，用户点击后立即显示对话状态
+- `70ad135` - fix: 改进 URL 轮询机制，直接从 API 获取对话
+- `a85f3d3` - fix: 添加 URL conv_id 轮询检测机制
+- `10f5ad4` - fix: 修复 URL 驱动加载对话时新对话未同步到列表的问题
+
+---
+
 ## 2026-01-13 (功能模块跳转重复发送修复) 🔧
 
 ### 问题描述
