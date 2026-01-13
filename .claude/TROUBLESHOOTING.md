@@ -353,6 +353,77 @@ function Component() {
 
 ## ⚙️ 后端云函数问题
 
+### 案例：对话窗口隔离性失效 - 多层问题级联修复（2026-01-13）
+
+**案例背景**
+- 原问题：对话窗口隔离性失效，每轮对话都创建新的 Conversation 记录
+- 症状表现：
+  1. 新建对话功能失效，新窗口显示旧内容
+  2. 对话记录不出现在历史列表
+  3. user_email 字段在首轮对话时为空
+  4. 发送消息时重复发送 2 次请求
+
+**问题分析过程**
+
+| 阶段 | 发现的问题 | 修复方案 | 引入的新问题 |
+|------|-----------|---------|-------------|
+| 1 | React useState 异步导致 conversation_id 竞态 | 添加 conversationIdRef 同步跟踪 | 无 |
+| 2 | 每次发消息发 2 次请求 | 添加 isStreamingRef 同步检查 | 无 |
+| 3 | 中文输入法 Enter 键重复触发 | 添加 isComposing 检查 | 无 |
+| 4 | user_email 未验证可能为空 | 后端添加 email 验证 | 无 |
+| 5 | RLS "Creator Only" 不匹配 | 改用 "Entity-User Field Comparison" | asServiceRole 查询受限 |
+| 6 | asServiceRole 对 Read 操作也受 RLS 限制 | Read 改为 No Restrictions | 前端需手动过滤 |
+| 7 | asServiceRole 对 Update 操作也受 RLS 限制 | Update 改为 No Restrictions | 无 |
+
+**根本原因**
+
+1. **React 异步状态更新**：`setState` 是异步的，多次快速调用时状态未及时更新
+2. **IME 输入法事件**：中文输入法按 Enter 确认时触发 keydown 事件
+3. **Base44 RLS 特殊行为**：`asServiceRole` 只对 Create 操作绕过 RLS，Read/Update 仍受限
+
+**最终解决方案**
+
+```javascript
+// 1. 前端：使用 useRef 同步跟踪状态
+const conversationIdRef = useRef(null);
+const isStreamingRef = useRef(false);
+
+// 2. 前端：检查 IME 输入法状态
+if (e.isComposing || e.keyCode === 229) return;
+
+// 3. 前端：查询时手动添加 user_email 过滤
+const convs = await base44.entities.Conversation.filter(
+  { user_email: user.email },
+  '-updated_date',
+  100
+);
+
+// 4. 后端：验证 user.email 不为空
+if (!user.email || user.email.trim() === '') {
+  return Response.json({ error: 'User email required' }, { status: 400 });
+}
+
+// 5. RLS 配置
+// Create: No restrictions
+// Read: No restrictions（代码中手动过滤）
+// Update: No restrictions
+// Delete: user_email = user field
+```
+
+**经验教训**
+- Base44 的 `asServiceRole` 并不是真正的管理员权限，需要测试实际行为
+- React 的 setState 异步特性在高频操作时需要用 useRef 配合
+- 中文输入法（IME）需要特殊处理，检查 `e.isComposing`
+- RLS 权限修改需要逐项测试，不要假设行为一致
+- 当 RLS 无法满足需求时，可以放开权限并在代码中实现安全控制
+
+**相关文件**
+- `src/components/hooks/useChatState.jsx` - conversationIdRef, isStreamingRef, isComposing
+- `functions/smartChatWithSearch.ts` - userEmail 验证和 asServiceRole 使用
+- Base44 RLS 配置 - Conversation 实体权限设置
+
+---
+
 ### 案例：Base44 实体数据嵌套导致监控数据读取失败（2026-01-11）
 
 **案例背景**
