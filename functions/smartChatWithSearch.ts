@@ -92,18 +92,14 @@ const saveCache = async (query, searchType, results, base44) => {
   }
 };
 
-// 执行搜索
-const executeSearch = async (query, searchType) => {
-  // 这里集成实际的搜索API
-  // 为了演示，返回模拟数据
-  return {
-    query,
-    results: [
-      { title: '搜索结果1', snippet: '相关内容...', url: 'https://example.com/1' },
-      { title: '搜索结果2', snippet: '相关内容...', url: 'https://example.com/2' }
-    ],
-    timestamp: new Date().toISOString()
-  };
+/**
+ * @deprecated 联网搜索现在通过 Claude API web_search tool 实现
+ * 此函数保留仅作为缓存层数据结构参考，实际搜索请使用 callAIModel 的 force_web_search 参数
+ * @see callAIModel.ts - force_web_search 参数
+ */
+const executeSearch = async (_query: string, _searchType: string) => {
+  log.warn('[Search] executeSearch is deprecated, use force_web_search in callAIModel instead');
+  throw new Error('Deprecated: Use force_web_search in callAIModel instead');
 };
 
 Deno.serve(async (req) => {
@@ -202,14 +198,31 @@ Deno.serve(async (req) => {
           taskClassification = classifyRes.data;
           shouldUpdateSessionTaskType = taskClassification.should_update_session_task_type;
 
-          // 根据任务分类结果选择模型
-          if (taskClassification.model_id) {
-            const classifiedModel = models.find(m =>
-              m.model_id === taskClassification.model_id ||
-              m.model_id.includes(taskClassification.recommended_model)
-            );
+          // 【P1修复】增强模型匹配逻辑，解决ID格式不一致问题
+          if (taskClassification.model_id || taskClassification.recommended_model) {
+            const targetModelId = (taskClassification.model_id || '').toLowerCase();
+            const recommendedModel = (taskClassification.recommended_model || '').toLowerCase();
+
+            const classifiedModel = models.find(m => {
+              const dbModelId = (m.model_id || '').toLowerCase();
+
+              // 精确匹配
+              if (dbModelId === targetModelId) return true;
+
+              // 包含匹配（数据库model_id包含推荐模型名，如 "haiku" 或 "sonnet"）
+              if (recommendedModel && dbModelId.includes(recommendedModel)) return true;
+
+              // 反向包含匹配（推荐模型ID包含数据库model_id）
+              if (targetModelId && targetModelId.includes(dbModelId)) return true;
+
+              return false;
+            });
+
             if (classifiedModel && classifiedModel.is_active) {
               selectedModel = classifiedModel;
+              log.info('[Chat] Model selected by classifier:', classifiedModel.model_id);
+            } else {
+              log.warn('[Chat] Classifier model not found in DB:', targetModelId, recommendedModel);
             }
           }
         }
