@@ -44,6 +44,67 @@
 
 ---
 
+### ✅ 问题已修复：功能模块跳转重复发送请求（2026-01-13）
+
+**症状**
+- 点击功能模块"使用"按钮跳转对话时，同时触发多次发送请求
+- 数据库创建 2-4 条重复对话记录
+- 用户积分被重复扣除
+
+**根本原因**
+React 18 StrictMode 会故意 mount → unmount → mount 组件两次（用于检测不纯副作用）。
+组件级的 `useRef` 在重新 mount 时会被重置为初始值，导致防重复检查失效。
+
+```
+Mount #1: autoSentRef.current = false → 设为 true → 发送请求
+卸载：组件被销毁
+Mount #2: autoSentRef = useRef(false) → 又是 false → 再次发送请求
+```
+
+**修复方案**（`src/components/hooks/useChatState.jsx:41-60`）
+
+```javascript
+// 【关键】使用模块级变量，防止 StrictMode 双重渲染导致重复发送
+// 问题：StrictMode 会 mount -> unmount -> mount，导致组件级 useRef 被重置
+// 解决：模块级变量在组件重新创建时仍能保持状态
+let globalAutoSendTriggered = false;
+
+export function useChatState() {
+  // 组件卸载时重置全局标记（仅在真正离开页面时）
+  useEffect(() => {
+    return () => {
+      setTimeout(() => {
+        if (!window.location.href.includes('auto_start=true')) {
+          globalAutoSendTriggered = false;
+        }
+      }, 200);  // 延迟重置，让 StrictMode 的快速重挂载保留状态
+    };
+  }, []);
+
+  // 自动发送时检查全局标记
+  useEffect(() => {
+    if (globalAutoSendTriggered) return;  // 全局防重复
+    if (autoSentRef.current) return;      // 组件级防重复
+
+    if (shouldAutoSend) {
+      globalAutoSendTriggered = true;
+      autoSentRef.current = true;
+      // ... 发送逻辑
+    }
+  }, [...]);
+}
+```
+
+**关键技术点**
+- 模块级变量（`let`）不会因组件重新创建而重置
+- 延迟 200ms 重置，让 StrictMode 的快速重挂载有机会保留状态
+- 真正离开页面（URL 无 `auto_start=true`）时才重置，允许用户再次使用功能模块
+
+**相关文件**
+- `src/components/hooks/useChatState.jsx` - globalAutoSendTriggered 模块级变量
+
+---
+
 ### ✅ 问题已修复：系统提示词跨对话串联（2026-01-11）
 
 **症状**

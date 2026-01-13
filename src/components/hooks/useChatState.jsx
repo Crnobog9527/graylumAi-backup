@@ -38,33 +38,21 @@ const defaultSettings = {
   showTokenUsageStats: false
 };
 
-// 【诊断用】模块级变量，用于追踪组件实例和发送状态
-let globalAutoSendTriggered = false;  // 跨组件实例的发送标记
-let mountCount = 0;  // 追踪 mount 次数
+// 【修复】模块级变量，防止 React 18 StrictMode 双重渲染导致的重复发送
+// 问题：StrictMode 会 mount -> unmount -> mount 组件，导致组件级 useRef 被重置
+// 解决：使用模块级变量，在组件重新创建时仍能保持状态
+let globalAutoSendTriggered = false;
 
 export function useChatState() {
   const queryClient = useQueryClient();
 
-  // 【诊断用】组件实例 ID，用于追踪 React StrictMode 双重渲染
-  const componentInstanceId = useRef(Math.random().toString(36).substr(2, 9));
-  mountCount++;
-  console.log(`[Diagnosis] 🔵 useChatState mount #${mountCount}, instance: ${componentInstanceId.current}`);
-  console.log(`[Diagnosis] 🔵 当前 globalAutoSendTriggered: ${globalAutoSendTriggered}`);
-
-  // 【诊断用】组件卸载时的日志，并在正常页面切换时重置全局标记
+  // 组件卸载时重置全局标记（仅在真正离开页面时）
   useEffect(() => {
-    const currentUrl = window.location.href;
-    console.log(`[Diagnosis] 🟢 组件 ${componentInstanceId.current} 已挂载, URL: ${currentUrl}`);
-
     return () => {
-      console.log(`[Diagnosis] 🔴 组件 ${componentInstanceId.current} 正在卸载`);
       // 延迟重置，让 StrictMode 的快速重新挂载有机会保留状态
-      // 如果是真正的页面切换（超过 100ms），则重置标记
       setTimeout(() => {
-        const newUrl = window.location.href;
         // 如果 URL 不再包含 auto_start=true，说明是正常流程或已处理完
-        if (!newUrl.includes('auto_start=true')) {
-          console.log('[Diagnosis] 🔄 重置 globalAutoSendTriggered (URL 无 auto_start)');
+        if (!window.location.href.includes('auto_start=true')) {
           globalAutoSendTriggered = false;
         }
       }, 200);
@@ -617,71 +605,36 @@ export function useChatState() {
     const moduleId = urlParams.get('module_id');
     const autoStart = urlParams.get('auto_start');
 
-    // 【诊断日志 - 增强版】
-    console.log('[AutoSend] ==========================================');
-    console.log('[AutoSend] 🔍 useEffect 触发');
-    console.log('[AutoSend] 📌 组件实例 ID:', componentInstanceId.current);
-    console.log('[AutoSend] 📌 全局 mount 次数:', mountCount);
-    console.log('[AutoSend] 📌 globalAutoSendTriggered:', globalAutoSendTriggered);
-    console.log('[AutoSend] 📌 autoSentRef.current:', autoSentRef.current);
-    console.log('[AutoSend] 📌 URL auto_start:', autoStart);
-    console.log('[AutoSend] 📌 URL module_id:', moduleId);
-    console.log('[AutoSend] 📌 currentConversation:', currentConversation?.id || 'null');
-    console.log('[AutoSend] 📌 messages.length:', messages.length);
-    console.log('[AutoSend] 📌 isStreaming:', isStreaming);
-    console.log('[AutoSend] 📌 isStreamingRef.current:', isStreamingRef.current);
-
-    // 【诊断】检查是否是 StrictMode 重复 mount
-    if (autoSentRef.current) {
-      console.log('[AutoSend] ⚠️ autoSentRef 已为 true，但这是组件实例级别的');
-    }
-    if (globalAutoSendTriggered) {
-      console.log('[AutoSend] ✗ globalAutoSendTriggered 已为 true，跳过（全局防重复生效）');
-      return;
-    }
-
-    // 如果已经自动发送过，直接返回
-    if (autoSentRef.current) {
-      console.log('[AutoSend] ✗ 已经发送过（组件级 ref），跳过');
-      return;
-    }
+    // 【修复】使用模块级变量检查，防止 React 18 StrictMode 双重渲染导致重复发送
+    if (globalAutoSendTriggered) return;
+    if (autoSentRef.current) return;
 
     // 只有当 auto_start=true、有 moduleId、没有当前对话、且消息为空时才自动发送
     const shouldAutoSend = autoStart === 'true' && moduleId && !currentConversation && messages.length === 0 && !isStreaming;
-    console.log('[AutoSend] 📊 shouldAutoSend:', shouldAutoSend);
 
     if (shouldAutoSend) {
-      // 【诊断】立即设置全局标记，防止 StrictMode 双重触发
+      // 【关键】立即设置标记，防止重复触发
       globalAutoSendTriggered = true;
-      autoSentRef.current = true;  // 标记已经触发过
-      console.log('[AutoSend] ✓ 开始自动发送流程');
-      console.log('[AutoSend] ✓ 已设置 globalAutoSendTriggered = true');
+      autoSentRef.current = true;
 
       const autoSendMessage = async () => {
         try {
-          console.log('[AutoSend] 正在获取模块:', moduleId);
           const modules = await base44.entities.PromptModule.filter({ id: moduleId });
-          console.log('[AutoSend] 获取到模块数量:', modules.length);
 
           if (modules.length > 0) {
             const module = modules[0];
             const userPrompt = module.user_prompt_template || '';
-            console.log('[AutoSend] 模块标题:', module.title);
-            console.log('[AutoSend] user_prompt_template:', userPrompt ? userPrompt.slice(0, 50) + '...' : '(空)');
 
-            // 清除 URL 中的 auto_start 参数，避免重复触发
+            // 【关键】立即清除 URL 中的 auto_start 参数，防止重复触发
             const newUrl = window.location.pathname + '?module_id=' + moduleId;
             window.history.replaceState({}, '', newUrl);
 
             // 如果有用户提示词模板，自动填充并发送
             if (userPrompt && userPrompt.trim()) {
-              console.log('[AutoSend] ✓ 有用户提示词，准备发送');
               setInputMessage(userPrompt);
 
               // 使用 setTimeout 确保 inputMessage 更新后再发送
               setTimeout(() => {
-                console.log('[AutoSend] setTimeout 触发，开始发送消息');
-                // 创建用户消息
                 const userMessage = {
                   role: 'user',
                   content: userPrompt,
@@ -691,19 +644,13 @@ export function useChatState() {
                 setMessages([userMessage]);
                 setInputMessage('');
                 setIsStreaming(true);
-                isStreamingRef.current = true;  // 【关键修复】同步设置 ref
+                isStreamingRef.current = true;
 
-                // 调用 API
-                const apiCallTimestamp = new Date().toISOString();
-                console.log('[AutoSend] 🚀 调用 smartChatWithSearch API');
-                console.log('[AutoSend] 🕐 API 调用时间:', apiCallTimestamp);
-                console.log('[AutoSend] 🔖 组件实例:', componentInstanceId.current);
                 base44.functions.invoke('smartChatWithSearch', {
                   message: userPrompt,
                   conversation_id: null,
                   system_prompt: module.system_prompt || ''
                 }).then(response => {
-                  console.log('[AutoSend] API 响应:', response?.data ? '成功' : '失败');
                   const responseData = response.data;
                   if (responseData && !responseData.error) {
                     const assistantMessage = {
@@ -717,11 +664,8 @@ export function useChatState() {
 
                     setMessages(prev => [...prev, assistantMessage]);
 
-                    // 更新对话
                     if (responseData.conversation_id) {
-                      // 【关键修复】立即更新 ref
                       conversationIdRef.current = responseData.conversation_id;
-                      console.log('[AutoSend] 更新 conversationIdRef:', responseData.conversation_id);
 
                       const newConv = {
                         id: responseData.conversation_id,
@@ -732,21 +676,13 @@ export function useChatState() {
                         is_archived: false
                       };
                       setCurrentConversation(newConv);
-                      // 延迟后强制刷新对话列表，多次尝试确保数据同步
-                      setTimeout(() => {
-                        console.log('[useChatState] First refetch attempt (auto)...');
-                        refetchConversations();
-                      }, 500);
-                      setTimeout(() => {
-                        console.log('[useChatState] Second refetch attempt (auto)...');
-                        refetchConversations();
-                      }, 1500);
+                      // 延迟后刷新对话列表
+                      setTimeout(() => refetchConversations(), 500);
+                      setTimeout(() => refetchConversations(), 1500);
                     }
-                  } else {
-                    console.log('[AutoSend] API 返回错误:', responseData?.error);
                   }
                 }).catch(error => {
-                  console.error('[AutoSend] Auto-send failed:', error);
+                  console.error('[AutoSend] Failed:', error);
                   setMessages(prev => [...prev, {
                     role: 'assistant',
                     content: `抱歉，发送失败：${error.message}`,
@@ -755,25 +691,18 @@ export function useChatState() {
                   }]);
                 }).finally(() => {
                   setIsStreaming(false);
-                  isStreamingRef.current = false;  // 【关键修复】同步重置 ref
+                  isStreamingRef.current = false;
                 });
               }, 100);
-            } else {
-              console.log('[AutoSend] ✗ 用户提示词为空，不发送');
             }
-          } else {
-            console.log('[AutoSend] ✗ 未找到模块');
           }
         } catch (e) {
-          console.error('[AutoSend] Failed to auto-send message:', e);
+          console.error('[AutoSend] Failed to auto-send:', e);
         }
       };
 
       autoSendMessage();
-    } else {
-      console.log('[AutoSend] ✗ 条件不满足，不触发自动发送');
     }
-    console.log('[AutoSend] ====================================');
   }, [messages.length, currentConversation, isStreaming, queryClient]);
 
   return {
