@@ -508,11 +508,22 @@ Deno.serve(async (req) => {
       const systemTokens = estimateTokens(finalSystemPrompt);
       const shouldCacheSystem = systemTokens >= CACHE_MIN_TOKENS;
 
-      const requestBody = {
+      const requestBody: Record<string, unknown> = {
         model: model.model_id,
         max_tokens: model.max_tokens || 4096,
         messages: anthropicMessages
       };
+
+      // 【P0修复】添加 web_search tool 支持
+      if (force_web_search === true) {
+        requestBody.tools = [{
+          type: 'web_search',
+          name: 'web_search',
+          max_uses: 5
+        }];
+        requestBody.tool_choice = { type: 'auto' };
+        log.info('[AI] Web search enabled for official Anthropic API');
+      }
 
       // 如果系统提示词足够长，启用 Prompt Caching
       if (finalSystemPrompt) {
@@ -543,7 +554,27 @@ Deno.serve(async (req) => {
       }
 
       const data = await res.json();
-      responseText = data.content[0].text;
+
+      // 【P0修复】处理可能的 tool_use 响应格式
+      // Claude web_search 返回格式可能包含多个 content blocks
+      responseText = '';
+      let webSearchExecuted = false;
+
+      if (data.content && Array.isArray(data.content)) {
+        for (const block of data.content) {
+          if (block.type === 'text') {
+            responseText += block.text;
+          } else if (block.type === 'tool_use' && block.name === 'web_search') {
+            webSearchExecuted = true;
+            log.info('[AI] Web search tool executed:', block.input?.query || 'unknown query');
+          }
+        }
+      }
+
+      // 兼容旧格式
+      if (!responseText && data.content?.[0]?.text) {
+        responseText = data.content[0].text;
+      }
 
       // Anthropic 返回 usage（包含缓存统计）
       let cachedTokens = 0;
@@ -582,7 +613,8 @@ Deno.serve(async (req) => {
         output_credits: outputCredits,
         credits_used: inputCredits + outputCredits,
         usage: data.usage || null,
-        web_search_enabled: false,
+        web_search_enabled: force_web_search === true,  // 【P0修复】动态返回搜索状态
+        web_search_executed: webSearchExecuted,         // 实际是否执行了搜索
         // 缓存统计信息
         cache_enabled: shouldCacheSystem,
         cached_tokens: cachedTokens,
