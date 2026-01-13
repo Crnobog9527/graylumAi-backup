@@ -285,9 +285,12 @@ export function useChatState() {
           const convMessages = existingConv.messages ? JSON.parse(JSON.stringify(existingConv.messages)) : [];
           setCurrentConversation({ ...existingConv, messages: convMessages });
           setMessages(convMessages);
+          setIsStreaming(false);
+          isStreamingRef.current = false;
           conversationIdRef.current = convIdFromUrl;
 
-          // 清除 URL 参数
+          // 清除 pending 状态和 URL 参数
+          sessionStorage.removeItem('pendingAutoSendMessage');
           currentUrlParams.delete('conv_id');
           currentUrlParams.delete('module_id');
           const newUrl = currentUrlParams.toString()
@@ -306,9 +309,12 @@ export function useChatState() {
             const convMessages = convData.messages ? JSON.parse(JSON.stringify(convData.messages)) : [];
             setCurrentConversation({ ...convData, messages: convMessages });
             setMessages(convMessages);
+            setIsStreaming(false);
+            isStreamingRef.current = false;
             conversationIdRef.current = convIdFromUrl;
 
-            // 清除 URL 参数
+            // 清除 pending 状态和 URL 参数
+            sessionStorage.removeItem('pendingAutoSendMessage');
             currentUrlParams.delete('conv_id');
             currentUrlParams.delete('module_id');
             const newUrl = currentUrlParams.toString()
@@ -337,6 +343,48 @@ export function useChatState() {
       clearTimeout(timeoutId);
     };
   }, [currentConversation, user, conversations, refetchConversations]);
+
+  // 【即时反馈】恢复 pending 状态：显示用户消息和"AI 正在回复"状态
+  // 解决：StrictMode 重挂载导致状态丢失，用户看不到任何反馈的问题
+  useEffect(() => {
+    // 如果已经有当前对话或消息，不需要恢复
+    if (currentConversation || messages.length > 0) {
+      return;
+    }
+
+    // 检查 URL 是否有 module_id（表示正在等待自动发送）
+    const urlParams = new URLSearchParams(window.location.search);
+    const moduleId = urlParams.get('module_id');
+    if (!moduleId) {
+      return;
+    }
+
+    // 检查 sessionStorage 中是否有 pending 消息
+    const pendingData = sessionStorage.getItem('pendingAutoSendMessage');
+    if (!pendingData) {
+      return;
+    }
+
+    try {
+      const { userMessage, moduleId: pendingModuleId, timestamp } = JSON.parse(pendingData);
+
+      // 验证是同一个模块且不是太旧（5分钟内）
+      if (pendingModuleId === moduleId && (Date.now() - timestamp) < 5 * 60 * 1000) {
+        console.log('[即时反馈] 从 sessionStorage 恢复 pending 状态');
+
+        // 显示用户消息和"正在回复"状态
+        setMessages([userMessage]);
+        setIsStreaming(true);
+        isStreamingRef.current = true;
+      } else {
+        // 数据过期或不匹配，清除
+        sessionStorage.removeItem('pendingAutoSendMessage');
+      }
+    } catch (e) {
+      console.error('[即时反馈] 解析 pending 数据失败:', e);
+      sessionStorage.removeItem('pendingAutoSendMessage');
+    }
+  }, [currentConversation, messages.length]);
 
   // 获取模型列表
   const { data: models = [] } = useQuery({
@@ -861,6 +909,16 @@ export function useChatState() {
                 timestamp: new Date().toISOString()
               };
 
+              // 【即时反馈】在 API 调用前保存 pending 状态到 sessionStorage
+              // 这样即使 StrictMode 重挂载组件，新组件也能显示用户消息和"正在回复"状态
+              sessionStorage.setItem('pendingAutoSendMessage', JSON.stringify({
+                userMessage,
+                moduleId,
+                moduleTitle: module.title,
+                timestamp: Date.now()
+              }));
+              console.log('[AutoSend] 已保存 pending 消息到 sessionStorage');
+
               // 立即更新 UI 状态
               setMessages([userMessage]);
               setInputMessage('');
@@ -920,6 +978,9 @@ export function useChatState() {
                     setCurrentConversation(newConv);
                     setMessages([userMessage, assistantMessage]);
                     console.log('[AutoSend] 设置当前对话');
+
+                    // 清除 pending 状态
+                    sessionStorage.removeItem('pendingAutoSendMessage');
 
                     // 刷新对话列表，URL 监听器会在列表更新后自动恢复对话
                     setTimeout(() => {
