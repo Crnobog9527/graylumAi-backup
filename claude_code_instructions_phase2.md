@@ -65,7 +65,7 @@ export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);
 ```
 
 **重要提示**: 请在 Vercel 项目的环境变量中添加 `SUPABASE_SERVICE_ROLE_KEY`，值为您自己的 Supabase 服务角色密钥。
-```
+
 
 **预期输出**:
 - 文件写入成功。
@@ -123,7 +123,7 @@ export const userRouter = router({
     return userProfile?.credits ?? 0;
   }),
 });
-```
+
 
 **请将 `packages/api/src/root.ts` 更新为：**
 
@@ -139,7 +139,7 @@ export const appRouter = router({
 
 export type AppRouter = typeof appRouter;
 ```
-```
+
 
 **预期输出**:
 - 文件创建和更新成功。
@@ -203,7 +203,7 @@ export const creditsRouter = router({
       return { success: true, newCredits };
     }),
 });
-```
+
 
 **请将 `packages/api/src/root.ts` 更新为：**
 
@@ -223,7 +223,7 @@ export type AppRouter = typeof appRouter;
 ```
 
 **说明**: 真正的积分操作需要数据库事务来保证原子性。Supabase 中，这通常通过数据库函数（RPC）或 Edge Functions 来实现。这里的实现是一个简化版，用于演示 tRPC 的基本用法。
-```
+
 
 **预期输出**:
 - 文件创建和更新成功。
@@ -364,7 +364,7 @@ export const invitations = pgTable('invitations', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 ```
-```
+
 
 **预期输出**:
 - 文件写入成功。
@@ -531,7 +531,7 @@ export const chatRouter = router({
 
 **给 Claude Code 的指令**:
 
-```
+
 请在 `/home/ubuntu/graylumAi-refactor/apps/web/src/components/` 目录下创建 `chat` 目录，并添加以下两个组件文件。
 
 **1. `chat/ConversationList.tsx` 文件内容：**
@@ -566,7 +566,7 @@ export function ConversationList({ onSelectConversation }: ConversationListProps
     </div>
   );
 }
-```
+
 
 **2. `chat/ChatInterface.tsx` 文件内容：**
 
@@ -626,7 +626,7 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
   );
 }
 ```
-```
+
 
 **预期输出**:
 - 文件创建成功。
@@ -689,7 +689,7 @@ export default function HomePage() {
 
 **给 Claude Code 的指令**:
 
-```
+
 请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令：
 
 git add . && \
