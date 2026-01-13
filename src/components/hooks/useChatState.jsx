@@ -606,98 +606,133 @@ export function useChatState() {
     const autoStart = urlParams.get('auto_start');
 
     // 【修复】使用模块级变量检查，防止 React 18 StrictMode 双重渲染导致重复发送
-    if (globalAutoSendTriggered) return;
-    if (autoSentRef.current) return;
+    if (globalAutoSendTriggered) {
+      console.log('[AutoSend] 跳过：globalAutoSendTriggered 已为 true');
+      return;
+    }
+    if (autoSentRef.current) {
+      console.log('[AutoSend] 跳过：autoSentRef 已为 true');
+      return;
+    }
 
     // 只有当 auto_start=true、有 moduleId、没有当前对话、且消息为空时才自动发送
     const shouldAutoSend = autoStart === 'true' && moduleId && !currentConversation && messages.length === 0 && !isStreaming;
+
+    console.log('[AutoSend] 检查条件:', {
+      autoStart,
+      moduleId: !!moduleId,
+      currentConversation: !!currentConversation,
+      messagesLength: messages.length,
+      isStreaming,
+      shouldAutoSend
+    });
 
     if (shouldAutoSend) {
       // 【关键】立即设置标记，防止重复触发
       globalAutoSendTriggered = true;
       autoSentRef.current = true;
 
+      // 【关键】立即清除 URL 中的 auto_start 参数，防止刷新后重复触发
+      const newUrl = window.location.pathname + '?module_id=' + moduleId;
+      window.history.replaceState({}, '', newUrl);
+      console.log('[AutoSend] 已清除 URL auto_start 参数');
+
       const autoSendMessage = async () => {
         try {
+          console.log('[AutoSend] 开始获取模块:', moduleId);
           const modules = await base44.entities.PromptModule.filter({ id: moduleId });
 
           if (modules.length > 0) {
             const module = modules[0];
             const userPrompt = module.user_prompt_template || '';
-
-            // 【关键】立即清除 URL 中的 auto_start 参数，防止重复触发
-            const newUrl = window.location.pathname + '?module_id=' + moduleId;
-            window.history.replaceState({}, '', newUrl);
+            console.log('[AutoSend] 获取到模块:', module.title, '用户提示词长度:', userPrompt.length);
 
             // 如果有用户提示词模板，自动填充并发送
             if (userPrompt && userPrompt.trim()) {
-              setInputMessage(userPrompt);
+              console.log('[AutoSend] 准备发送消息');
 
-              // 使用 setTimeout 确保 inputMessage 更新后再发送
-              setTimeout(() => {
-                const userMessage = {
-                  role: 'user',
-                  content: userPrompt,
-                  timestamp: new Date().toISOString()
-                };
+              // 创建用户消息
+              const userMessage = {
+                role: 'user',
+                content: userPrompt,
+                timestamp: new Date().toISOString()
+              };
 
-                setMessages([userMessage]);
-                setInputMessage('');
-                setIsStreaming(true);
-                isStreamingRef.current = true;
+              // 立即更新 UI 状态
+              setMessages([userMessage]);
+              setInputMessage('');
+              setIsStreaming(true);
+              isStreamingRef.current = true;
+              console.log('[AutoSend] UI 状态已更新，开始 API 调用');
 
-                base44.functions.invoke('smartChatWithSearch', {
+              try {
+                const response = await base44.functions.invoke('smartChatWithSearch', {
                   message: userPrompt,
                   conversation_id: null,
                   system_prompt: module.system_prompt || ''
-                }).then(response => {
-                  const responseData = response.data;
-                  if (responseData && !responseData.error) {
-                    const assistantMessage = {
-                      role: 'assistant',
-                      content: responseData.response || '',
-                      timestamp: new Date().toISOString(),
-                      credits_used: responseData.credits_used,
-                      input_tokens: responseData.input_tokens,
-                      output_tokens: responseData.output_tokens
-                    };
-
-                    setMessages(prev => [...prev, assistantMessage]);
-
-                    if (responseData.conversation_id) {
-                      conversationIdRef.current = responseData.conversation_id;
-
-                      const newConv = {
-                        id: responseData.conversation_id,
-                        title: userPrompt.slice(0, 50),
-                        messages: [userMessage, assistantMessage],
-                        created_date: new Date().toISOString(),
-                        updated_date: new Date().toISOString(),
-                        is_archived: false
-                      };
-                      setCurrentConversation(newConv);
-                      // 延迟后刷新对话列表
-                      setTimeout(() => refetchConversations(), 500);
-                      setTimeout(() => refetchConversations(), 1500);
-                    }
-                  }
-                }).catch(error => {
-                  console.error('[AutoSend] Failed:', error);
-                  setMessages(prev => [...prev, {
-                    role: 'assistant',
-                    content: `抱歉，发送失败：${error.message}`,
-                    timestamp: new Date().toISOString(),
-                    isError: true
-                  }]);
-                }).finally(() => {
-                  setIsStreaming(false);
-                  isStreamingRef.current = false;
                 });
-              }, 100);
+
+                console.log('[AutoSend] API 响应:', response?.data ? '成功' : '失败');
+                const responseData = response.data;
+
+                if (responseData && !responseData.error) {
+                  const assistantMessage = {
+                    role: 'assistant',
+                    content: responseData.response || '',
+                    timestamp: new Date().toISOString(),
+                    credits_used: responseData.credits_used,
+                    input_tokens: responseData.input_tokens,
+                    output_tokens: responseData.output_tokens
+                  };
+
+                  setMessages(prev => {
+                    console.log('[AutoSend] 更新消息列表，当前长度:', prev.length);
+                    return [...prev, assistantMessage];
+                  });
+
+                  if (responseData.conversation_id) {
+                    conversationIdRef.current = responseData.conversation_id;
+                    console.log('[AutoSend] 设置 conversation_id:', responseData.conversation_id);
+
+                    const newConv = {
+                      id: responseData.conversation_id,
+                      title: userPrompt.slice(0, 50),
+                      messages: [userMessage, assistantMessage],
+                      created_date: new Date().toISOString(),
+                      updated_date: new Date().toISOString(),
+                      is_archived: false
+                    };
+                    setCurrentConversation(newConv);
+                    console.log('[AutoSend] 设置当前对话');
+
+                    // 延迟后刷新对话列表
+                    setTimeout(() => refetchConversations(), 500);
+                    setTimeout(() => refetchConversations(), 1500);
+                  }
+                } else {
+                  console.error('[AutoSend] API 返回错误:', responseData?.error);
+                }
+              } catch (apiError) {
+                console.error('[AutoSend] API 调用失败:', apiError);
+                setMessages(prev => [...prev, {
+                  role: 'assistant',
+                  content: `抱歉，发送失败：${apiError.message}`,
+                  timestamp: new Date().toISOString(),
+                  isError: true
+                }]);
+              } finally {
+                setIsStreaming(false);
+                isStreamingRef.current = false;
+                console.log('[AutoSend] 完成，isStreaming 已重置');
+              }
+            } else {
+              console.log('[AutoSend] 用户提示词为空，不发送');
             }
+          } else {
+            console.log('[AutoSend] 未找到模块');
           }
         } catch (e) {
-          console.error('[AutoSend] Failed to auto-send:', e);
+          console.error('[AutoSend] 获取模块失败:', e);
         }
       };
 
