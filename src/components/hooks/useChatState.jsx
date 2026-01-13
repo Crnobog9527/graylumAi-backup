@@ -69,6 +69,32 @@ export function useChatState() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
 
+  // 【修复】检查 sessionStorage 中是否有待恢复的对话状态
+  // 解决 React 18 StrictMode 导致的状态丢失问题
+  useEffect(() => {
+    const pendingData = sessionStorage.getItem('pendingAutoSendConversation');
+    if (pendingData) {
+      try {
+        const data = JSON.parse(pendingData);
+        console.log('[AutoSend] 从 sessionStorage 恢复对话状态:', data.id);
+        setCurrentConversation({
+          id: data.id,
+          title: data.title,
+          messages: data.messages,
+          created_date: data.created_date,
+          updated_date: data.updated_date,
+          is_archived: false
+        });
+        setMessages(data.messages);
+        conversationIdRef.current = data.id;
+        sessionStorage.removeItem('pendingAutoSendConversation');
+      } catch (e) {
+        console.error('[AutoSend] 恢复状态失败:', e);
+        sessionStorage.removeItem('pendingAutoSendConversation');
+      }
+    }
+  }, []);
+
   // 选择模式
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedConversations, setSelectedConversations] = useState([]);
@@ -212,6 +238,13 @@ export function useChatState() {
     setFileContents([]);
     conversationIdRef.current = null;  // 【关键修复】重置 ref
 
+    // 【修复】清除 sessionStorage 中的待恢复状态
+    sessionStorage.removeItem('pendingAutoSendConversation');
+
+    // 【修复】重置自动发送标记，允许新的功能模块自动发送
+    globalAutoSendTriggered = false;
+    autoSentRef.current = false;
+
     // 【修复 Bug 1】清除 URL 中的 module_id 参数，防止系统提示词跨对话串联
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('module_id')) {
@@ -227,6 +260,26 @@ export function useChatState() {
 
   // 选择对话
   const handleSelectConversation = useCallback(async (conv) => {
+    console.log('[handleSelectConversation] 选择对话:', conv.id, '消息数:', conv.messages?.length || 0);
+
+    // 【修复】清除 sessionStorage 中的待恢复状态，防止状态冲突
+    sessionStorage.removeItem('pendingAutoSendConversation');
+
+    // 【修复】重置自动发送标记
+    globalAutoSendTriggered = false;
+    autoSentRef.current = false;
+
+    // 【修复】清除 URL 中的 module_id 参数
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('module_id')) {
+      urlParams.delete('module_id');
+      urlParams.delete('auto_start');
+      const newUrl = urlParams.toString()
+        ? `${window.location.pathname}?${urlParams.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+
     setCurrentConversation(conv);
     setMessages(conv.messages || []);
     setEditingTitleValue(conv.title || '');
@@ -694,14 +747,20 @@ export function useChatState() {
                     conversationIdRef.current = responseData.conversation_id;
                     console.log('[AutoSend] 设置 conversation_id:', responseData.conversation_id);
 
+                    const now = new Date().toISOString();
                     const newConv = {
                       id: responseData.conversation_id,
                       title: userPrompt.slice(0, 50),
                       messages: [userMessage, assistantMessage],
-                      created_date: new Date().toISOString(),
-                      updated_date: new Date().toISOString(),
+                      created_date: now,
+                      updated_date: now,
                       is_archived: false
                     };
+
+                    // 【修复】保存到 sessionStorage，防止 StrictMode 状态丢失
+                    sessionStorage.setItem('pendingAutoSendConversation', JSON.stringify(newConv));
+                    console.log('[AutoSend] 已保存到 sessionStorage');
+
                     setCurrentConversation(newConv);
                     console.log('[AutoSend] 设置当前对话');
 
