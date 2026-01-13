@@ -69,42 +69,55 @@ export function useChatState() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
 
-  // 【修复】使用 state 触发 sessionStorage 恢复检查
-  const [pendingRestore, setPendingRestore] = useState(0);
-
-  // 【修复】检查 sessionStorage 中是否有待恢复的对话状态
+  // 【重构方案 A】URL 参数驱动：监听 URL 中的 conversation_id 并自动加载对话
   // 解决 React 18 StrictMode 导致的状态丢失问题
+  // 原理：URL 参数不受组件重挂载影响，比 sessionStorage/useState 更可靠
   useEffect(() => {
-    const checkAndRestore = () => {
-      const pendingData = sessionStorage.getItem('pendingAutoSendConversation');
-      if (pendingData && !currentConversation) {
-        try {
-          const data = JSON.parse(pendingData);
-          console.log('[AutoSend] 从 sessionStorage 恢复对话状态:', data.id);
-          setCurrentConversation({
-            id: data.id,
-            title: data.title,
-            messages: data.messages,
-            created_date: data.created_date,
-            updated_date: data.updated_date,
-            is_archived: false
-          });
-          setMessages(data.messages);
-          conversationIdRef.current = data.id;
-          sessionStorage.removeItem('pendingAutoSendConversation');
-        } catch (e) {
-          console.error('[AutoSend] 恢复状态失败:', e);
-          sessionStorage.removeItem('pendingAutoSendConversation');
-        }
-      }
-    };
+    const urlParams = new URLSearchParams(window.location.search);
+    const convIdFromUrl = urlParams.get('conv_id');
 
-    checkAndRestore();
+    // 如果 URL 没有 conv_id，不执行任何操作
+    if (!convIdFromUrl) return;
 
-    // 延迟再检查一次，确保异步操作完成后能恢复
-    const timer = setTimeout(checkAndRestore, 300);
-    return () => clearTimeout(timer);
-  }, [currentConversation, pendingRestore]);
+    // 如果当前对话 ID 已经匹配 URL 中的 conv_id，说明状态已正确，清除 URL 参数
+    if (currentConversation?.id === convIdFromUrl) {
+      console.log('[URL驱动] 当前对话已匹配，清除 URL conv_id:', convIdFromUrl);
+      urlParams.delete('conv_id');
+      const newUrl = urlParams.toString()
+        ? `${window.location.pathname}?${urlParams.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      return;
+    }
+
+    // 如果对话列表还未加载，等待加载完成
+    if (conversations.length === 0) {
+      console.log('[URL驱动] 等待对话列表加载...');
+      return;
+    }
+
+    // 在对话列表中查找目标对话
+    const targetConv = conversations.find(c => c.id === convIdFromUrl);
+    if (targetConv) {
+      console.log('[URL驱动] 从 URL 加载对话:', convIdFromUrl);
+      const convMessages = targetConv.messages ? JSON.parse(JSON.stringify(targetConv.messages)) : [];
+      setCurrentConversation({
+        ...targetConv,
+        messages: convMessages
+      });
+      setMessages(convMessages);
+      conversationIdRef.current = convIdFromUrl;
+
+      // 加载完成后清除 URL 中的 conv_id 参数
+      urlParams.delete('conv_id');
+      const newUrl = urlParams.toString()
+        ? `${window.location.pathname}?${urlParams.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    } else {
+      console.log('[URL驱动] 对话未找到，可能还在刷新列表中:', convIdFromUrl);
+    }
+  }, [conversations, currentConversation]);
 
   // 选择模式
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -249,23 +262,21 @@ export function useChatState() {
     setFileContents([]);
     conversationIdRef.current = null;  // 【关键修复】重置 ref
 
-    // 【修复】清除 sessionStorage 中的待恢复状态
-    sessionStorage.removeItem('pendingAutoSendConversation');
-
     // 【修复】重置自动发送标记，允许新的功能模块自动发送
     globalAutoSendTriggered = false;
     autoSentRef.current = false;
 
-    // 【修复 Bug 1】清除 URL 中的 module_id 参数，防止系统提示词跨对话串联
+    // 【修复】清除 URL 中的所有对话相关参数，防止状态冲突
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('module_id')) {
+    if (urlParams.has('module_id') || urlParams.has('conv_id') || urlParams.has('auto_start')) {
       urlParams.delete('module_id');
       urlParams.delete('auto_start');
+      urlParams.delete('conv_id');
       const newUrl = urlParams.toString()
         ? `${window.location.pathname}?${urlParams.toString()}`
         : window.location.pathname;
       window.history.replaceState({}, '', newUrl);
-      console.log('[handleStartNewChat] 已清除 URL 中的 module_id 参数');
+      console.log('[handleStartNewChat] 已清除 URL 中的对话相关参数');
     }
   }, []);
 
@@ -276,18 +287,16 @@ export function useChatState() {
     console.log('[handleSelectConversation] 选择对话:', conv.id, '消息数:', convMessages.length);
     console.log('[handleSelectConversation] 消息内容:', convMessages.map(m => m.content?.slice(0, 20)));
 
-    // 【修复】清除 sessionStorage 中的待恢复状态，防止状态冲突
-    sessionStorage.removeItem('pendingAutoSendConversation');
-
     // 【修复】重置自动发送标记
     globalAutoSendTriggered = false;
     autoSentRef.current = false;
 
-    // 【修复】清除 URL 中的 module_id 参数
+    // 【修复】清除 URL 中的对话相关参数
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('module_id')) {
+    if (urlParams.has('module_id') || urlParams.has('conv_id') || urlParams.has('auto_start')) {
       urlParams.delete('module_id');
       urlParams.delete('auto_start');
+      urlParams.delete('conv_id');
       const newUrl = urlParams.toString()
         ? `${window.location.pathname}?${urlParams.toString()}`
         : window.location.pathname;
@@ -768,12 +777,13 @@ export function useChatState() {
                   });
 
                   if (responseData.conversation_id) {
-                    conversationIdRef.current = responseData.conversation_id;
-                    console.log('[AutoSend] 设置 conversation_id:', responseData.conversation_id);
+                    const convId = responseData.conversation_id;
+                    conversationIdRef.current = convId;
+                    console.log('[AutoSend] 设置 conversation_id:', convId);
 
                     const now = new Date().toISOString();
                     const newConv = {
-                      id: responseData.conversation_id,
+                      id: convId,
                       title: userPrompt.slice(0, 50),
                       messages: [userMessage, assistantMessage],
                       created_date: now,
@@ -781,20 +791,24 @@ export function useChatState() {
                       is_archived: false
                     };
 
-                    // 【修复】保存到 sessionStorage，防止 StrictMode 状态丢失
-                    sessionStorage.setItem('pendingAutoSendConversation', JSON.stringify(newConv));
-                    console.log('[AutoSend] 已保存到 sessionStorage');
+                    // 【重构方案 A】将 conv_id 添加到 URL，让 URL 驱动的 useEffect 来恢复状态
+                    // 这比 sessionStorage 更可靠，因为 URL 参数不受 StrictMode 重挂载影响
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('conv_id', convId);
+                    const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+                    window.history.replaceState({}, '', newUrl);
+                    console.log('[AutoSend] 已将 conv_id 添加到 URL:', convId);
 
+                    // 先设置本地状态
                     setCurrentConversation(newConv);
                     setMessages([userMessage, assistantMessage]);
                     console.log('[AutoSend] 设置当前对话');
 
-                    // 【修复】触发 sessionStorage 恢复检查
-                    setPendingRestore(prev => prev + 1);
-
-                    // 延迟后刷新对话列表
-                    setTimeout(() => refetchConversations(), 500);
-                    setTimeout(() => refetchConversations(), 1500);
+                    // 刷新对话列表，URL 监听器会在列表更新后自动恢复对话
+                    setTimeout(() => {
+                      console.log('[AutoSend] 刷新对话列表');
+                      refetchConversations();
+                    }, 500);
                   }
                 } else {
                   console.error('[AutoSend] API 返回错误:', responseData?.error);
