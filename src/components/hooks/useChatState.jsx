@@ -107,6 +107,7 @@ export function useChatState() {
   const autoSentRef = useRef(false);  // 跟踪是否已经自动发送过
   const conversationIdRef = useRef(null);  // 【关键修复】同步跟踪 conversation_id，解决异步状态更新竞态条件
   const isStreamingRef = useRef(false);  // 【关键修复】同步跟踪 streaming 状态，防止重复发送
+  const urlConvRetryRef = useRef(0);  // 【修复】URL 驱动加载对话的重试次数
 
   // 获取用户信息
   useEffect(() => {
@@ -179,17 +180,27 @@ export function useChatState() {
     const urlParams = new URLSearchParams(window.location.search);
     const convIdFromUrl = urlParams.get('conv_id');
 
-    // 如果 URL 没有 conv_id，不执行任何操作
-    if (!convIdFromUrl) return;
+    // 如果 URL 没有 conv_id，重置重试计数器并返回
+    if (!convIdFromUrl) {
+      urlConvRetryRef.current = 0;
+      return;
+    }
 
     // 如果当前对话 ID 已经匹配 URL 中的 conv_id，说明状态已正确，清除 URL 参数
     if (currentConversation?.id === convIdFromUrl) {
       console.log('[URL驱动] 当前对话已匹配，清除 URL conv_id:', convIdFromUrl);
+      urlConvRetryRef.current = 0;
       urlParams.delete('conv_id');
       const newUrl = urlParams.toString()
         ? `${window.location.pathname}?${urlParams.toString()}`
         : window.location.pathname;
       window.history.replaceState({}, '', newUrl);
+      return;
+    }
+
+    // 如果用户还未加载，等待用户加载
+    if (!user?.email) {
+      console.log('[URL驱动] 等待用户加载...');
       return;
     }
 
@@ -203,6 +214,7 @@ export function useChatState() {
     const targetConv = conversations.find(c => c.id === convIdFromUrl);
     if (targetConv) {
       console.log('[URL驱动] 从 URL 加载对话:', convIdFromUrl);
+      urlConvRetryRef.current = 0;
       const convMessages = targetConv.messages ? JSON.parse(JSON.stringify(targetConv.messages)) : [];
       setCurrentConversation({
         ...targetConv,
@@ -218,9 +230,25 @@ export function useChatState() {
         : window.location.pathname;
       window.history.replaceState({}, '', newUrl);
     } else {
-      console.log('[URL驱动] 对话未找到，可能还在刷新列表中:', convIdFromUrl);
+      // 【修复】对话未找到时，触发刷新并重试（最多 5 次）
+      // 这解决了旧组件实例调用 refetch 失败的问题
+      if (urlConvRetryRef.current < 5) {
+        urlConvRetryRef.current += 1;
+        console.log('[URL驱动] 对话未找到，触发刷新重试 (' + urlConvRetryRef.current + '/5):', convIdFromUrl);
+        setTimeout(() => {
+          refetchConversations();
+        }, 500);
+      } else {
+        console.log('[URL驱动] 重试次数已达上限，清除 URL conv_id:', convIdFromUrl);
+        urlConvRetryRef.current = 0;
+        urlParams.delete('conv_id');
+        const newUrl = urlParams.toString()
+          ? `${window.location.pathname}?${urlParams.toString()}`
+          : window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
     }
-  }, [conversations, currentConversation]);
+  }, [conversations, currentConversation, refetchConversations, user]);
 
   // 获取模型列表
   const { data: models = [] } = useQuery({
