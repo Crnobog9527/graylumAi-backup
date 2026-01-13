@@ -250,37 +250,93 @@ export function useChatState() {
     }
   }, [conversations, currentConversation, refetchConversations, user]);
 
-  // 【修复】轮询检测 URL 中的 conv_id
+  // 【修复】轮询检测 URL 中的 conv_id，并直接从 API 获取对话
   // 问题：当旧组件异步添加 conv_id 到 URL 时，新组件的 useEffect 不会重新运行
-  // 解决：使用 interval 定期检查 URL，当发现 conv_id 时触发 refetch
+  // 解决：使用 interval 定期检查 URL，当发现 conv_id 时直接从 API 获取对话数据
   useEffect(() => {
     // 只在没有当前对话且用户已加载时启动轮询
     if (currentConversation || !user?.email) {
       return;
     }
 
-    const checkUrlForConvId = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const convIdFromUrl = urlParams.get('conv_id');
+    // 检查是否有 module_id（表示正在等待自动发送）或 conv_id
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasModuleId = urlParams.has('module_id');
+    const hasConvId = urlParams.has('conv_id');
+
+    // 如果没有 module_id 也没有 conv_id，不需要轮询
+    if (!hasModuleId && !hasConvId) {
+      return;
+    }
+
+    console.log('[URL轮询] 启动轮询，检测 conv_id...');
+
+    const checkUrlForConvId = async () => {
+      const currentUrlParams = new URLSearchParams(window.location.search);
+      const convIdFromUrl = currentUrlParams.get('conv_id');
 
       if (convIdFromUrl) {
-        console.log('[URL轮询] 检测到 conv_id，触发 refetch:', convIdFromUrl);
-        refetchConversations();
+        console.log('[URL轮询] 检测到 conv_id:', convIdFromUrl);
+
+        // 先尝试在现有列表中查找
+        const existingConv = conversations.find(c => c.id === convIdFromUrl);
+        if (existingConv) {
+          console.log('[URL轮询] 在列表中找到对话，加载中...');
+          const convMessages = existingConv.messages ? JSON.parse(JSON.stringify(existingConv.messages)) : [];
+          setCurrentConversation({ ...existingConv, messages: convMessages });
+          setMessages(convMessages);
+          conversationIdRef.current = convIdFromUrl;
+
+          // 清除 URL 参数
+          currentUrlParams.delete('conv_id');
+          currentUrlParams.delete('module_id');
+          const newUrl = currentUrlParams.toString()
+            ? `${window.location.pathname}?${currentUrlParams.toString()}`
+            : window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+          return;
+        }
+
+        // 如果列表中没有，直接从 API 获取
+        try {
+          console.log('[URL轮询] 列表中未找到，从 API 获取对话...');
+          const convData = await base44.entities.Conversation.get(convIdFromUrl);
+          if (convData) {
+            console.log('[URL轮询] 从 API 获取成功，加载对话');
+            const convMessages = convData.messages ? JSON.parse(JSON.stringify(convData.messages)) : [];
+            setCurrentConversation({ ...convData, messages: convMessages });
+            setMessages(convMessages);
+            conversationIdRef.current = convIdFromUrl;
+
+            // 清除 URL 参数
+            currentUrlParams.delete('conv_id');
+            currentUrlParams.delete('module_id');
+            const newUrl = currentUrlParams.toString()
+              ? `${window.location.pathname}?${currentUrlParams.toString()}`
+              : window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+
+            // 刷新对话列表以包含新对话
+            refetchConversations();
+          }
+        } catch (e) {
+          console.error('[URL轮询] 从 API 获取对话失败:', e);
+        }
       }
     };
 
-    // 每 500ms 检查一次，持续 5 秒
-    const intervalId = setInterval(checkUrlForConvId, 500);
+    // 每 1 秒检查一次，持续 60 秒（API 调用可能需要较长时间）
+    const intervalId = setInterval(checkUrlForConvId, 1000);
     const timeoutId = setTimeout(() => {
       clearInterval(intervalId);
-      console.log('[URL轮询] 停止轮询（超时）');
-    }, 5000);
+      console.log('[URL轮询] 停止轮询（60秒超时）');
+    }, 60000);
 
     return () => {
       clearInterval(intervalId);
       clearTimeout(timeoutId);
     };
-  }, [currentConversation, user, refetchConversations]);
+  }, [currentConversation, user, conversations, refetchConversations]);
 
   // 获取模型列表
   const { data: models = [] } = useQuery({
