@@ -1,7 +1,7 @@
 # 故障排查手册
 
 <!--
-  最后更新: 2026-01-11
+  最后更新: 2026-01-13
   对应代码文件:
     - src/components/hooks/useChatState.jsx (前端状态问题)
     - functions/smartChatWithSearch.ts (后端聊天问题)
@@ -102,6 +102,137 @@ export function useChatState() {
 
 **相关文件**
 - `src/components/hooks/useChatState.jsx` - globalAutoSendTriggered 模块级变量
+
+---
+
+### ✅ 问题已修复：功能模块跳转后无法实时显示对话状态（2026-01-13）
+
+**症状**
+- 点击功能模块"使用"按钮跳转对话后，页面显示空白
+- 用户需要等待 AI 响应完成后才能看到新对话
+- 需要手动刷新页面才能看到对话状态
+- 用户在等待过程中可能重复点击，导致重复发送
+
+**根本原因**
+
+1. **useEffect 时机问题**：`useEffect` 在组件渲染**之后**才执行，无法在首次渲染时提供即时反馈
+2. **sessionStorage 读取时机**：原来在 useEffect 中读取 pendingAutoSendMessage，但此时组件已经渲染了空状态
+3. **React 18 StrictMode 影响**：mount → unmount → mount 导致状态丢失
+
+```
+用户点击"使用" → 跳转到 /chat?module_id=xxx&auto_start=true
+                    ↓
+组件首次渲染 → useState 初始化为空 [] → 页面显示空白
+                    ↓
+useEffect 执行 → 读取 sessionStorage → 但已经太晚了
+                    ↓
+用户看到空白页面 → 以为功能没生效 → 重复点击
+```
+
+**修复方案**（`src/components/hooks/useChatState.jsx:11-40`）
+
+使用 useState 初始化函数 + useMemo 实现**同步**状态恢复：
+
+```javascript
+// 【关键】模块级函数，在组件初始化时同步读取 sessionStorage
+const getInitialPendingState = () => {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const moduleId = urlParams.get('module_id');
+    if (!moduleId) return { messages: [], isStreaming: false };
+
+    const pendingData = sessionStorage.getItem('pendingAutoSendMessage');
+    if (!pendingData) return { messages: [], isStreaming: false };
+
+    const parsed = JSON.parse(pendingData);
+    const { moduleId: pendingModuleId, timestamp, status, userMessage } = parsed;
+
+    // 验证是否是当前模块的 pending 状态，且未过期（5分钟内）
+    if (pendingModuleId === moduleId && (Date.now() - timestamp) < 5 * 60 * 1000) {
+      console.log('[即时反馈] 初始化时恢复 pending 状态');
+      if (userMessage) {
+        return { messages: [userMessage], isStreaming: true };
+      }
+      return { messages: [], isStreaming: true };
+    }
+    sessionStorage.removeItem('pendingAutoSendMessage');
+    return { messages: [], isStreaming: false };
+  } catch (e) {
+    return { messages: [], isStreaming: false };
+  }
+};
+
+export function useChatState() {
+  // 【关键】useMemo 确保只在首次渲染时执行，且是同步的
+  const initialPendingState = useMemo(() => getInitialPendingState(), []);
+
+  // 使用初始化函数，在组件创建时立即获得正确状态
+  const [messages, setMessages] = useState(initialPendingState.messages);
+  const [isStreaming, setIsStreaming] = useState(initialPendingState.isStreaming);
+  // ...
+}
+```
+
+**配套修复：提前保存 pending 状态**（`src/components/hooks/useChatState.jsx:580-595`）
+
+```javascript
+// 在 AutoSend useEffect 中，立即保存 pending 状态（在任何异步操作之前）
+useEffect(() => {
+  // ... 检查条件 ...
+
+  // 【关键】立即保存，让下一次组件初始化能读取到
+  const initialPendingData = {
+    moduleId,
+    timestamp: Date.now(),
+    status: 'loading'
+  };
+  sessionStorage.setItem('pendingAutoSendMessage', JSON.stringify(initialPendingData));
+  setIsStreaming(true);
+
+  // 然后才执行异步操作
+  const modules = await base44.entities.PromptModule.filter({ id: moduleId });
+  // ...
+}, [...]);
+```
+
+**加强版防重复机制**（防止 30 秒内重复触发）
+
+```javascript
+let globalAutoSendTriggered = false;
+let globalAutoSendTimestamp = 0;
+
+// 在 AutoSend 检查中
+const now = Date.now();
+if (globalAutoSendTriggered && (now - globalAutoSendTimestamp) < 30000) {
+  console.log('[AutoSend] 跳过：30秒内已触发过');
+  return;
+}
+
+// 检查 sessionStorage 中是否已有 pending 数据
+const existingPending = sessionStorage.getItem('pendingAutoSendMessage');
+if (existingPending) {
+  const { moduleId: pendingModuleId, timestamp } = JSON.parse(existingPending);
+  if (pendingModuleId === moduleId && (now - timestamp) < 60000) {
+    console.log('[AutoSend] 跳过：sessionStorage 中已有此模块的 pending 数据');
+    return;
+  }
+}
+```
+
+**关键技术点**
+- `useState` 初始化函数在组件创建时**同步**执行，比 `useEffect` 更早
+- `useMemo(() => fn(), [])` 确保初始化逻辑只执行一次
+- sessionStorage 必须在**异步操作之前**写入，否则 StrictMode 重挂载时无法读取
+- 多层防重复：模块级变量 + 时间戳窗口 + sessionStorage 检查
+
+**经验教训**
+- `useEffect` 不适合做"首次渲染前"的状态恢复，它是"渲染后"的副作用
+- React 18 StrictMode 的 mount → unmount → mount 会重置组件级 state 和 ref
+- 跨组件生命周期保持状态，需要用 sessionStorage/localStorage + 模块级变量
+- 即时反馈对用户体验至关重要，空白等待会导致用户重复操作
+
+**相关文件**
+- `src/components/hooks/useChatState.jsx` - getInitialPendingState, initialPendingState
 
 ---
 
