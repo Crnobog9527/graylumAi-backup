@@ -26,7 +26,7 @@
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor/packages/api/src/trpc.ts` 文件中，添加一个 `protectedProcedure`，并创建一个可复用的 Supabase 客户端。
+请在 `/home/user/GraylumAI_vercel/packages/api/src/trpc.ts` 文件中，添加一个 `protectedProcedure`，并创建一个可复用的 Supabase 客户端。
 
 请将文件内容更新为：
 
@@ -237,7 +237,7 @@ export type AppRouter = typeof appRouter;
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令：
 
 git add . && \
 git commit -m "feat: migrate core business logic to tRPC
@@ -273,7 +273,7 @@ git push origin refactor
 **给 Claude Code 的指令**:
 
 ```
-请将 `/home/ubuntu/graylumAi-refactor/packages/db/schema.ts` 文件的内容完全替换为以下代码，以定义所有数据表的结构。
+请将 `/home/user/GraylumAI_vercel/packages/db/schema.ts` 文件的内容完全替换为以下代码，以定义所有数据表的结构。
 
 ```typescript
 import { pgTable, text, uuid, integer, timestamp, jsonb, primaryKey } from 'drizzle-orm/pg-core';
@@ -381,7 +381,7 @@ export const invitations = pgTable('invitations', {
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令，将新的数据表结构推送到数据库：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令，将新的数据表结构推送到数据库：
 
 pnpm run db:push
 ```
@@ -401,7 +401,7 @@ pnpm run db:push
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令：
 
 git add . && \
 git commit -m "feat: define and migrate complete database schema
@@ -437,7 +437,7 @@ git push origin refactor
 **给 Claude Code 的指令**:
 
 ```
-请将 `/home/ubuntu/graylumAi-refactor/packages/api/src/routers/chat.ts` 文件的内容完全替换为以下代码，以扩展聊天 API 的功能。
+请将 `/home/user/GraylumAI_vercel/packages/api/src/routers/chat.ts` 文件的内容完全替换为以下代码，以扩展聊天 API 的功能。
 
 ```typescript
 import { router, protectedProcedure } from '../../trpc';
@@ -532,7 +532,7 @@ export const chatRouter = router({
 **给 Claude Code 的指令**:
 
 
-请在 `/home/ubuntu/graylumAi-refactor/apps/web/src/components/` 目录下创建 `chat` 目录，并添加以下两个组件文件。
+请在 `/home/user/GraylumAI_vercel/apps/web/src/components/` 目录下创建 `chat` 目录，并添加以下两个组件文件。
 
 **1. `chat/ConversationList.tsx` 文件内容：**
 
@@ -640,7 +640,7 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
 **给 Claude Code 的指令**:
 
 ```
-请将 `/home/ubuntu/graylumAi-refactor/apps/web/src/app/page.tsx` 文件的内容完全替换为以下代码：
+请将 `/home/user/GraylumAI_vercel/apps/web/src/app/page.tsx` 文件的内容完全替换为以下代码：
 
 ```typescript
 'use client';
@@ -690,7 +690,7 @@ export default function HomePage() {
 **给 Claude Code 的指令**:
 
 
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令：
 
 git add . && \
 git commit -m "feat: migrate core chat interface
