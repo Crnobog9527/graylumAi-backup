@@ -27,42 +27,36 @@
 
 ### ## 任务 1.1：环境准备与清理
 
-**任务描述**: 克隆现有仓库，创建一个新的 `refactor` 分支用于重构工作，并清空所有旧文件，为新架构做准备。
+**任务描述**: 克隆现有仓库，创建一个新的 `claude/refactor-qOoTs` 分支用于重构工作，并清空所有旧文件，为新架构做准备。
 
 **给 Claude Code 的指令**:
 
 ```
 请执行以下 shell 命令，为项目重构做准备：
 
-1.  进入 /home/ubuntu 目录。
-2.  克隆 `Crnobog9527/ GraylumAI_vercel` 仓库。
-3.  进入仓库目录。
-4.  创建一个名为 `refactor` 的新分支并切换到该分支。
-5.  删除所有旧文件和目录（除了 .git 目录）。
-6.  创建一个 README.md 文件，内容为 "# GraylumAI Modern Architecture Refactor"。
-7.  提交这次清理工作。
-8.  将新的 `refactor` 分支推送到远程仓库。
+1.  创建一个名为 `claude/refactor-qOoTs` 的新分支并切换到该分支。
+2.  删除所有旧文件和目录（除了 .git 目录）。
+3.  创建一个 README.md 文件，内容为 "# GraylumAI Modern Architecture Refactor"。
+4.  提交这次清理工作。
+5.  将新的 `claude/refactor-qOoTs` 分支推送到远程仓库。
 
 请按顺序执行以下命令：
 
-cd /home/ubuntu && \
-git clone https://github.com/Crnobog9527/ GraylumAI_vercel.git graylumAi-refactor && \
-cd graylumAi-refactor && \
-git checkout -b refactor && \
-git ls-files -z | xargs -0 rm -f && \
-rm -rf .github/ migration_docs/ architecture_refactoring/ && \
-echo "# GraylumAI Modern Architecture Refactor" > README.md && \
-git add README.md && \
-git commit -m "chore: initial setup for architecture refactor" && \
-git push -u origin refactor
+git checkout -b claude/refactor-qOoTs &&
+git rm -rf . &&
+git clean -fd &&
+echo "# GraylumAI Modern Architecture claude/refactor-qOoTs" > README.md &&
+git add README.md &&
+git commit -m "chore: clean slate for modern architecture claude/refactor-qOoTs" &&
+git push -u origin claude/refactor-qOoTs
 ```
 
 **预期输出**:
 - Claude Code 会显示 git clone, checkout, rm, commit, push 的一系列输出。
-- 最后会显示成功将 `refactor` 分支推送到远程仓库。
+- 最后会显示成功将 `claude/refactor-qOoTs` 分支推送到远程仓库。
 
 **验证方法**:
-- 在 GitHub 仓库页面，您应该能看到一个新的 `refactor` 分支，且该分支下只有一个 `README.md` 文件。
+- 在 GitHub 仓库页面，您应该能看到一个新的 `claude/refactor-qOoTs` 分支，且该分支下只有一个 `README.md` 文件。
 
 ---
 
