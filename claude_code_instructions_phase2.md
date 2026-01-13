@@ -527,7 +527,7 @@ export const chatRouter = router({
 ### ## 任务 8.2：创建聊天界面组件
 
 **任务描述**: 创建聊天界面的核心组件，包括对话列表 (`ConversationList`) 和消息界面 (`ChatInterface`)。
-
+```
 **给 Claude Code 的指令**:
 
 
@@ -670,7 +670,7 @@ export default function HomePage() {
   );
 }
 ```
-```
+
 
 **预期输出**:
 - 文件写入成功。
@@ -688,7 +688,7 @@ export default function HomePage() {
 
 **给 Claude Code 的指令**:
 
-
+```
 请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令：
 
 git add . && \
