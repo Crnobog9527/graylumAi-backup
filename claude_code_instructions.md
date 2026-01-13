@@ -762,9 +762,7 @@ export default function LoginPage() {
   );
 }
 ```
-
 请使用 `file` 工具写入以上内容。
-```
 
 **预期输出**:
 - 文件写入成功。
