@@ -38,8 +38,38 @@ const defaultSettings = {
   showTokenUsageStats: false
 };
 
+// 【诊断用】模块级变量，用于追踪组件实例和发送状态
+let globalAutoSendTriggered = false;  // 跨组件实例的发送标记
+let mountCount = 0;  // 追踪 mount 次数
+
 export function useChatState() {
   const queryClient = useQueryClient();
+
+  // 【诊断用】组件实例 ID，用于追踪 React StrictMode 双重渲染
+  const componentInstanceId = useRef(Math.random().toString(36).substr(2, 9));
+  mountCount++;
+  console.log(`[Diagnosis] 🔵 useChatState mount #${mountCount}, instance: ${componentInstanceId.current}`);
+  console.log(`[Diagnosis] 🔵 当前 globalAutoSendTriggered: ${globalAutoSendTriggered}`);
+
+  // 【诊断用】组件卸载时的日志，并在正常页面切换时重置全局标记
+  useEffect(() => {
+    const currentUrl = window.location.href;
+    console.log(`[Diagnosis] 🟢 组件 ${componentInstanceId.current} 已挂载, URL: ${currentUrl}`);
+
+    return () => {
+      console.log(`[Diagnosis] 🔴 组件 ${componentInstanceId.current} 正在卸载`);
+      // 延迟重置，让 StrictMode 的快速重新挂载有机会保留状态
+      // 如果是真正的页面切换（超过 100ms），则重置标记
+      setTimeout(() => {
+        const newUrl = window.location.href;
+        // 如果 URL 不再包含 auto_start=true，说明是正常流程或已处理完
+        if (!newUrl.includes('auto_start=true')) {
+          console.log('[Diagnosis] 🔄 重置 globalAutoSendTriggered (URL 无 auto_start)');
+          globalAutoSendTriggered = false;
+        }
+      }, 200);
+    };
+  }, []);
 
   // 用户状态
   const [user, setUser] = useState(null);
@@ -587,28 +617,45 @@ export function useChatState() {
     const moduleId = urlParams.get('module_id');
     const autoStart = urlParams.get('auto_start');
 
-    // 【诊断日志】
-    console.log('[AutoSend] ========== useEffect 触发 ==========');
-    console.log('[AutoSend] autoSentRef.current:', autoSentRef.current);
-    console.log('[AutoSend] moduleId:', moduleId);
-    console.log('[AutoSend] autoStart:', autoStart);
-    console.log('[AutoSend] currentConversation:', currentConversation?.id || 'null');
-    console.log('[AutoSend] messages.length:', messages.length);
-    console.log('[AutoSend] isStreaming:', isStreaming);
+    // 【诊断日志 - 增强版】
+    console.log('[AutoSend] ==========================================');
+    console.log('[AutoSend] 🔍 useEffect 触发');
+    console.log('[AutoSend] 📌 组件实例 ID:', componentInstanceId.current);
+    console.log('[AutoSend] 📌 全局 mount 次数:', mountCount);
+    console.log('[AutoSend] 📌 globalAutoSendTriggered:', globalAutoSendTriggered);
+    console.log('[AutoSend] 📌 autoSentRef.current:', autoSentRef.current);
+    console.log('[AutoSend] 📌 URL auto_start:', autoStart);
+    console.log('[AutoSend] 📌 URL module_id:', moduleId);
+    console.log('[AutoSend] 📌 currentConversation:', currentConversation?.id || 'null');
+    console.log('[AutoSend] 📌 messages.length:', messages.length);
+    console.log('[AutoSend] 📌 isStreaming:', isStreaming);
+    console.log('[AutoSend] 📌 isStreamingRef.current:', isStreamingRef.current);
+
+    // 【诊断】检查是否是 StrictMode 重复 mount
+    if (autoSentRef.current) {
+      console.log('[AutoSend] ⚠️ autoSentRef 已为 true，但这是组件实例级别的');
+    }
+    if (globalAutoSendTriggered) {
+      console.log('[AutoSend] ✗ globalAutoSendTriggered 已为 true，跳过（全局防重复生效）');
+      return;
+    }
 
     // 如果已经自动发送过，直接返回
     if (autoSentRef.current) {
-      console.log('[AutoSend] ✗ 已经发送过，跳过');
+      console.log('[AutoSend] ✗ 已经发送过（组件级 ref），跳过');
       return;
     }
 
     // 只有当 auto_start=true、有 moduleId、没有当前对话、且消息为空时才自动发送
     const shouldAutoSend = autoStart === 'true' && moduleId && !currentConversation && messages.length === 0 && !isStreaming;
-    console.log('[AutoSend] shouldAutoSend:', shouldAutoSend);
+    console.log('[AutoSend] 📊 shouldAutoSend:', shouldAutoSend);
 
     if (shouldAutoSend) {
+      // 【诊断】立即设置全局标记，防止 StrictMode 双重触发
+      globalAutoSendTriggered = true;
       autoSentRef.current = true;  // 标记已经触发过
       console.log('[AutoSend] ✓ 开始自动发送流程');
+      console.log('[AutoSend] ✓ 已设置 globalAutoSendTriggered = true');
 
       const autoSendMessage = async () => {
         try {
@@ -647,7 +694,10 @@ export function useChatState() {
                 isStreamingRef.current = true;  // 【关键修复】同步设置 ref
 
                 // 调用 API
-                console.log('[AutoSend] 调用 smartChatWithSearch API');
+                const apiCallTimestamp = new Date().toISOString();
+                console.log('[AutoSend] 🚀 调用 smartChatWithSearch API');
+                console.log('[AutoSend] 🕐 API 调用时间:', apiCallTimestamp);
+                console.log('[AutoSend] 🔖 组件实例:', componentInstanceId.current);
                 base44.functions.invoke('smartChatWithSearch', {
                   message: userPrompt,
                   conversation_id: null,
