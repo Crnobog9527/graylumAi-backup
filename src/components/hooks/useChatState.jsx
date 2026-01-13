@@ -69,31 +69,42 @@ export function useChatState() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
 
+  // 【修复】使用 state 触发 sessionStorage 恢复检查
+  const [pendingRestore, setPendingRestore] = useState(0);
+
   // 【修复】检查 sessionStorage 中是否有待恢复的对话状态
   // 解决 React 18 StrictMode 导致的状态丢失问题
   useEffect(() => {
-    const pendingData = sessionStorage.getItem('pendingAutoSendConversation');
-    if (pendingData) {
-      try {
-        const data = JSON.parse(pendingData);
-        console.log('[AutoSend] 从 sessionStorage 恢复对话状态:', data.id);
-        setCurrentConversation({
-          id: data.id,
-          title: data.title,
-          messages: data.messages,
-          created_date: data.created_date,
-          updated_date: data.updated_date,
-          is_archived: false
-        });
-        setMessages(data.messages);
-        conversationIdRef.current = data.id;
-        sessionStorage.removeItem('pendingAutoSendConversation');
-      } catch (e) {
-        console.error('[AutoSend] 恢复状态失败:', e);
-        sessionStorage.removeItem('pendingAutoSendConversation');
+    const checkAndRestore = () => {
+      const pendingData = sessionStorage.getItem('pendingAutoSendConversation');
+      if (pendingData && !currentConversation) {
+        try {
+          const data = JSON.parse(pendingData);
+          console.log('[AutoSend] 从 sessionStorage 恢复对话状态:', data.id);
+          setCurrentConversation({
+            id: data.id,
+            title: data.title,
+            messages: data.messages,
+            created_date: data.created_date,
+            updated_date: data.updated_date,
+            is_archived: false
+          });
+          setMessages(data.messages);
+          conversationIdRef.current = data.id;
+          sessionStorage.removeItem('pendingAutoSendConversation');
+        } catch (e) {
+          console.error('[AutoSend] 恢复状态失败:', e);
+          sessionStorage.removeItem('pendingAutoSendConversation');
+        }
       }
-    }
-  }, []);
+    };
+
+    checkAndRestore();
+
+    // 延迟再检查一次，确保异步操作完成后能恢复
+    const timer = setTimeout(checkAndRestore, 300);
+    return () => clearTimeout(timer);
+  }, [currentConversation, pendingRestore]);
 
   // 选择模式
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -260,7 +271,10 @@ export function useChatState() {
 
   // 选择对话
   const handleSelectConversation = useCallback(async (conv) => {
-    console.log('[handleSelectConversation] 选择对话:', conv.id, '消息数:', conv.messages?.length || 0);
+    // 【修复】深拷贝消息数组，防止引用共享导致的数据污染
+    const convMessages = conv.messages ? JSON.parse(JSON.stringify(conv.messages)) : [];
+    console.log('[handleSelectConversation] 选择对话:', conv.id, '消息数:', convMessages.length);
+    console.log('[handleSelectConversation] 消息内容:', convMessages.map(m => m.content?.slice(0, 20)));
 
     // 【修复】清除 sessionStorage 中的待恢复状态，防止状态冲突
     sessionStorage.removeItem('pendingAutoSendConversation');
@@ -280,10 +294,20 @@ export function useChatState() {
       window.history.replaceState({}, '', newUrl);
     }
 
-    setCurrentConversation(conv);
-    setMessages(conv.messages || []);
-    setEditingTitleValue(conv.title || '');
-    conversationIdRef.current = conv.id;  // 【关键修复】更新 ref
+    // 【修复】先清空状态，再设置新对话，确保 React 正确识别状态变化
+    setMessages([]);
+    setCurrentConversation(null);
+
+    // 使用 setTimeout 确保状态更新后再设置新值
+    setTimeout(() => {
+      setCurrentConversation({
+        ...conv,
+        messages: convMessages
+      });
+      setMessages(convMessages);
+      setEditingTitleValue(conv.title || '');
+      conversationIdRef.current = conv.id;
+    }, 0);
   }, []);
 
   // 删除对话
@@ -762,7 +786,11 @@ export function useChatState() {
                     console.log('[AutoSend] 已保存到 sessionStorage');
 
                     setCurrentConversation(newConv);
+                    setMessages([userMessage, assistantMessage]);
                     console.log('[AutoSend] 设置当前对话');
+
+                    // 【修复】触发 sessionStorage 恢复检查
+                    setPendingRestore(prev => prev + 1);
 
                     // 延迟后刷新对话列表
                     setTimeout(() => refetchConversations(), 500);
