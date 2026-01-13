@@ -67,7 +67,7 @@ git push -u origin claude/refactor-qOoTs
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令，初始化 Monorepo：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令，初始化 Monorepo：
 
 1.  使用 pnpm 初始化项目。
 2.  安装 Turborepo 作为开发依赖。
@@ -77,7 +77,7 @@ git push -u origin claude/refactor-qOoTs
 
 请执行以下命令：
 
-cd /home/ubuntu/graylumAi-refactor && \
+cd /home/user/GraylumAI_vercel && \
 pnpm init && \
 pnpm add turbo --save-dev && \
 echo "packages:\n  - 'apps/*'
@@ -102,7 +102,7 @@ mkdir -p apps packages
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令，创建 Next.js 应用：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令，创建 Next.js 应用：
 
 使用 `create-next-app` 在 `apps/web` 目录创建一个新的 Next.js 项目。请使用以下配置：
 - TypeScript: Yes
@@ -116,7 +116,7 @@ mkdir -p apps packages
 
 请执行以下命令：
 
-cd /home/ubuntu/graylumAi-refactor && \
+cd /home/user/GraylumAI_vercel && \
 yes | create-next-app@latest apps/web --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"
 ```
 
@@ -136,7 +136,7 @@ yes | create-next-app@latest apps/web --typescript --tailwind --eslint --app --s
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令，创建共享包：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令，创建共享包：
 
 1.  创建 `packages/ui`, `packages/eslint-config-custom`, `packages/tsconfig` 目录。
 2.  为每个包创建 `package.json` 文件，定义包名和主文件。
@@ -145,7 +145,7 @@ yes | create-next-app@latest apps/web --typescript --tailwind --eslint --app --s
 
 请执行以下命令：
 
-cd /home/ubuntu/graylumAi-refactor && \
+cd /home/user/GraylumAI_vercel && \
 mkdir -p packages/ui packages/eslint-config-custom packages/tsconfig && \
 echo '{ "name": "@repo/ui", "version": "0.0.0", "main": "./index.tsx", "exports": { ".": "./index.tsx", "./styles.css": "./styles.css" } }' > packages/ui/package.json && \
 echo '{ "name": "@repo/eslint-config-custom", "version": "0.0.0", "main": "index.js" }' > packages/eslint-config-custom/package.json && \
@@ -169,7 +169,7 @@ echo "module.exports = { extends: ['next', 'turbo', 'prettier'], rules: { '@next
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令，安装依赖并配置工作区：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令，安装依赖并配置工作区：
 
 1.  修改 `apps/web/package.json`，使其依赖 `@repo/eslint-config-custom`。
 2.  修改 `apps/web/eslint.config.js`，使其继承共享配置。
@@ -178,7 +178,7 @@ echo "module.exports = { extends: ['next', 'turbo', 'prettier'], rules: { '@next
 
 请执行以下命令：
 
-cd /home/ubuntu/graylumAi-refactor && \
+cd /home/user/GraylumAI_vercel && \
 sed -i 's/"eslint-config-next"/"@repo/eslint-config-custom"/' apps/web/package.json && \
 echo "module.exports = require('@repo/eslint-config-custom');" > apps/web/eslint.config.js && \
 echo '{ "extends": "@repo/tsconfig/base.json", "compilerOptions": { "plugins": [{ "name": "next" }], "paths": { "@/*": ["./src/*"] } }, "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"], "exclude": ["node_modules"] }' > apps/web/tsconfig.json && \
@@ -201,7 +201,7 @@ pnpm install
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令，提交代码：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令，提交代码：
 
 git add . && \
 git commit -m "feat: initialize monorepo with Next.js and shared packages" && \
@@ -242,7 +242,7 @@ git push origin refactor
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令，创建数据库包并安装依赖：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令，创建数据库包并安装依赖：
 
 1.  创建 `packages/db` 目录。
 2.  为该包创建 `package.json` 文件。
@@ -250,7 +250,7 @@ git push origin refactor
 
 请执行以下命令：
 
-cd /home/ubuntu/graylumAi-refactor && \
+cd /home/user/GraylumAI_vercel && \
 mkdir -p packages/db && \
 echo \'{ "name": "@repo/db", "version": "0.0.0", "main": "./index.ts" }\' > packages/db/package.json && \
 pnpm add drizzle-orm postgres zod @supabase/supabase-js && \
@@ -272,7 +272,7 @@ pnpm add -D drizzle-kit pg dotenv
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令，配置 Drizzle ORM：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令，配置 Drizzle ORM：
 
 1.  创建 `packages/db/drizzle.config.ts` 配置文件。
 2.  创建 `packages/db/schema.ts` 文件，并定义 `profiles` 表的 Schema。
@@ -282,7 +282,7 @@ pnpm add -D drizzle-kit pg dotenv
 
 请执行以下命令：
 
-cd /home/ubuntu/graylumAi-refactor && \
+cd /home/user/GraylumAI_vercel && \
 echo "import type { Config } from \'drizzle-kit\';
 import \'dotenv/config\';
 
@@ -322,14 +322,14 @@ echo "DATABASE_URL=YOUR_DATABASE_CONNECTION_STRING" > .env
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令，生成并执行数据库迁移：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令，生成并执行数据库迁移：
 
 1.  在根目录的 `package.json` 中添加一个 `db:push` 脚本。
 2.  执行该脚本，生成迁移文件并推送到数据库。
 
 请执行以下命令：
 
-cd /home/ubuntu/graylumAi-refactor && \
+cd /home/user/GraylumAI_vercel && \
 pnpm pkg set scripts.db:push="drizzle-kit push:pg" && \
 pnpm run db:push
 ```
@@ -350,7 +350,7 @@ pnpm run db:push
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令，集成 Supabase Auth：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令，集成 Supabase Auth：
 
 1.  在 `apps/web/src/lib` 目录下创建 `supabase.ts` 文件，用于初始化 Supabase 客户端。
 2.  创建 `.env.local` 文件，并填入您的 Supabase 项目 URL 和 Anon Key。
@@ -359,7 +359,7 @@ pnpm run db:push
 
 请执行以下命令：
 
-cd /home/ubuntu/graylumAi-refactor && \
+cd /home/user/GraylumAI_vercel && \
 mkdir -p apps/web/src/lib && \
 echo "import { createBrowserClient } from \'@supabase/ssr\';
 
@@ -389,13 +389,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY" > apps/web/.env.local
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令，创建登录页面：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令，创建登录页面：
 
 在 `apps/web/src/app` 目录下创建一个 `login/page.tsx` 文件，包含一个简单的登录表单。
 
 请执行以下命令来创建文件：
 
-cd /home/ubuntu/graylumAi-refactor/apps/web && \
+cd /home/user/GraylumAI_vercel/apps/web && \
 mkdir -p src/app/login && \
 echo "'use client';
 
@@ -446,7 +446,7 @@ export default function LoginPage() {
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令，提交代码：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令，提交代码：
 
 git add . && \
 git commit -m "feat: setup database with Drizzle and integrate Supabase Auth" && \
@@ -481,9 +481,9 @@ git push origin refactor
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令：
 
-cd /home/ubuntu/graylumAi-refactor && \
+cd /home/user/GraylumAI_vercel && \
 mkdir -p packages/api && \
 echo \'{ "name": "@repo/api", "version": "0.0.0", "main": "./index.ts" }\\' > packages/api/package.json && \
 pnpm add @trpc/server @trpc/client @trpc/react-query @trpc/next @tanstack/react-query
@@ -501,10 +501,10 @@ pnpm add @trpc/server @trpc/client @trpc/react-query @trpc/next @tanstack/react-
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令：
 
 # 1. 创建 tRPC 上下文和初始化文件
-cd /home/ubuntu/graylumAi-refactor/packages/api && \
+cd /home/user/GraylumAI_vercel/packages/api && \
 mkdir -p src && \
 echo "import { initTRPC } from \'@trpc/server\';
 export const createTRPCContext = async (opts: { headers: Headers }) => {
@@ -538,7 +538,7 @@ export const chatRouter = router({
 });" > src/routers/chat.ts && \
 
 # 4. 在 Next.js 中创建 tRPC API 路由
-cd /home/ubuntu/graylumAi-refactor/apps/web && \
+cd /home/user/GraylumAI_vercel/apps/web && \
 mkdir -p src/app/api/trpc/[trpc] && \
 echo "import { fetchRequestHandler } from \'@trpc/server/adapters/fetch\';
 import { type NextRequest } from \'next/server\';
@@ -575,10 +575,10 @@ export const trpc = createTRPCReact<AppRouter>({});" > src/trpc/client.ts
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令：
 
 # 1. 创建 tRPC Provider
-cd /home/ubuntu/graylumAi-refactor/apps/web && \
+cd /home/user/GraylumAI_vercel/apps/web && \
 echo "\'use client\';
 
 import { QueryClient, QueryClientProvider } from \'@tanstack/react-query\';
@@ -626,9 +626,9 @@ sed -i '1s/^/import Provider from \'@/trpc/provider\';\n/' apps/web/src/app/layo
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令：
 
-cd /home/ubuntu/graylumAi-refactor/apps/web && \
+cd /home/user/GraylumAI_vercel/apps/web && \
 mkdir -p src/app/test-trpc && \
 echo "\'use client\';
 
@@ -658,7 +658,7 @@ export default function TestTRPCPage() {
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令：
 
 git add . && \
 git commit -m "feat: setup tRPC server and client infrastructure" && \
@@ -690,7 +690,7 @@ git push origin refactor
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor/apps/web` 目录下执行以下 shell 命令：
+请在 `/home/user/GraylumAI_vercel/apps/web` 目录下执行以下 shell 命令：
 
 # Shadcn/ui 的初始化是交互式的，我们需要用 yes 来自动确认
 yes | pnpm dlx shadcn-ui@latest init && \
@@ -709,7 +709,7 @@ yes | pnpm dlx shadcn-ui@latest add button card input label
 **给 Claude Code 的指令**:
 
 ```
-请将 `/home/ubuntu/graylumAi-refactor/apps/web/src/app/login/page.tsx` 的内容替换为以下代码：
+请将 `/home/user/GraylumAI_vercel/apps/web/src/app/login/page.tsx` 的内容替换为以下代码：
 
 ```typescript
 \"use client\";
@@ -787,7 +787,7 @@ export default function LoginPage() {
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令：
 
 echo \"{
   \\\"$schema\\\": \\\"https://openapi.vercel.sh/vercel.json\\\",
@@ -812,7 +812,7 @@ echo \"{
 **给 Claude Code 的指令**:
 
 ```
-请在 `/home/ubuntu/graylumAi-refactor` 目录下执行以下 shell 命令：
+请在 `/home/user/GraylumAI_vercel` 目录下执行以下 shell 命令：
 
 git add . && \
 git commit -m "feat: complete frontend and deployment setup" && \
