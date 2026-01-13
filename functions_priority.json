@@ -1,0 +1,185 @@
+{
+  "核心功能 (P0 - 最高优先级)": [
+    {
+      "name": "smartChatWithSearch",
+      "description": "AI智能对话核心功能",
+      "complexity": "高",
+      "dependencies": [
+        "OpenAI API",
+        "搜索服务",
+        "积分系统"
+      ]
+    },
+    {
+      "name": "getConversations",
+      "description": "获取用户对话列表",
+      "complexity": "中",
+      "dependencies": [
+        "数据库"
+      ]
+    },
+    {
+      "name": "createConversation",
+      "description": "创建新对话",
+      "complexity": "低",
+      "dependencies": [
+        "数据库"
+      ]
+    }
+  ],
+  "用户管理 (P1 - 高优先级)": [
+    {
+      "name": "getUserProfile",
+      "description": "获取用户资料",
+      "complexity": "低",
+      "dependencies": [
+        "数据库"
+      ]
+    },
+    {
+      "name": "updateUserProfile",
+      "description": "更新用户资料",
+      "complexity": "低",
+      "dependencies": [
+        "数据库"
+      ]
+    },
+    {
+      "name": "getUserCredits",
+      "description": "获取用户积分",
+      "complexity": "低",
+      "dependencies": [
+        "数据库"
+      ]
+    }
+  ],
+  "积分系统 (P1 - 高优先级)": [
+    {
+      "name": "deductCredits",
+      "description": "扣除用户积分",
+      "complexity": "中",
+      "dependencies": [
+        "数据库",
+        "事务处理"
+      ]
+    },
+    {
+      "name": "addCredits",
+      "description": "增加用户积分",
+      "complexity": "中",
+      "dependencies": [
+        "数据库",
+        "事务处理"
+      ]
+    },
+    {
+      "name": "getCreditTransactions",
+      "description": "获取积分流水",
+      "complexity": "低",
+      "dependencies": [
+        "数据库"
+      ]
+    }
+  ],
+  "AI模型管理 (P2 - 中优先级)": [
+    {
+      "name": "getAvailableModels",
+      "description": "获取可用AI模型列表",
+      "complexity": "低",
+      "dependencies": [
+        "数据库"
+      ]
+    },
+    {
+      "name": "updateModelConfig",
+      "description": "更新模型配置",
+      "complexity": "中",
+      "dependencies": [
+        "数据库",
+        "管理员权限"
+      ]
+    }
+  ],
+  "工单系统 (P2 - 中优先级)": [
+    {
+      "name": "createTicket",
+      "description": "创建工单",
+      "complexity": "中",
+      "dependencies": [
+        "数据库",
+        "邮件通知"
+      ]
+    },
+    {
+      "name": "getTickets",
+      "description": "获取工单列表",
+      "complexity": "低",
+      "dependencies": [
+        "数据库"
+      ]
+    },
+    {
+      "name": "replyToTicket",
+      "description": "回复工单",
+      "complexity": "中",
+      "dependencies": [
+        "数据库",
+        "邮件通知"
+      ]
+    }
+  ],
+  "系统管理 (P3 - 低优先级)": [
+    {
+      "name": "getSystemSettings",
+      "description": "获取系统设置",
+      "complexity": "低",
+      "dependencies": [
+        "数据库"
+      ]
+    },
+    {
+      "name": "updateSystemSettings",
+      "description": "更新系统设置",
+      "complexity": "低",
+      "dependencies": [
+        "数据库",
+        "管理员权限"
+      ]
+    },
+    {
+      "name": "getStatistics",
+      "description": "获取系统统计数据",
+      "complexity": "中",
+      "dependencies": [
+        "数据库",
+        "聚合查询"
+      ]
+    }
+  ],
+  "邀请与推广 (P3 - 低优先级)": [
+    {
+      "name": "generateInvitationCode",
+      "description": "生成邀请码",
+      "complexity": "低",
+      "dependencies": [
+        "数据库"
+      ]
+    },
+    {
+      "name": "validateInvitationCode",
+      "description": "验证邀请码",
+      "complexity": "低",
+      "dependencies": [
+        "数据库"
+      ]
+    },
+    {
+      "name": "getInvitationHistory",
+      "description": "获取邀请历史",
+      "complexity": "低",
+      "dependencies": [
+        "数据库"
+      ]
+    }
+  ]
+}
