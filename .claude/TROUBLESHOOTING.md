@@ -361,6 +361,141 @@ apiMessages = apiMessages.filter(m => {
 
 ## 🔍 AI 系统问题
 
+### 🔴 P0 紧急：联网搜索官方API未实现（2026-01-13 诊断发现）
+
+**严重程度**：🔴 紧急（6/10）
+
+**问题描述**
+官方 Anthropic API 路径完全没有 `web_search` tool 支持，仅 OpenRouter 有 plugins 实现。
+
+**涉及文件**
+- `functions/callAIModel.ts:504-592` - 官方API分支无 web_search tool
+- `functions/callAIModel.ts:585` - 强制返回 `web_search_enabled: false`
+- `functions/smartChatWithSearch.ts:237` - 搜索决策依赖 `selectedModel.enable_web_search`
+
+**当前实现 vs 预期**
+
+```typescript
+// ❌ 当前实现（callAIModel.ts:511-515）
+const requestBody = {
+  model: model.model_id,
+  max_tokens: model.max_tokens || 4096,
+  messages: anthropicMessages
+  // 缺少 tools 参数
+};
+
+// ✅ Claude API 正确格式
+const requestBody = {
+  model: model.model_id,
+  max_tokens: model.max_tokens || 4096,
+  messages: anthropicMessages,
+  tools: [{
+    type: "web_search",
+    name: "web_search",
+    max_uses: 5
+  }],
+  tool_choice: { type: "auto" }
+};
+```
+
+**影响范围**
+- 使用官方 Anthropic API 的用户无法使用联网搜索功能
+- 搜索关键词检测正常但实际搜索不会执行
+
+---
+
+### 🟡 P1：智能路由模型ID匹配失败（2026-01-13 诊断发现）
+
+**严重程度**：🟡 中等（7/10）
+
+**问题描述**
+`taskClassifier` 返回的 `model_id` 与数据库 `AIModel` 表的 `model_id` 字段格式不一致，导致匹配失败。
+
+**涉及文件**
+- `functions/taskClassifier.ts:98-99` - 返回完整模型ID如 `claude-haiku-4-5-20251001`
+- `functions/smartChatWithSearch.ts:206-213` - 尝试匹配数据库记录
+
+**问题代码**
+
+```typescript
+// taskClassifier.ts:98-99
+const selectedModelId = selectModel(message, conversationTurns, is_internal_task || false);
+// 返回: "claude-haiku-4-5-20251001"
+
+// smartChatWithSearch.ts:207-209
+const classifiedModel = models.find(m =>
+  m.model_id === taskClassification.model_id ||  // 数据库model_id可能是简写
+  m.model_id.includes(taskClassification.recommended_model)
+);
+```
+
+**影响**
+- 即使路由到 Haiku，如果数据库没有精确匹配的记录，会 fallback 到默认 Sonnet
+- 智能路由优化失效
+
+---
+
+### 🟡 P2：搜索缓存 executeSearch 返回模拟数据（2026-01-13 诊断发现）
+
+**严重程度**：🟡 中等（8/10）
+
+**问题描述**
+`smartChatWithSearch.ts` 中的 `executeSearch` 函数返回硬编码的模拟数据，未实际集成搜索API。
+
+**涉及文件**
+- `functions/smartChatWithSearch.ts:96-107`
+
+**问题代码**
+
+```typescript
+// smartChatWithSearch.ts:96-107
+const executeSearch = async (query, searchType) => {
+  // 这里集成实际的搜索API
+  // 为了演示，返回模拟数据  ← 未实现
+  return {
+    query,
+    results: [
+      { title: '搜索结果1', snippet: '相关内容...', url: 'https://example.com/1' },
+      { title: '搜索结果2', snippet: '相关内容...', url: 'https://example.com/2' }
+    ],
+    timestamp: new Date().toISOString()
+  };
+};
+```
+
+**说明**
+此函数当前未被调用，联网搜索通过 `force_web_search` 参数传递给 `callAIModel` 处理。但如需独立搜索功能，需要实现真实API集成。
+
+---
+
+### 🟢 P3：上下文压缩角色顺序风险（2026-01-13 诊断发现）
+
+**严重程度**：🟢 低（9/10）
+
+**问题描述**
+摘要拼接到第一条消息时，如果该消息是 assistant 角色，可能破坏对话角色顺序。
+
+**涉及文件**
+- `functions/smartChatWithSearch.ts:340-432`
+
+**风险场景**
+
+```typescript
+// smartChatWithSearch.ts:365-387
+if (recentMessages.length > 0) {
+  const firstMessage = recentMessages[0];
+  const firstContent = summaryContext + '\n' + ((firstMessage.content || firstMessage.text) || '');
+  // 如果 firstMessage.role === 'assistant'，摘要会被附加到 assistant 消息
+  // 这可能导致 Claude 认为摘要是它自己说的话
+}
+```
+
+**影响**
+- 极少数情况下可能导致上下文理解错误
+- 当前实现假设 recentMessages[0] 总是 user 消息
+
+---
+
 ### 问题：AI 响应缓慢或超时 ✅ 已有监控
 
 **症状**
