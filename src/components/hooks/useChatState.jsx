@@ -69,56 +69,6 @@ export function useChatState() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
 
-  // 【重构方案 A】URL 参数驱动：监听 URL 中的 conversation_id 并自动加载对话
-  // 解决 React 18 StrictMode 导致的状态丢失问题
-  // 原理：URL 参数不受组件重挂载影响，比 sessionStorage/useState 更可靠
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const convIdFromUrl = urlParams.get('conv_id');
-
-    // 如果 URL 没有 conv_id，不执行任何操作
-    if (!convIdFromUrl) return;
-
-    // 如果当前对话 ID 已经匹配 URL 中的 conv_id，说明状态已正确，清除 URL 参数
-    if (currentConversation?.id === convIdFromUrl) {
-      console.log('[URL驱动] 当前对话已匹配，清除 URL conv_id:', convIdFromUrl);
-      urlParams.delete('conv_id');
-      const newUrl = urlParams.toString()
-        ? `${window.location.pathname}?${urlParams.toString()}`
-        : window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
-      return;
-    }
-
-    // 如果对话列表还未加载，等待加载完成
-    if (conversations.length === 0) {
-      console.log('[URL驱动] 等待对话列表加载...');
-      return;
-    }
-
-    // 在对话列表中查找目标对话
-    const targetConv = conversations.find(c => c.id === convIdFromUrl);
-    if (targetConv) {
-      console.log('[URL驱动] 从 URL 加载对话:', convIdFromUrl);
-      const convMessages = targetConv.messages ? JSON.parse(JSON.stringify(targetConv.messages)) : [];
-      setCurrentConversation({
-        ...targetConv,
-        messages: convMessages
-      });
-      setMessages(convMessages);
-      conversationIdRef.current = convIdFromUrl;
-
-      // 加载完成后清除 URL 中的 conv_id 参数
-      urlParams.delete('conv_id');
-      const newUrl = urlParams.toString()
-        ? `${window.location.pathname}?${urlParams.toString()}`
-        : window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
-    } else {
-      console.log('[URL驱动] 对话未找到，可能还在刷新列表中:', convIdFromUrl);
-    }
-  }, [conversations, currentConversation]);
-
   // 选择模式
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedConversations, setSelectedConversations] = useState([]);
@@ -220,6 +170,57 @@ export function useChatState() {
     staleTime: 5000,  // 缩短缓存时间以更快刷新
     refetchOnWindowFocus: true
   });
+
+  // 【重构方案 A】URL 参数驱动：监听 URL 中的 conversation_id 并自动加载对话
+  // 解决 React 18 StrictMode 导致的状态丢失问题
+  // 原理：URL 参数不受组件重挂载影响，比 sessionStorage/useState 更可靠
+  // 注意：此 useEffect 必须放在 conversations 声明之后
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const convIdFromUrl = urlParams.get('conv_id');
+
+    // 如果 URL 没有 conv_id，不执行任何操作
+    if (!convIdFromUrl) return;
+
+    // 如果当前对话 ID 已经匹配 URL 中的 conv_id，说明状态已正确，清除 URL 参数
+    if (currentConversation?.id === convIdFromUrl) {
+      console.log('[URL驱动] 当前对话已匹配，清除 URL conv_id:', convIdFromUrl);
+      urlParams.delete('conv_id');
+      const newUrl = urlParams.toString()
+        ? `${window.location.pathname}?${urlParams.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      return;
+    }
+
+    // 如果对话列表还未加载，等待加载完成
+    if (conversations.length === 0) {
+      console.log('[URL驱动] 等待对话列表加载...');
+      return;
+    }
+
+    // 在对话列表中查找目标对话
+    const targetConv = conversations.find(c => c.id === convIdFromUrl);
+    if (targetConv) {
+      console.log('[URL驱动] 从 URL 加载对话:', convIdFromUrl);
+      const convMessages = targetConv.messages ? JSON.parse(JSON.stringify(targetConv.messages)) : [];
+      setCurrentConversation({
+        ...targetConv,
+        messages: convMessages
+      });
+      setMessages(convMessages);
+      conversationIdRef.current = convIdFromUrl;
+
+      // 加载完成后清除 URL 中的 conv_id 参数
+      urlParams.delete('conv_id');
+      const newUrl = urlParams.toString()
+        ? `${window.location.pathname}?${urlParams.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    } else {
+      console.log('[URL驱动] 对话未找到，可能还在刷新列表中:', convIdFromUrl);
+    }
+  }, [conversations, currentConversation]);
 
   // 获取模型列表
   const { data: models = [] } = useQuery({
