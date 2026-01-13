@@ -78,7 +78,7 @@ git push -u origin refactor
 1.  使用 pnpm 初始化项目。
 2.  安装 Turborepo 作为开发依赖。
 3.  创建 `pnpm-workspace.yaml` 文件，定义工作区。
-4.  创建 `turborepo.json` 配置文件。
+4.  创建 `turbo.json` 配置文件。
 5.  创建 `apps` 和 `packages` 目录。
 
 请执行以下命令：
@@ -88,7 +88,7 @@ pnpm init && \
 pnpm add turbo --save-dev && \
 echo "packages:\n  - 'apps/*'
   - 'packages/*'" > pnpm-workspace.yaml && \
-touch turborepo.json && \
+touch turbo.json && \
 mkdir -p apps packages
 ```
 
@@ -97,7 +97,7 @@ mkdir -p apps packages
 - 不会报错。
 
 **验证方法**:
-- 项目根目录下会生成 `package.json`, `pnpm-workspace.yaml`, `turborepo.json` 文件，以及 `apps` 和 `packages` 目录。
+- 项目根目录下会生成 `package.json`, `pnpm-workspace.yaml`, `turbo.json` 文件，以及 `apps` 和 `packages` 目录。
 
 ---
 
