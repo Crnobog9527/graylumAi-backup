@@ -250,6 +250,38 @@ export function useChatState() {
     }
   }, [conversations, currentConversation, refetchConversations, user]);
 
+  // 【修复】轮询检测 URL 中的 conv_id
+  // 问题：当旧组件异步添加 conv_id 到 URL 时，新组件的 useEffect 不会重新运行
+  // 解决：使用 interval 定期检查 URL，当发现 conv_id 时触发 refetch
+  useEffect(() => {
+    // 只在没有当前对话且用户已加载时启动轮询
+    if (currentConversation || !user?.email) {
+      return;
+    }
+
+    const checkUrlForConvId = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const convIdFromUrl = urlParams.get('conv_id');
+
+      if (convIdFromUrl) {
+        console.log('[URL轮询] 检测到 conv_id，触发 refetch:', convIdFromUrl);
+        refetchConversations();
+      }
+    };
+
+    // 每 500ms 检查一次，持续 5 秒
+    const intervalId = setInterval(checkUrlForConvId, 500);
+    const timeoutId = setTimeout(() => {
+      clearInterval(intervalId);
+      console.log('[URL轮询] 停止轮询（超时）');
+    }, 5000);
+
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
+    };
+  }, [currentConversation, user, refetchConversations]);
+
   // 获取模型列表
   const { data: models = [] } = useQuery({
     queryKey: ['models'],
