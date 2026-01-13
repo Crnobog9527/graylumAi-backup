@@ -35,7 +35,7 @@
 请执行以下 shell 命令，为项目重构做准备：
 
 1.  进入 /home/ubuntu 目录。
-2.  克隆 `Crnobog9527/graylumAi-backup` 仓库。
+2.  克隆 `Crnobog9527/ GraylumAI_vercel` 仓库。
 3.  进入仓库目录。
 4.  创建一个名为 `refactor` 的新分支并切换到该分支。
 5.  删除所有旧文件和目录（除了 .git 目录）。
@@ -46,7 +46,7 @@
 请按顺序执行以下命令：
 
 cd /home/ubuntu && \
-git clone https://github.com/Crnobog9527/graylumAi-backup.git graylumAi-refactor && \
+git clone https://github.com/Crnobog9527/ GraylumAI_vercel.git graylumAi-refactor && \
 cd graylumAi-refactor && \
 git checkout -b refactor && \
 git ls-files -z | xargs -0 rm -f && \
