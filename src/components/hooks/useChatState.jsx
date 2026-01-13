@@ -42,6 +42,54 @@ const defaultSettings = {
 // 问题：StrictMode 会 mount -> unmount -> mount 组件，导致组件级 useRef 被重置
 // 解决：使用模块级变量，在组件重新创建时仍能保持状态
 let globalAutoSendTriggered = false;
+let globalAutoSendTimestamp = 0;  // 记录上次触发时间，防止短时间内重复触发
+
+// 【即时反馈】从 sessionStorage 读取 pending 状态
+// 返回初始 messages 和 isStreaming 状态
+const getInitialPendingState = () => {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const moduleId = urlParams.get('module_id');
+
+    if (!moduleId) {
+      return { messages: [], isStreaming: false };
+    }
+
+    const pendingData = sessionStorage.getItem('pendingAutoSendMessage');
+    if (!pendingData) {
+      return { messages: [], isStreaming: false };
+    }
+
+    const parsed = JSON.parse(pendingData);
+    const { moduleId: pendingModuleId, timestamp, status, userMessage } = parsed;
+
+    // 验证是同一个模块且不是太旧（5分钟内）
+    if (pendingModuleId === moduleId && (Date.now() - timestamp) < 5 * 60 * 1000) {
+      console.log('[即时反馈] 初始化时恢复 pending 状态, status:', status);
+
+      // 如果有用户消息，显示它；如果没有（status='loading'），只设置 isStreaming
+      if (userMessage) {
+        return {
+          messages: [userMessage],
+          isStreaming: true
+        };
+      } else {
+        // 正在加载模块，只显示加载状态
+        return {
+          messages: [],
+          isStreaming: true
+        };
+      }
+    }
+
+    // 数据过期或不匹配，清除
+    sessionStorage.removeItem('pendingAutoSendMessage');
+    return { messages: [], isStreaming: false };
+  } catch (e) {
+    console.error('[即时反馈] 读取 pending 状态失败:', e);
+    return { messages: [], isStreaming: false };
+  }
+};
 
 export function useChatState() {
   const queryClient = useQueryClient();
@@ -62,11 +110,14 @@ export function useChatState() {
   // 用户状态
   const [user, setUser] = useState(null);
 
+  // 【即时反馈】使用初始化函数，在第一次渲染时就读取 pending 状态
+  const initialPendingState = useMemo(() => getInitialPendingState(), []);
+
   // 聊天状态
   const [selectedModel, setSelectedModel] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [messages, setMessages] = useState(initialPendingState.messages);
+  const [isStreaming, setIsStreaming] = useState(initialPendingState.isStreaming);
   const [inputMessage, setInputMessage] = useState('');
 
   // 选择模式
@@ -343,48 +394,6 @@ export function useChatState() {
       clearTimeout(timeoutId);
     };
   }, [currentConversation, user, conversations, refetchConversations]);
-
-  // 【即时反馈】恢复 pending 状态：显示用户消息和"AI 正在回复"状态
-  // 解决：StrictMode 重挂载导致状态丢失，用户看不到任何反馈的问题
-  useEffect(() => {
-    // 如果已经有当前对话或消息，不需要恢复
-    if (currentConversation || messages.length > 0) {
-      return;
-    }
-
-    // 检查 URL 是否有 module_id（表示正在等待自动发送）
-    const urlParams = new URLSearchParams(window.location.search);
-    const moduleId = urlParams.get('module_id');
-    if (!moduleId) {
-      return;
-    }
-
-    // 检查 sessionStorage 中是否有 pending 消息
-    const pendingData = sessionStorage.getItem('pendingAutoSendMessage');
-    if (!pendingData) {
-      return;
-    }
-
-    try {
-      const { userMessage, moduleId: pendingModuleId, timestamp } = JSON.parse(pendingData);
-
-      // 验证是同一个模块且不是太旧（5分钟内）
-      if (pendingModuleId === moduleId && (Date.now() - timestamp) < 5 * 60 * 1000) {
-        console.log('[即时反馈] 从 sessionStorage 恢复 pending 状态');
-
-        // 显示用户消息和"正在回复"状态
-        setMessages([userMessage]);
-        setIsStreaming(true);
-        isStreamingRef.current = true;
-      } else {
-        // 数据过期或不匹配，清除
-        sessionStorage.removeItem('pendingAutoSendMessage');
-      }
-    } catch (e) {
-      console.error('[即时反馈] 解析 pending 数据失败:', e);
-      sessionStorage.removeItem('pendingAutoSendMessage');
-    }
-  }, [currentConversation, messages.length]);
 
   // 获取模型列表
   const { data: models = [] } = useQuery({
@@ -856,18 +865,30 @@ export function useChatState() {
     const moduleId = urlParams.get('module_id');
     const autoStart = urlParams.get('auto_start');
 
-    // 【修复】使用模块级变量检查，防止 React 18 StrictMode 双重渲染导致重复发送
-    if (globalAutoSendTriggered) {
-      console.log('[AutoSend] 跳过：globalAutoSendTriggered 已为 true');
-      return;
-    }
-    if (autoSentRef.current) {
-      console.log('[AutoSend] 跳过：autoSentRef 已为 true');
+    // 【修复】使用模块级变量 + 时间戳检查，防止重复发送
+    const now = Date.now();
+    if (globalAutoSendTriggered && (now - globalAutoSendTimestamp) < 30000) {
+      console.log('[AutoSend] 跳过：30秒内已触发过');
       return;
     }
 
-    // 只有当 auto_start=true、有 moduleId、没有当前对话、且消息为空时才自动发送
-    const shouldAutoSend = autoStart === 'true' && moduleId && !currentConversation && messages.length === 0 && !isStreaming;
+    // 【修复】检查 sessionStorage 中是否已有 pending 数据（说明另一个组件已在处理）
+    const existingPending = sessionStorage.getItem('pendingAutoSendMessage');
+    if (existingPending) {
+      try {
+        const { moduleId: pendingModuleId, timestamp } = JSON.parse(existingPending);
+        if (pendingModuleId === moduleId && (now - timestamp) < 60000) {
+          console.log('[AutoSend] 跳过：sessionStorage 中已有此模块的 pending 数据');
+          return;
+        }
+      } catch (e) {
+        // 解析失败，继续执行
+      }
+    }
+
+    // 只有当 auto_start=true、有 moduleId、没有当前对话时才自动发送
+    // 注意：不再检查 messages.length，因为可能已从 sessionStorage 恢复
+    const shouldAutoSend = autoStart === 'true' && moduleId && !currentConversation && !isStreaming;
 
     console.log('[AutoSend] 检查条件:', {
       autoStart,
@@ -879,14 +900,29 @@ export function useChatState() {
     });
 
     if (shouldAutoSend) {
-      // 【关键】立即设置标记，防止重复触发
+      // 【关键】立即设置标记和时间戳，防止重复触发
       globalAutoSendTriggered = true;
+      globalAutoSendTimestamp = now;
       autoSentRef.current = true;
 
       // 【关键】立即清除 URL 中的 auto_start 参数，防止刷新后重复触发
       const newUrl = window.location.pathname + '?module_id=' + moduleId;
       window.history.replaceState({}, '', newUrl);
       console.log('[AutoSend] 已清除 URL auto_start 参数');
+
+      // 【即时反馈】立即保存初始 pending 状态到 sessionStorage（在任何异步调用之前）
+      // 这样即使 StrictMode 在异步期间重挂载组件，新组件也能看到 pending 状态
+      const initialPendingData = {
+        moduleId,
+        timestamp: Date.now(),
+        status: 'loading'  // 正在加载模块
+      };
+      sessionStorage.setItem('pendingAutoSendMessage', JSON.stringify(initialPendingData));
+      console.log('[AutoSend] 已保存初始 pending 状态');
+
+      // 立即设置 isStreaming 状态
+      setIsStreaming(true);
+      isStreamingRef.current = true;
 
       const autoSendMessage = async () => {
         try {
@@ -909,21 +945,19 @@ export function useChatState() {
                 timestamp: new Date().toISOString()
               };
 
-              // 【即时反馈】在 API 调用前保存 pending 状态到 sessionStorage
-              // 这样即使 StrictMode 重挂载组件，新组件也能显示用户消息和"正在回复"状态
+              // 【即时反馈】更新 pending 状态，添加用户消息
               sessionStorage.setItem('pendingAutoSendMessage', JSON.stringify({
                 userMessage,
                 moduleId,
                 moduleTitle: module.title,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                status: 'sending'  // 正在发送
               }));
-              console.log('[AutoSend] 已保存 pending 消息到 sessionStorage');
+              console.log('[AutoSend] 已更新 pending 消息');
 
-              // 立即更新 UI 状态
+              // 更新 UI 状态
               setMessages([userMessage]);
               setInputMessage('');
-              setIsStreaming(true);
-              isStreamingRef.current = true;
               console.log('[AutoSend] UI 状态已更新，开始 API 调用');
 
               try {
