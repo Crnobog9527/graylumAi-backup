@@ -1,7 +1,7 @@
 # PROJECT_CONTEXT.md
 
 <!--
-  最后更新: 2026-01-11
+  最后更新: 2026-01-13
   对应代码文件:
     - package.json (依赖版本)
     - vite.config.js (构建配置)
@@ -161,6 +161,35 @@ Grayscale 是一个 AI 驱动的社交媒体增长平台，通过智能聊天机
 
 ---
 
+## Base44 平台特殊行为 ⚠️
+
+> 2026-01-13 重要发现
+
+### RLS (Row Level Security) 行为
+
+**关键发现**: Base44 的 `asServiceRole` **仅**绕过 **Create** 权限的 RLS 检查！
+
+| 操作 | asServiceRole 是否绕过 RLS |
+|------|---------------------------|
+| Create | ✅ 是 |
+| Read | ❌ 否 |
+| Update | ❌ 否 |
+| Delete | ❌ 否 |
+
+**影响**：
+- 云函数中用 `base44.asServiceRole.entities.XXX.filter()` 查询时，仍受 RLS 限制
+- 需要将 Read/Update 设为 "No Restrictions"，并在代码层实现过滤
+
+**推荐 RLS 配置**（对于需要云函数访问的实体）：
+```
+Create: No Restrictions
+Read: No Restrictions（代码层过滤）
+Update: No Restrictions
+Delete: Entity-User Field Comparison（保留保护）
+```
+
+---
+
 ## 已知技术债务
 
 ### 1. 紧急问题 🔴
@@ -199,9 +228,10 @@ Grayscale 是一个 AI 驱动的社交媒体增长平台，通过智能聊天机
 | 属性 | 状态 |
 |------|------|
 | **开发阶段** | 生产运行中 |
-| **最后更新** | 2026-01-11 |
-| **维护模式** | 准备接入 Claude Code 长期维护 |
-| **代码分支** | `claude/sync-main-branch-I79Bq` |
+| **最后更新** | 2026-01-13 |
+| **维护模式** | Claude Code 长期维护中 |
+| **代码分支** | `claude/sync-main-s4e2p` |
+| **最新修复** | 对话窗口隔离性问题（多层修复）|
 
 ---
 

@@ -1,7 +1,7 @@
 # Grayscale 项目健康度评估报告
 
 <!--
-  最后更新: 2026-01-11
+  最后更新: 2026-01-13
   对应代码文件:
     - 全部核心代码文件 (用于评估项目健康度)
   维护说明: 每月更新一次，或在重大变更后更新
@@ -105,6 +105,70 @@
 - 未实现代码分割 (React.lazy)
 - 未实现图片懒加载
 - 缺少前端性能监控
+
+---
+
+## 🟢 已修复问题（2026-01-13）
+
+> **P0 紧急问题：对话窗口隔离性失效 - 多层修复完成**
+
+### ✅ 对话窗口隔离性失效 [已修复]
+
+| 属性 | 详情 |
+|------|------|
+| **状态** | ✅ 已修复 |
+| **修复日期** | 2026-01-13 |
+| **影响等级** | P0 紧急 |
+
+**问题表现**：
+- 每轮对话都创建新的 Conversation 记录（应该复用）
+- 新建对话不显示在侧边栏历史
+- 消息发送时重复发送（一次操作触发 2 次请求）
+
+**根本原因（多层问题）**：
+
+| 层级 | 问题 | 原因 |
+|------|------|------|
+| **RLS 层** | `asServiceRole` 查询返回 0 条结果 | Base44 的 `asServiceRole` **仅**绕过 Create 权限，不绕过 Read/Update |
+| **前端查询层** | 使用 `list()` 获取全部对话 | 未按 `user_email` 过滤 |
+| **前端状态层** | React `useState` 异步问题 | 快速操作时状态检查失效 |
+| **输入法层** | 中文 IME 触发重复事件 | 缺少 `isComposing` 检查 |
+
+**修复方案**：
+
+1. **RLS 配置调整**（Base44 控制台）
+   - Create: No Restrictions
+   - Read: No Restrictions（配合代码层过滤）
+   - Update: No Restrictions
+   - Delete: user_email = {{user.email}}（保留保护）
+
+2. **前端查询修复**（`useChatState.jsx`）
+   ```javascript
+   // 改用 filter 替代 list，确保用户隔离
+   const convs = await base44.entities.Conversation.filter(
+     { user_email: user.email },
+     '-updated_date',
+     100
+   );
+   ```
+
+3. **同步状态检查**（`useChatState.jsx`）
+   ```javascript
+   // 添加 useRef 同步跟踪，防止重复发送
+   const isStreamingRef = useRef(false);
+   if (isStreamingRef.current) return;
+   isStreamingRef.current = true;
+   ```
+
+4. **IME 输入法处理**（`useChatState.jsx`）
+   ```javascript
+   // 中文输入法 composing 检查
+   if (e.isComposing || e.keyCode === 229) return;
+   ```
+
+**关键发现 ⚠️**：
+> **Base44 平台的 `asServiceRole` 仅绕过 Create 的 RLS，不绕过 Read/Update/Delete 权限！**
+> 这与常规预期不同，需要特别注意 RLS 配置。
 
 ---
 
@@ -392,8 +456,8 @@
 
 ---
 
-**报告生成时间**：2026-01-11
-**下次审查时间**：2026-02-11（建议每月更新）
+**报告生成时间**：2026-01-13
+**下次审查时间**：2026-02-13（建议每月更新）
 **负责团队**：Grayscale Development Team
 
 ---
